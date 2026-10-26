@@ -1,5 +1,6 @@
-# On a published GitHub release (tag vX.Y.Z): build with that version, run all checks and attach
-# the plugin jar and the API jars to the release.
+# On a published GitHub release (tag vX.Y.Z): build with that version, run all checks, attach the
+# plugin jar and the API jars to the release and publish the plugin jar to Modrinth (0.x = beta).
+# Requires the MODRINTH_TOKEN repo secret.
 name: Release
 
 on:
@@ -24,6 +25,7 @@ jobs:
             exit 1
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          if [[ "$VERSION" == 0.* || "$VERSION" == *-* ]]; then echo "CHANNEL=beta" >> "$GITHUB_ENV"; else echo "CHANNEL=release" >> "$GITHUB_ENV"; fi
 
       - uses: actions/setup-java@v4
         with:
@@ -51,3 +53,17 @@ jobs:
             "api/build/libs/glyphwork-api-$VERSION.jar" \
             "api/build/libs/glyphwork-api-$VERSION-sources.jar" \
             --clobber
+
+      - name: Publish to Modrinth
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: Hf28Ysow
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: build/libs/Glyphwork-${{ env.VERSION }}.jar
+          name: Glyphwork ${{ env.VERSION }}
+          version: ${{ env.VERSION }}
+          version-type: ${{ env.CHANNEL }}
+          changelog: ${{ github.event.release.body }}
+          loaders: paper purpur
+          game-versions: "26.3"
+          java: "25"

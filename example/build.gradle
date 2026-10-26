@@ -1,0 +1,33 @@
+// Example plugin: how another plugin uses Glyphwork. Builds glyphwork-example-<version>.jar.
+plugins {
+    id 'java'
+}
+
+group = 'de.flyingfinger'
+version = rootProject.version
+base.archivesName = 'glyphwork-example'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+compileJava.options.encoding = 'UTF-8'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
+    // In your own plugin: compileOnly files('libs/glyphwork-api-<version>.jar').
+    // compileOnly: the API classes ship inside the Glyphwork plugin, do not shade them.
+    compileOnly project(':api')
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('plugin.yml') { expand version: project.version }
+}

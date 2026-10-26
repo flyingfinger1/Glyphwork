@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Example plugin** ([example/](example/)): a trader (`/haendler`) built against `glyphwork-api`
+  the way another plugin would use it: item icons in a grid, amount buttons and a text prompt, a buy
+  button that is only active when the player can pay, and an options screen for the display mode.
+  Releases attach it as `glyphwork-example-<version>.jar`.
+- CI: GitHub Actions updated to their current versions.
+
 ## 0.4.0 – icons from the server's resource pack
 
 - **Icons match the server's resource pack:** `icon-source-pack: auto` (default) reads the pack

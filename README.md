@@ -46,6 +46,11 @@ dependencies {
 
 Then build scenes as shown in [docs/api.md](docs/api.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
+A complete example plugin is in [example/](example/): `/haendler` opens a small trader with item
+icons, amount buttons, a text prompt, a buy button that is only active when the player can pay, and
+an options screen for the display mode. It builds as `glyphwork-example-<version>.jar` (also
+attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
+
 ## How it works (as verified against the 26.3 client)
 
 - **x (P1):** font `glyphwork:space` maps private-use chars to advances of +-2^k px; any offset is a
@@ -107,8 +112,8 @@ the editor's JavaScript builds the same tiles as the plugin.
 JAVA_HOME="/c/Program Files/Java/jdk-25.0.3" ./gradlew build
 ```
 
-The tests replay the client's layout and hit test and write a preview of the demo screen to
-`build/preview/demo.png` (text shown as bars).
+The tests replay the client's layout and hit test and write previews of the demo and the example
+trader to `build/preview/` (text shown as bars).
 
 `tools/extract_vanilla_text.py <client.jar> src/main/resources/vanilla_text.json` regenerates the
 vanilla char grids and advances when Minecraft changes its fonts.

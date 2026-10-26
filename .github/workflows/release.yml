@@ -52,6 +52,7 @@ jobs:
             "build/libs/Glyphwork-$VERSION.jar" \
             "api/build/libs/glyphwork-api-$VERSION.jar" \
             "api/build/libs/glyphwork-api-$VERSION-sources.jar" \
+            "example/build/libs/glyphwork-example-$VERSION.jar" \
             --clobber
 
       - name: Publish to Modrinth

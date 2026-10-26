@@ -1,0 +1,11 @@
+name: GlyphworkExample
+version: '${version}'
+main: de.flyingfinger.glyphwork.example.ExamplePlugin
+api-version: '26.3'
+description: Example plugin for the Glyphwork API (a small trader)
+author: flyingfinger1
+depend: [Glyphwork]
+commands:
+  haendler:
+    description: Opens the trader
+    aliases: [trader]

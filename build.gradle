@@ -26,6 +26,7 @@ repositories {
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
     implementation project(':api')
+    testImplementation project(':example')
 
     testImplementation 'io.papermc.paper:paper-api:26.3.build.222-stable'
     testImplementation platform('org.junit:junit-bom:5.13.4')

@@ -111,4 +111,8 @@ Players choose it with `/glyphwork darstellung`. To offer it in your own setting
   `Glyphwork.get().hasPack(player)` tells you whether the pack loaded.
 
 The demo (`/glyphwork test`) is built with this API only:
-[Demo.java](../src/main/java/de/flyingfinger/glyphwork/demo/Demo.java).
+[Demo.java](../src/main/java/de/flyingfinger/glyphwork/demo/Demo.java). A separate plugin that uses
+the API the way yours would is in [example/](../example/): a trader (`/haendler`) with
+[Trader.java](../example/src/main/java/de/flyingfinger/glyphwork/example/Trader.java) as the
+screens and [ExamplePlugin.java](../example/src/main/java/de/flyingfinger/glyphwork/example/ExamplePlugin.java)
+as the command.

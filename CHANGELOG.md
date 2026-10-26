@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Item icons:** `Icon` element, `Grid.icon`, `Button.icon`, `ListView.icon`, and `icon:` in YAML
+  menus (element, button, list and grid items). The pack only references the item and block
+  textures every client already has (no Minecraft image is shipped); 1595 items have an icon, items
+  drawn by special renderers (heads, chests, beds, banners, shields, shulker boxes) do not.
+  `icons: false` in `config.yml` leaves them out of the pack. Third demo page "Items".
+- Grids accept `frame("none")`.
+
 ## 0.2.0 – menus without code
 
 ### Plugin

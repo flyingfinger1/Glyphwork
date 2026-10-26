@@ -41,8 +41,16 @@ Glyphwork.get().open(player, settings);
 | `Label.of(x, y, text)` | one line of text; `.color`, `.width` (clips with "..."), `.align` / `.center(width)` |
 | `Button.of(x, y, w, h)` | frame + centered text; `.text`, `.tint`, `.textColor`, `.tooltip`, `.enabled`, `.onClick` |
 | `Hitbox.of(x, y, w, h)` | invisible clickable area (min. 8 x 8), e.g. over a label |
+| `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.tint`, `.tooltip`, `.onClick` |
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected`, `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
+
+Item icons: `Grid.icon(item -> "diamond")` (centered in the cell; `cell(26, 24)` keeps the slot
+frame visible around it, `frame("none")` draws no frame), `Button.icon("emerald")` (left of the
+text, best with height 24) and `ListView.icon(...)`. Icons use the textures the client already
+has: flat items look like in the inventory, block items show one face (no 3D), and items drawn by
+special renderers (heads, chests, beds, banners, shields, shulker boxes) have no icon. Like text,
+icons are drawn above frames.
 
 `y` of a label is the top of the glyphs; capitals are 7 px high, so text centered in a 16 px
 button starts 4 px below the button's top.
@@ -72,7 +80,6 @@ a warning is logged.
 
 - Scenes may be up to `max-height` pixels high (`config.yml`, default 256).
 - Text uses the Minecraft font without shadow, one style per label (color only).
-- Item icons are not supported yet (planned: M4).
 - Players without the pack (declined, failed, still loading, or a client that ignores server packs)
   get a plain native dialog built from the same scene, if `fallback: true` (default): labels become
   text lines, buttons, hitboxes, list rows, grid cells and page buttons become dialog buttons.

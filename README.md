@@ -8,6 +8,9 @@ serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.
 plugins build screens with panels, labels, buttons, lists, grids, navigation and text input:
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
+**Item icons:** 16 x 16 icons for 1595 items (in grids, buttons, lists, menus), drawn from the
+textures every client already has.
+
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus or ask for input, PlaceholderAPI support and a
 command per menu: [docs/menus.md](docs/menus.md).

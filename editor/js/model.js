@@ -118,11 +118,12 @@ export class History {
     this.undoStack = [];
     this.redoStack = [];
     this.limit = limit;
+    this.meta = () => null; // extra state saved with each step (e.g. generator settings)
   }
 
   /** Call before changing frame `name`; pass its current pixels. */
   record(name, before) {
-    this.undoStack.push({ name, px: new Uint32Array(before.px) });
+    this.undoStack.push({ name, px: new Uint32Array(before.px), meta: this.meta(name) });
     if (this.undoStack.length > this.limit) this.undoStack.shift();
     this.redoStack.length = 0;
   }
@@ -140,8 +141,9 @@ export class History {
     if (!e) return null;
     const frame = theme.frames.get(e.name);
     if (!frame || frame.px.length !== e.px.length) return null;
-    to.push({ name: e.name, px: new Uint32Array(frame.px) });
+    to.push({ name: e.name, px: new Uint32Array(frame.px), meta: this.meta(e.name) });
     frame.px.set(e.px);
+    this.lastMeta = e.meta;
     return e.name;
   }
 

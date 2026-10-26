@@ -6,6 +6,9 @@ import { SheetEditor } from './sheet-editor.js';
 import { Preview, PRESET_KEYS } from './preview.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
 import { mirrored } from './tools.js';
+import { renderDemo, clickDemo, DemoState } from './demo.js';
+import { HIDDEN, TEST_SHAPE } from './seams.js';
+import { quarterRole } from './autotile.js';
 
 const $ = (id) => document.getElementById(id);
 const TILE_SIZES = [8, 10, 12, 14, 16, 20, 24, 32];
@@ -131,6 +134,7 @@ function refresh(structure) {
   }
   preview.render();
   renderPalette();
+  renderExtras();
   scheduleSave();
 }
 
@@ -256,8 +260,8 @@ $('exportBtn').addEventListener('click', async () => {
 // ---------- tools ----------
 
 document.querySelectorAll('[data-tool]').forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
-$('undo').addEventListener('click', () => { genSession = false; const n = history.undo(theme); if (n) { current = n; refresh(true); } });
-$('redo').addEventListener('click', () => { genSession = false; const n = history.redo(theme); if (n) { current = n; refresh(true); } });
+$('undo').addEventListener('click', () => { genSession = false; const n = history.undo(theme); if (n) { current = n; restoreGen(n); refresh(true); } });
+$('redo').addEventListener('click', () => { genSession = false; const n = history.redo(theme); if (n) { current = n; restoreGen(n); refresh(true); } });
 $('color').addEventListener('input', (e) => {
   const rgb = parseInt(e.target.value.slice(1), 16);
   setColor((((color >>> 24) << 24) | rgb) >>> 0);
@@ -276,8 +280,8 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- preview controls ----------
 
-$('zoom').addEventListener('change', (e) => { preview.zoom = Number(e.target.value); preview.render(); });
-$('bg').addEventListener('change', (e) => { preview.bg = e.target.value; preview.render(); });
+$('zoom').addEventListener('change', (e) => { preview.zoom = Number(e.target.value); preview.render(); renderExtras(); });
+$('bg').addEventListener('change', (e) => { preview.bg = e.target.value; preview.render(); renderExtras(); });
 $('tintOn').addEventListener('change', (e) => { preview.tintOn = e.target.checked; preview.render(); });
 $('tint').addEventListener('input', (e) => { preview.tint = parseInt(e.target.value.slice(1), 16); if (preview.tintOn) preview.render(); });
 for (const key of PRESET_KEYS) {
@@ -322,7 +326,13 @@ function loadGen() {
   $('genShade').value = toHex(g.shade);
 }
 
+function beginGen() {
+  if (!genSession) history.record(current, app.frame());
+  genSession = true;
+}
+
 function applyGen() {
+  beginGen();
   const g = gen();
   g.fill = fromHex($('genFill').value);
   g.outlineOn = $('genOutlineOn').checked;
@@ -332,8 +342,6 @@ function applyGen() {
   g.light = fromHex($('genLight').value);
   g.shadeWidth = Math.max(0, Math.min(6, Number($('genShadeW').value) || 0));
   g.shade = fromHex($('genShade').value);
-  if (!genSession) history.record(current, app.frame());
-  genSession = true;
   app.frame().px.set(a2FromStyle({ ...g, outline: g.outlineOn ? g.outline : null }, theme.tileSize).px);
   refresh(false);
 }
@@ -343,11 +351,157 @@ for (const id of ['genFill', 'genOutlineOn', 'genOutline', 'genRound', 'genLight
 }
 document.querySelectorAll('[data-gen]').forEach((b) => b.addEventListener('click', () => {
   const st = STYLES[b.dataset.gen];
+  genSession = false;
+  beginGen();
   genParams.set(current, { ...st, outline: st.outline ?? 0xff000000, outlineOn: st.outline != null });
   loadGen();
-  genSession = false;
   applyGen();
 }));
+history.meta = (name) => (genParams.has(name) ? { ...genParams.get(name) } : null);
+
+function restoreGen(name) {
+  if (history.lastMeta) genParams.set(name, history.lastMeta);
+  else genParams.delete(name);
+  loadGen();
+}
+
+// ---------- tabs: demo scene, seams ----------
+
+let tab = 'shapes';
+const demoState = new DemoState();
+let demoTargets = [];
+
+function renderDemoTab() {
+  const z = preview.zoom;
+  const { pix, targets } = renderDemo(theme.frames, theme.tileSize, demoState, getLang());
+  demoTargets = targets;
+  const c = $('demo');
+  c.width = pix.w * z;
+  c.height = pix.h * z;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = preview.bg === 'light' ? '#d8dce4' : '#1c1f26';
+  ctx.fillRect(0, 0, c.width, c.height);
+  const off = document.createElement('canvas');
+  off.width = pix.w;
+  off.height = pix.h;
+  off.getContext('2d').putImageData(toImageData(pix), 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(off, 0, 0, c.width, c.height);
+}
+
+$('demo').addEventListener('click', (e) => {
+  const c = $('demo');
+  const r = c.getBoundingClientRect();
+  const z = preview.zoom * (r.width / c.width);
+  if (clickDemo(demoTargets, demoState, Math.floor((e.clientX - r.left) / z), Math.floor((e.clientY - r.top) / z), getLang())) renderDemoTab();
+});
+
+let activeSeam = null;
+function roleName(q) {
+  const role = quarterRole(q[0], q[1]);
+  return t(role === 'preview' ? 'preview_role' : role);
+}
+
+function renderSeamsTab() {
+  const list = $('seamList');
+  list.innerHTML = '';
+  const q = theme.tileSize / 2, z = Math.max(4, Math.floor(48 / q));
+  const a2 = app.frame();
+  for (const p of HIDDEN) {
+    const item = document.createElement('div');
+    item.className = 'seam' + (activeSeam === p.key ? ' active' : '');
+    const c = document.createElement('canvas');
+    const w = p.dir === 'h' ? 2 * q : q, h = p.dir === 'h' ? q : 2 * q;
+    c.width = w * z;
+    c.height = h * z;
+    const pix = new Pix(w, h);
+    pix.blit(a2, p.a[0] * q, p.a[1] * q, 0, 0, q, q);
+    pix.blit(a2, p.b[0] * q, p.b[1] * q, p.dir === 'h' ? q : 0, p.dir === 'h' ? 0 : q, q, q);
+    const off = document.createElement('canvas');
+    off.width = w;
+    off.height = h;
+    off.getContext('2d').putImageData(toImageData(pix), 0, 0);
+    const ctx = c.getContext('2d');
+    for (let y = 0; y < h * 2; y++) {
+      for (let x = 0; x < w * 2; x++) {
+        ctx.fillStyle = (x + y) & 1 ? '#3a3a44' : '#4a4a56';
+        ctx.fillRect(x * z / 2, y * z / 2, z / 2, z / 2);
+      }
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, c.width, c.height);
+    ctx.strokeStyle = '#e040fb';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    if (p.dir === 'h') { ctx.moveTo(q * z, 0); ctx.lineTo(q * z, c.height); } else { ctx.moveTo(0, q * z); ctx.lineTo(c.width, q * z); }
+    ctx.stroke();
+    const label = document.createElement('div');
+    label.textContent = `${roleName(p.a)} ${p.dir === 'h' ? '→' : '↓'} ${roleName(p.b)}`;
+    item.append(c, label);
+    item.addEventListener('click', () => {
+      activeSeam = activeSeam === p.key ? null : p.key;
+      editor.marks = activeSeam ? [p.a, p.b] : [];
+      editor.render();
+      renderSeamsTab();
+    });
+    list.append(item);
+  }
+}
+
+function renderExtras() {
+  if (tab === 'demo') renderDemoTab();
+  if (tab === 'seams') renderSeamsTab();
+}
+
+function setTab(name) {
+  tab = name;
+  document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  for (const n of ['shapes', 'demo', 'seams']) document.querySelectorAll('.tab-' + n).forEach((el) => { el.hidden = n !== name; });
+  if (name !== 'seams' && editor.marks.length) { editor.marks = []; activeSeam = null; editor.render(); }
+  renderExtras();
+}
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+$('seamTest').addEventListener('click', () => {
+  setTab('shapes');
+  preview.setCells(TEST_SHAPE);
+  toast(t('seamTestLoaded'));
+});
+
+// ---------- palettes ----------
+
+const PALETTES = {
+  gui: [0xff000000, 0xff373737, 0xff404040, 0xff555555, 0xff8b8b8b, 0xffa0a0a0, 0xffc6c6c6, 0xffdbdbdb, 0xffffffff, 0x00000000],
+  chat: [0xff000000, 0xff0000aa, 0xff00aa00, 0xff00aaaa, 0xffaa0000, 0xffaa00aa, 0xffffaa00, 0xffaaaaaa,
+    0xff555555, 0xff5555ff, 0xff55ff55, 0xff55ffff, 0xffff5555, 0xffff55ff, 0xffffff55, 0xffffffff],
+};
+let ownPalette = [];
+try { ownPalette = JSON.parse(localStorage.getItem('glyphwork-editor-palette') || '[]'); } catch { ownPalette = []; }
+const saveOwn = () => { try { localStorage.setItem('glyphwork-editor-palette', JSON.stringify(ownPalette)); } catch { /* ignore */ } };
+
+function renderPalettes() {
+  const which = $('paletteSel').value;
+  const colors = which === 'own' ? ownPalette : PALETTES[which];
+  const el = $('paletteSwatches');
+  el.innerHTML = '';
+  colors.forEach((v, i) => {
+    const s = document.createElement('span');
+    s.className = 'swatch';
+    s.style.setProperty('--c', rgba(v));
+    s.title = (v >>> 24) === 0 ? t('transparent') : hex(v) + ((v >>> 24) < 255 ? ` α${v >>> 24}` : '');
+    s.addEventListener('click', () => setColor(v));
+    if (which === 'own') {
+      s.addEventListener('contextmenu', (e) => { e.preventDefault(); ownPalette.splice(i, 1); saveOwn(); renderPalettes(); });
+    }
+    el.append(s);
+  });
+  $('paletteAdd').hidden = which !== 'own';
+}
+$('paletteSel').addEventListener('change', renderPalettes);
+$('paletteAdd').addEventListener('click', () => {
+  if (!ownPalette.includes(color)) ownPalette.push(color);
+  saveOwn();
+  renderPalettes();
+});
 
 // ---------- language & start ----------
 
@@ -372,6 +526,7 @@ setTool('pencil');
 setColor(color);
 loadGen();
 preview.setMode('shape');
+renderPalettes();
 refresh(true);
 
 // for debugging in the console

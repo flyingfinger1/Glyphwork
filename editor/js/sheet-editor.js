@@ -18,6 +18,7 @@ export class SheetEditor {
     this.zoom = 16;
     this.showGrid = true;
     this.hover = null;
+    this.marks = []; // quarters [col, row] highlighted from the seam list
     this.drag = null; // {button, start:[x,y], last:[x,y], erase}
     this.off = document.createElement('canvas');
     canvas.addEventListener('pointerdown', (e) => this.#down(e));
@@ -140,6 +141,11 @@ export class SheetEditor {
       }
       for (let x = 0; x <= p.w; x += q) line(x * z, 0, x * z, p.h * z, x % T ? 'rgba(255,200,0,0.45)' : 'rgba(255,200,0,0.9)', x % T ? 1 : 2);
       for (let y = 0; y <= p.h; y += q) line(0, y * z, p.w * z, y * z, y % T ? 'rgba(255,200,0,0.45)' : 'rgba(255,200,0,0.9)', y % T ? 1 : 2);
+    }
+    if (this.marks.length) {
+      ctx.strokeStyle = '#e040fb';
+      ctx.lineWidth = 3;
+      for (const [c, r] of this.marks) ctx.strokeRect(c * q * z + 1.5, r * q * z + 1.5, q * z - 3, q * z - 3);
     }
     if (this.hover && !this.drag) {
       const [x, y] = this.hover;

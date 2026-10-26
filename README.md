@@ -42,6 +42,11 @@ format:
   window, button and slot, as a starting point for hand painting.
 - Pixel tools on the A2 sheet with a quarter overlay that names each part, optional mirroring.
 - Live preview of any cell shape (with tint), all 47 generated tiles.
+- **Demo scene:** the plugin's `/glyphwork test` screen rendered with the skin, clickable
+  (own pixel font; the Minecraft font is not shipped).
+- **Seams:** the 40 quarter transitions that are not neighbours in the A2 sheet, magnified, plus
+  a test shape that contains all 68 possible transitions.
+- Palettes: vanilla GUI colors, Minecraft text colors, own palette.
 - ZIP import/export in exactly the folder layout the plugin loads; autosave in the browser;
   German and English UI.
 

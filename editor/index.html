@@ -76,11 +76,25 @@
     <div class="sheetWrap" id="sheetWrap"><canvas id="sheet"></canvas></div>
     <div class="status" id="status"></div>
     <div class="paletteRow"><span data-i18n="sheetColors">Farben im Blatt:</span> <span id="palette"></span></div>
+    <div class="paletteRow">
+      <select id="paletteSel">
+        <option value="gui" data-i18n="palGui">Vanilla-GUI</option>
+        <option value="chat" data-i18n="palChat">Minecraft-Textfarben</option>
+        <option value="own" data-i18n="palOwn">Eigene</option>
+      </select>
+      <span id="paletteSwatches"></span>
+      <button id="paletteAdd" class="small" data-i18n-title="palAddTitle">+</button>
+    </div>
   </section>
 
   <section class="panel previewPanel">
     <h2 data-i18n="preview">Vorschau</h2>
-    <div class="toolbar">
+    <div class="tabs">
+      <button data-tab="shapes" class="active" data-i18n="tabShapes">Formen</button>
+      <button data-tab="demo" data-i18n="tabDemo">Demo-Szene</button>
+      <button data-tab="seams" data-i18n="tabSeams">Nähte</button>
+    </div>
+    <div class="toolbar tab-shapes">
       <button id="modeShape" class="active" data-i18n="modeShape">Form bauen</button>
       <button id="modePaint" data-i18n="modePaint">Im Fenster malen</button>
     </div>
@@ -96,11 +110,22 @@
       <label class="inline"><input id="tintOn" type="checkbox"> <span data-i18n="tint">Einfärben</span></label>
       <input id="tint" type="color" value="#ff5050">
     </div>
-    <div class="toolbar" id="presets"><span data-i18n="presets">Formen:</span></div>
-    <div class="previewWrap"><canvas id="preview"></canvas></div>
-    <p class="hint" id="previewStatus"></p>
-    <h3 data-i18n="allTiles">Alle 47 Kacheln</h3>
-    <canvas id="tiles"></canvas>
+    <div class="toolbar tab-shapes" id="presets"><span data-i18n="presets">Formen:</span></div>
+    <div class="tab-shapes">
+      <div class="previewWrap"><canvas id="preview"></canvas></div>
+      <p class="hint" id="previewStatus"></p>
+      <h3 data-i18n="allTiles">Alle 47 Kacheln</h3>
+      <canvas id="tiles"></canvas>
+    </div>
+    <div class="tab-demo" hidden>
+      <div class="previewWrap"><canvas id="demo"></canvas></div>
+      <p class="hint" data-i18n="demoHint"></p>
+    </div>
+    <div class="tab-seams" hidden>
+      <p class="hint" data-i18n="seamsHint"></p>
+      <button id="seamTest" data-i18n="seamTest">Testform mit allen Übergängen anzeigen</button>
+      <div id="seamList"></div>
+    </div>
   </section>
 </main>
 

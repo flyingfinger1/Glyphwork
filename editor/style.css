@@ -161,3 +161,15 @@ canvas { image-rendering: pixelated; display: block; }
 .gen input[type=number] { width: 52px; }
 #preview.painting { cursor: crosshair; }
 #genPresets button.active { background: var(--panel-2); }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+.tabs button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; padding: 6px 10px; }
+.tabs button.active { border-bottom-color: var(--accent); color: var(--text); font-weight: 600; }
+button.small { padding: 2px 8px; }
+#demo { cursor: pointer; }
+#seamList { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+.seam { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px; cursor: pointer; font-size: 11px; color: var(--muted); text-align: center; }
+.seam.active { outline: 2px solid #e040fb; }
+.seam canvas { margin: 0 auto 4px; }
+[hidden] { display: none !important; }
+#demo, #preview { max-width: 100%; height: auto; }

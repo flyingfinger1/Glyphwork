@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { decodePng, encodePng } from '../editor/js/png.js';
 import { STYLES, a2FromStyle } from '../editor/js/style.js';
 import { tiles } from '../editor/js/autotile.js';
+import { PAIRS, HIDDEN, TEST_SHAPE, transitions } from '../editor/js/seams.js';
 
 const T = 8;
 let failures = 0;
@@ -28,4 +29,7 @@ for (const frame of ['panel', 'button', 'slot']) {
   const round = await decodePng(await encodePng(jsA2));
   check(round.equals(jsA2), `${frame}: PNG round trip`);
 }
+const covered = transitions(TEST_SHAPE);
+check(PAIRS.length === 68 && HIDDEN.length === 40, `seams: ${PAIRS.length} transitions, ${HIDDEN.length} hidden`);
+check(PAIRS.every((p) => covered.has(p.key)), 'seams: test shape contains every transition');
 process.exit(failures ? 1 : 0);

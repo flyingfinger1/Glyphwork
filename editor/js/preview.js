@@ -56,6 +56,11 @@ export class Preview {
     this.#status();
   }
 
+  setCells(cells) {
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) this.cells[r][c] = !!cells[r]?.[c];
+    this.render();
+  }
+
   preset(key) {
     for (const row of this.cells) row.fill(false);
     const p = PRESETS[key];

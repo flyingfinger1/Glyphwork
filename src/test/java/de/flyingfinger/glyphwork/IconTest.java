@@ -101,9 +101,14 @@ class IconTest {
         // cells stay clickable where the slot frame is drawn, icons do not block
         assertEquals("glyphwork:demo-items#2:cell0", l.hit(20, 30));
         assertEquals("glyphwork:demo-items#2:cell7", l.hit(10 + 26 + 12, 20 + 26 + 12));
+        // the grid's page buttons (126..142) stay free: nothing else is drawn there
+        assertEquals("glyphwork:demo-items#2:next", l.hit(160, 134));
+        assertTrue(l.icons.stream().noneMatch(i -> i[1] + 16 > 126 && i[1] < 142), "no icon over the pager");
+        assertTrue(l.textRuns.stream().noneMatch(t -> t[0] == 8 && t[1] >= 120 && t[1] < 142),
+            "no label in the pager row (the selection label used to sit there)");
         // the "Kaufen" button with an icon at its left
-        assertEquals("glyphwork:demo-items#6", l.hit(140, 156));
-        assertTrue(l.icons.stream().anyMatch(i -> i[0] == 99 && i[1] == 148), "button icon at 99,148");
+        assertEquals("glyphwork:demo-items#6", l.hit(140, 176));
+        assertTrue(l.icons.stream().anyMatch(i -> i[0] == 99 && i[1] == 168), "button icon at 99,168");
     }
 
     @Test

@@ -53,9 +53,10 @@ public final class Demo {
     }
 
     private static Scene buildItems() {
-        return Scene.builder("glyphwork:demo-items", 176, 172)
+        // grid 20..124, its page buttons 126..142, selection and buttons below
+        return Scene.builder("glyphwork:demo-items", 176, 196)
             .title(Component.text("Glyphwork - Items"))
-            .add(Panel.of(0, 0, 176, 172))
+            .add(Panel.of(0, 0, 176, 196))
             .add(Label.of(8, 7, "Item-Icons"))
             .add(Grid.of("items", 10, 20, 6, 4, v -> ITEMS)
                 .cell(26, 24)
@@ -63,10 +64,10 @@ public final class Demo {
                 .tooltip(id -> Component.text(pretty(id)))
                 .selected(v -> v.get("item", (String) null))
                 .onClick((c, id) -> { c.set("item", id); c.reopen(); }))
-            .add(Label.of(8, 130, v -> "Auswahl: " + pretty(v.get("item", "-"))).width(100))
-            .add(Icon.of(152, 125, v -> v.get("item", (String) null)))
-            .add(Button.of(8, 148, 56, 16).text("< Zurück").onClick(c -> c.back()))
-            .add(Button.of(96, 144, 72, 24).icon("emerald").text("Kaufen").tint(TextColor.color(0x50E050))
+            .add(Label.of(8, 150, v -> "Auswahl: " + pretty(v.get("item", "-"))).width(136))
+            .add(Icon.of(152, 146, v -> v.get("item", (String) null)))
+            .add(Button.of(8, 168, 56, 16).text("< Zurück").onClick(c -> c.back()))
+            .add(Button.of(96, 164, 72, 24).icon("emerald").text("Kaufen").tint(TextColor.color(0x50E050))
                 .tooltip("Button mit Icon")
                 .onClick(c -> c.player().sendMessage(Component.text("Gekauft: " + pretty(c.get("item", "nichts"))))))
             .build();

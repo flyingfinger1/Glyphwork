@@ -62,15 +62,27 @@ public final class SceneRenderer {
     }
 
     public LineBuilder render(Scene scene, View view, Binder binder) {
-        return render(scene, view, binder, true);
+        return render(scene, view, binder, true, true);
     }
+
+    public LineBuilder render(Scene scene, View view, Binder binder, boolean showIcons) {
+        return render(scene, view, binder, showIcons, true);
+    }
+
+    /** Whether the viewer has the server's pack, so icons of its own textures can be drawn. */
+    private boolean packIconsThisPass = true;
 
     /** Whether icons are drawn in the current pass (renders run on the main thread, one at a time). */
     private boolean iconsThisPass = true;
 
-    /** @param showIcons false: no item icons; grid cells without a label show a short item name */
-    public LineBuilder render(Scene scene, View view, Binder binder, boolean showIcons) {
+/**
+     * @param showIcons     false: no item icons; grid cells without a label show a short item name
+     * @param packTextures  false: the viewer lacks the server's pack, so icons that need its
+     *                      textures are left out (the client would draw boxes for them)
+     */
+    public LineBuilder render(Scene scene, View view, Binder binder, boolean showIcons, boolean packTextures) {
         iconsThisPass = showIcons;
+        packIconsThisPass = packTextures;
         if (scene.height() > maxHeight) {
             warnOnce(scene.id() + ":height", "Scene " + scene.id() + " is " + scene.height()
                 + " px high, the pack covers " + maxHeight + " px (raise max-height in config.yml)");
@@ -115,6 +127,9 @@ public final class SceneRenderer {
         if (layers == null) {
             warnOnce("icon:" + item, "No icon for item '" + item + "' (unknown, or drawn by a special renderer"
                 + " like heads, chests, beds, banners)");
+            return false;
+        }
+        if (!packIconsThisPass && layers.stream().anyMatch(l -> l.texture().fromPack())) {
             return false;
         }
         line.icon(layers, x, y, tint);

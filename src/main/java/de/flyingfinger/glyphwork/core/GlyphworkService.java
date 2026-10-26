@@ -35,6 +35,7 @@ public final class GlyphworkService implements Glyphwork {
     private final Plugin plugin;
     private final Predicate<Player> hasPack;
     private final Consumer<Player> sendPack;
+    private final Predicate<Player> hasServerPack;
     private final NamespacedKey displayKey;
     private final FallbackRenderer fallbackRenderer;
     private final Map<UUID, Session> sessions = new HashMap<>();
@@ -43,7 +44,8 @@ public final class GlyphworkService implements Glyphwork {
     private volatile boolean fallback;
 
     public GlyphworkService(Plugin plugin, SceneRenderer renderer, int maxHeight, boolean fallback,
-                            Predicate<Player> hasPack, Consumer<Player> sendPack) {
+                            Predicate<Player> hasPack, Consumer<Player> sendPack, Predicate<Player> hasServerPack) {
+        this.hasServerPack = hasServerPack;
         this.plugin = plugin;
         this.sendPack = sendPack;
         this.displayKey = new NamespacedKey(plugin, "display");
@@ -159,7 +161,7 @@ public final class GlyphworkService implements Glyphwork {
             return;
         }
         LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, name, action),
-            mode != DisplayMode.NO_ICONS);
+            mode != DisplayMode.NO_ICONS, hasServerPack.test(player));
         DialogFactory.show(player, DialogFactory.gui(scene.title().apply(view), line.build(scene.height()),
             Math.max(scene.width(), line.width()), scene.exitLabel()));
     }

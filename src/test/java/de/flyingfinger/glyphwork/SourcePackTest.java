@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -63,6 +64,43 @@ class SourcePackTest {
                 "{\"model\":{\"type\":\"minecraft:model\",\"model\":\"minecraft:item/not_in_pack\"}}".getBytes(StandardCharsets.UTF_8));
         }
         return file;
+    }
+
+    @Test
+    void packIconsAreLeftOutWithoutTheServerPack(@TempDir Path dir) throws Exception {
+        GlyphAllocator alloc = new GlyphAllocator();
+        var theme = de.flyingfinger.glyphwork.theme.Theme.builtin(alloc);
+        var hit = de.flyingfinger.glyphwork.font.Sheet.invisible(alloc);
+        IconCatalog icons = IconCatalog.load(alloc);
+        try (ZipFile zip = new ZipFile(samplePack(dir).toFile())) {
+            icons.applyPack(new PackIcons(zip), alloc);
+        }
+        var text = de.flyingfinger.glyphwork.font.VanillaText.load();
+        var renderer = new de.flyingfinger.glyphwork.render.SceneRenderer(text, theme, hit.glyph(), 256,
+            java.util.logging.Logger.getLogger("test"), icons);
+        var scene = de.flyingfinger.glyphwork.api.Scene.builder("t", 176, 64)
+            .add(de.flyingfinger.glyphwork.api.Grid.of("g", 8, 8, 2, 1, v -> List.of("myserver:ruby", "emerald"))
+                .cell(26, 24).icon(id -> id))
+            .build();
+        de.flyingfinger.glyphwork.api.View view = new de.flyingfinger.glyphwork.api.View() {
+            public org.bukkit.entity.Player player() { return null; }
+            public de.flyingfinger.glyphwork.api.Scene scene() { return scene; }
+            public <T> T get(String key, T fallback) { return fallback; }
+            public void set(String key, Object value) { }
+        };
+        java.util.List<de.flyingfinger.glyphwork.font.Sheet> sheets = new java.util.ArrayList<>(theme.sheets());
+        sheets.add(hit);
+        char ruby = icons.icon("myserver:ruby").getFirst().texture().codepoint();
+
+        var with = renderer.render(scene, view, (n, a) -> net.kyori.adventure.text.event.ClickEvent.runCommand(n), true, true);
+        Layout lw = new Layout(with.build(64), sheets, text, icons);
+        assertTrue(lw.icons.stream().anyMatch(i -> i[2] == ruby), "ruby drawn with the server pack");
+
+        var without = renderer.render(scene, view, (n, a) -> net.kyori.adventure.text.event.ClickEvent.runCommand(n), true, false);
+        Layout lo = new Layout(without.build(64), sheets, text, icons);
+        assertTrue(lo.icons.stream().noneMatch(i -> i[2] == ruby), "no ruby without the server pack");
+        assertEquals(1, lo.icons.size());                                  // the vanilla emerald stays
+        assertTrue(lo.textRuns.stream().anyMatch(t -> t[0] >= 8 && t[0] < 32), "short name in the ruby cell");
     }
 
     @Test

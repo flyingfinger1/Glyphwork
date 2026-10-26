@@ -64,7 +64,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
             service = new GlyphworkService(this, b.renderer(), b.settings().maxHeight(), b.settings().fallback(),
-                packs::hasPack, packs::send);
+                packs::hasPack, packs::send, packs::hasServerPack);
         } catch (IOException e) {
             getLogger().severe("Pack could not be published: " + e);
             getServer().getPluginManager().disablePlugin(this);
@@ -223,6 +223,12 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        packs.recordServerPack(event.getPlayer());
+        if (getServer().getResourcePack() != null && !getServer().getResourcePack().isBlank()) {
+            getLogger().info(event.getPlayer().getName() + " server pack (server.properties): "
+                + event.getPlayer().getResourcePackStatus()
+                + (packs.hasServerPack(event.getPlayer()) ? "" : " -> icons from it are left out for this player"));
+        }
         if (settings.sendOnJoin()) {
             packs.send(event.getPlayer());
         }
@@ -237,6 +243,10 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
         if (!PackService.PACK_ID.equals(event.getID())) {
+            org.bukkit.packs.ResourcePack server = getServer().getServerResourcePack();
+            if (server != null && server.getId().equals(event.getID())) {
+                packs.serverPackStatus(event.getPlayer(), event.getStatus());
+            }
             return;
         }
         Player p = event.getPlayer();

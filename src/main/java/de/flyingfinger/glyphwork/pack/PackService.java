@@ -32,6 +32,8 @@ public final class PackService {
     private final Plugin plugin;
     private final Path dir;
     private final Map<UUID, Status> status = new ConcurrentHashMap<>();
+    /** Players whose client loaded the server's own pack (server.properties resource-pack). */
+    private final java.util.Set<UUID> serverPack = ConcurrentHashMap.newKeySet();
     private @Nullable PackServer server;
     private String serverKey = "";
     private Settings settings;
@@ -142,5 +144,33 @@ public final class PackService {
 
     public void forget(Player player) {
         status.remove(player.getUniqueId());
+        serverPack.remove(player.getUniqueId());
+    }
+
+    /**
+     * Call on join, before sending the Glyphwork pack: the connection still holds the answer to the
+     * server pack, which is sent while logging in (no event fires for it).
+     */
+    public void recordServerPack(Player player) {
+        String url = Bukkit.getServer().getResourcePack();
+        if (url != null && !url.isBlank() && player.getResourcePackStatus() == Status.SUCCESSFULLY_LOADED) {
+            serverPack.add(player.getUniqueId());
+        } else {
+            serverPack.remove(player.getUniqueId());
+        }
+    }
+
+    /** A later status for the server pack (e.g. sent again by another plugin). */
+    public void serverPackStatus(Player player, Status s) {
+        if (s == Status.SUCCESSFULLY_LOADED) {
+            serverPack.add(player.getUniqueId());
+        } else if (s == Status.DECLINED || s == Status.FAILED_DOWNLOAD || s == Status.DISCARDED
+            || s == Status.INVALID_URL || s == Status.FAILED_RELOAD) {
+            serverPack.remove(player.getUniqueId());
+        }
+    }
+
+    public boolean hasServerPack(Player player) {
+        return serverPack.contains(player.getUniqueId());
     }
 }

@@ -57,6 +57,20 @@ public final class Sheet {
         this(name, List.of(image), 1, alloc);
     }
 
+    /**
+     * One 8 x 8 cell of alpha-1 pixels: the client discards it when drawing (alpha < 0.1) but its
+     * box counts for clicks, so it makes invisible hitboxes.
+     */
+    public static Sheet invisible(GlyphAllocator alloc) {
+        BufferedImage img = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
+                img.setRGB(x, y, 0x01000000);
+            }
+        }
+        return new Sheet("glyphwork_hit", img, alloc);
+    }
+
     /** Same rule as the client: rightmost column with any non-zero alpha pixel. */
     static int actualWidth(BufferedImage img) {
         for (int x = img.getWidth() - 1; x >= 0; x--) {

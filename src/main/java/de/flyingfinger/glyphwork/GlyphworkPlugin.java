@@ -1,20 +1,20 @@
 package de.flyingfinger.glyphwork;
 
-import de.flyingfinger.glyphwork.demo.DemoScreen;
-import de.flyingfinger.glyphwork.dialog.DialogFactory;
+import de.flyingfinger.glyphwork.api.Glyphwork;
+import de.flyingfinger.glyphwork.core.GlyphworkService;
+import de.flyingfinger.glyphwork.demo.Demo;
 import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
+import de.flyingfinger.glyphwork.font.Sheet;
 import de.flyingfinger.glyphwork.font.VanillaText;
 import de.flyingfinger.glyphwork.pack.PackFiles;
-import de.flyingfinger.glyphwork.render.LineBuilder;
+import de.flyingfinger.glyphwork.render.SceneRenderer;
 import de.flyingfinger.glyphwork.serve.PackServer;
 import de.flyingfinger.glyphwork.theme.Theme;
 import net.kyori.adventure.resource.ResourcePackInfo;
 import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -23,6 +23,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
@@ -30,33 +31,38 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     private static final UUID PACK_ID = UUID.nameUUIDFromBytes("Glyphwork".getBytes());
 
     private PackServer server;
-    private DemoScreen demo;
+    private GlyphworkService service;
+    private Demo demo;
     private String sha1;
-    private final Map<UUID, DemoScreen.State> states = new HashMap<>();
-    private final Map<UUID, PlayerResourcePackStatusEvent.Status> packStatus = new HashMap<>();
+    private final Map<UUID, PlayerResourcePackStatusEvent.Status> packStatus = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        int maxHeight = Math.max(16, Math.min(1024, getConfig().getInt("max-height", 256)));
         VanillaText text = VanillaText.load();
         GlyphAllocator alloc = new GlyphAllocator();
         Theme theme = loadTheme(alloc);
-        demo = new DemoScreen(text, theme);
+        Sheet hit = Sheet.invisible(alloc);
 
+        List<Sheet> sheets = new ArrayList<>(theme.sheets());
+        sheets.add(hit);
         PackFiles pack = new PackFiles();
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
-        ShiftFonts.write(pack, theme.sheets(), demo.offsets(), text);
+        ShiftFonts.write(pack, sheets, maxHeight, text);
         byte[] zip = pack.toZip();
         sha1 = PackFiles.sha1(zip);
         try {
@@ -71,9 +77,14 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             return;
         }
         server.publish(zip, sha1);
-        getLogger().info("Theme '" + theme.name() + "', pack " + sha1 + " (" + zip.length + " bytes, "
-            + demo.offsets().size() + " shift fonts) at " + packUrl());
+        getLogger().info("Theme '" + theme.name() + "', pack " + sha1 + " (" + zip.length / 1024 + " KB, height "
+            + maxHeight + " px) at " + packUrl());
 
+        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), maxHeight, getLogger());
+        service = new GlyphworkService(this, renderer, maxHeight,
+            p -> packStatus.get(p.getUniqueId()) == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED);
+        getServer().getServicesManager().register(Glyphwork.class, service, this, ServicePriority.Normal);
+        demo = new Demo();
         getServer().getPluginManager().registerEvents(this, this);
     }
 
@@ -101,6 +112,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        getServer().getServicesManager().unregisterAll(this);
         if (server != null) {
             server.stop();
         }
@@ -129,8 +141,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        states.remove(event.getPlayer().getUniqueId());
         packStatus.remove(event.getPlayer().getUniqueId());
+        service.forget(event.getPlayer());
     }
 
     @EventHandler
@@ -155,50 +167,14 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 player.sendMessage(Component.text("Pack gesendet.", NamedTextColor.GRAY));
             }
             case "test" -> {
-                if (packStatus.get(player.getUniqueId()) != PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
+                if (!service.hasPack(player)) {
                     player.sendMessage(Component.text("Pack noch nicht geladen (Status: "
                         + packStatus.get(player.getUniqueId()) + ") – /glyphwork pack", NamedTextColor.YELLOW));
                 }
-                openDemo(player);
+                service.open(player, demo.main);
             }
             default -> player.sendMessage(Component.text("/glyphwork <test|pack>", NamedTextColor.GRAY));
         }
         return true;
-    }
-
-    private void openDemo(Player player) {
-        DemoScreen.State state = states.computeIfAbsent(player.getUniqueId(), id -> new DemoScreen.State());
-        LineBuilder line = demo.render(state, target -> ClickEvent.callback(audience -> {
-            // callbacks may arrive off the main thread
-            Bukkit.getScheduler().runTask(this, () -> onDemoClick(player, state, target));
-        }, DialogFactory.callbackOptions()));
-        DialogFactory.show(player, DialogFactory.gui(Component.text("Glyphwork"),
-            line.build(DemoScreen.H), line.width()));
-    }
-
-    private void onDemoClick(Player player, DemoScreen.State state, DemoScreen.Target target) {
-        if (!player.isOnline()) {
-            return;
-        }
-        getLogger().info("Demo click " + player.getName() + ": " + target);
-        switch (target) {
-            case CLOSE -> {
-                player.closeDialog();
-                return;
-            }
-            case TOGGLE -> state.soundOn = !state.soundOn;
-            case COUNTER -> state.count++;
-            case PANEL, WELL -> {
-            }
-            default -> state.selectedSlot = target.ordinal() - DemoScreen.Target.SLOT_0.ordinal();
-        }
-        state.lastClick = switch (target) {
-            case PANEL -> "Panel";
-            case WELL -> "L-Form";
-            case TOGGLE -> "Umschalter";
-            case COUNTER -> "Zähler";
-            default -> "Zelle " + (state.selectedSlot + 1);
-        };
-        openDemo(player);
     }
 }

@@ -4,8 +4,9 @@ Clickable, pixel-positioned GUIs inside the vanilla **dialog** screen (Paper 26.
 The whole GUI is one `plain_message`; the plugin generates a resource pack with bitmap fonts,
 serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.md).
 
-**Status: M1** (primitives proven in a vanilla client, autotiled skins). A hard-coded demo screen
-opens with `/glyphwork test`. The public scene API (M3) does not exist yet.
+**Status: M3** (primitives proven in a vanilla client, autotiled skins, public scene API). Other
+plugins build screens with panels, labels, buttons, lists, grids, navigation and text input:
+[docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
 **Skin editor:** https://flyingfinger1.github.io/Glyphwork/ ([guide](docs/skin-editor.md))
 
@@ -13,14 +14,18 @@ opens with `/glyphwork test`. The public scene API (M3) does not exist yet.
 
 - **x (P1):** font `glyphwork:space` maps private-use chars to advances of +-2^k px; any offset is a
   combination of them. All elements are layered on the **first text line** in paint order.
-- **y (P2):** one font per vertical offset (`glyphwork:y<N>`) registers every glyph sheet and the
-  vanilla text textures (`ascii.png` etc., not shipped) with `ascent = normal - N`. Only offsets that
-  are used get a font. The remaining lines of the message are empty and only make the text widget
-  tall enough to receive clicks.
+- **y (P2):** frames are drawn on the first text line; one font per pixel row (`glyphwork:y<N>`,
+  N < `max-height`) registers every glyph sheet with `ascent = 7 - N`, so their paint order is exact.
+  Text goes on the text line it falls into, with 9 fonts (`glyphwork:t0..8`) that re-register the
+  vanilla text textures (`ascii.png` etc., not shipped) shifted by the remainder. Those textures are
+  large and every font loads them again, so text gets only 9 fonts; text lines come after the first
+  line, so text is always on top of frames. The pack depends only on the skin, not on the scenes.
+  Empty lines make the text widget tall enough to receive clicks.
 - **Clicks (P3):** the 26.3 client (`ActiveTextCollector.ClickableStyleFinder`) hit-tests each glyph
   against its *drawn* box (space glyphs: their line box) and the **last** glyph under the cursor that
   has a click event wins. So a sprite with a click event is clickable exactly where it is drawn, and
-  glyphs without events (text labels, decorations) never block clicks. The line-binding problem from
+  glyphs without events (text labels, decorations) never block clicks. Invisible hitboxes are 8 x 8
+  glyphs of alpha-1 pixels: the client does not draw them (alpha < 0.1) but they count for clicks. The line-binding problem from
   the original HugoSMP recipe does not apply to 26.3. `src/test/java/de/flyingfinger/glyphwork/M0HitTest.java` replays this logic.
 - Text clicks in a dialog body run with the dialog's `afterAction`; we use `NONE`, so the screen
   stays open and the server answers with a re-rendered dialog.

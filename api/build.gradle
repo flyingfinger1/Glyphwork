@@ -1,0 +1,25 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'de.flyingfinger'
+version = rootProject.version
+base.archivesName = 'glyphwork-api'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withSourcesJar()
+}
+
+compileJava.options.encoding = 'UTF-8'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
+}

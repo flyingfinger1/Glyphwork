@@ -24,6 +24,7 @@ repositories {
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
+    implementation project(':api')
 
     testImplementation 'io.papermc.paper:paper-api:26.3.build.222-stable'
     testImplementation platform('org.junit:junit-bom:5.13.4')
@@ -33,6 +34,14 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+// the API classes ship inside the plugin jar; other plugins compile against api/ only
+evaluationDependsOn(':api')
+
+jar {
+    dependsOn(':api:classes')
+    from(project(':api').sourceSets.main.output)
 }
 
 processResources {

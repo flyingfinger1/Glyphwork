@@ -19,10 +19,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Replays how the 26.3 client lays out and hit-tests the first line of a Glyphwork message
- * (Font.PreparedTextBuilder + ActiveTextCollector.ClickableStyleFinder):
- * bitmap glyphs get their drawn box (right edge = x + advance), space glyphs an EmptyArea on the
- * first line, and the last box under the cursor with a click event wins.
+ * Replays how the 26.3 client lays out and hit-tests a Glyphwork message
+ * (Font.PreparedTextBuilder + ActiveTextCollector.ClickableStyleFinder): lines are 9 px apart,
+ * bitmap glyphs get their drawn box (right edge = x + advance), space glyphs an EmptyArea on their
+ * line, and the last box under the cursor with a click event wins. Lines are centered by the
+ * client; Glyphwork ends every line at the same x, so all lines start at x = 0 here.
  */
 final class Layout {
 
@@ -35,6 +36,7 @@ final class Layout {
     final List<Box> boxes = new ArrayList<>();
     final List<Drawn> drawn = new ArrayList<>();
     final List<int[]> textRuns = new ArrayList<>(); // x, y, width, rgb
+    final List<Integer> lineWidths = new ArrayList<>();
 
     Layout(Component message, List<Sheet> sheets, VanillaText text) {
         Map<Character, BufferedImage> cells = new HashMap<>();
@@ -43,31 +45,43 @@ final class Layout {
                 cells.put(s.glyph(i).codepoint(), s.cell(i));
             }
         }
+        int line = 0;
         float x = 0;
-        for (Component child : message.children().getFirst().children()) {
-            String s = ((TextComponent) child).content();
-            String font = child.font() == null ? "" : child.font().asString();
-            int y = font.startsWith("glyphwork:y") ? Integer.parseInt(font.substring("glyphwork:y".length())) : 0;
-            for (char c : s.toCharArray()) {
-                Integer space = SpaceFont.advance(c);
-                float adv;
-                if (space != null) {
-                    adv = space;
-                    boxes.add(new Box(x, 0, x + adv, 9, child.clickEvent()));
-                } else if (cells.containsKey(c)) {
-                    BufferedImage img = cells.get(c);
-                    adv = advance(img);
-                    boxes.add(new Box(x, y, x + adv, y + img.getHeight(), child.clickEvent()));
-                    drawn.add(new Drawn(img, (int) x, y, child.color()));
-                } else {
-                    adv = text.width(String.valueOf(c));
-                    if (c != VanillaText.NB_SPACE && c != ' ') {
-                        textRuns.add(new int[]{(int) x, y, (int) adv - 1, child.color() == null ? 0xFFFFFF : child.color().value()});
+        for (Component part : message.children()) {
+            if (part instanceof TextComponent tc && tc.content().equals("\n")) {
+                lineWidths.add((int) x);
+                line++;
+                x = 0;
+                continue;
+            }
+            for (Component child : part.children()) {
+                String s = ((TextComponent) child).content();
+                String font = child.font() == null ? "" : child.font().value();
+                int shift = font.length() > 1 && (font.startsWith("y") || font.startsWith("t")) ? Integer.parseInt(font.substring(1)) : 0;
+                for (char c : s.toCharArray()) {
+                    Integer space = SpaceFont.advance(c);
+                    float adv;
+                    if (space != null) {
+                        adv = space;
+                        boxes.add(new Box(x, 9 * line, x + adv, 9 * line + 9, child.clickEvent()));
+                    } else if (cells.containsKey(c)) {
+                        BufferedImage img = cells.get(c);
+                        adv = advance(img);
+                        int top = 9 * line + shift;
+                        boxes.add(new Box(x, top, x + adv, top + img.getHeight(), child.clickEvent()));
+                        drawn.add(new Drawn(img, (int) x, top, child.color()));
+                    } else {
+                        adv = text.width(String.valueOf(c));
+                        if (c != VanillaText.NB_SPACE && c != ' ') {
+                            textRuns.add(new int[]{(int) x, 9 * line + shift, (int) adv - 1,
+                                child.color() == null ? 0xFFFFFF : child.color().value()});
+                        }
                     }
+                    x += adv;
                 }
-                x += adv;
             }
         }
+        lineWidths.add((int) x);
     }
 
     private static int advance(BufferedImage img) {

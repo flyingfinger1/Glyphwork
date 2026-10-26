@@ -18,13 +18,14 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 
 /**
- * Builds the whole GUI as one text line. Elements are appended in paint order (later = on top)
- * and positioned with space glyphs (x) and shifted fonts (y). Consecutive glyphs with the same
- * style are merged into one text component.
+ * Builds the GUI as text lines. Glyphs from sheets (frames) go on the first line in paint order
+ * (later = on top), positioned with space glyphs (x) and the {@code y<N>} fonts. Text goes on the
+ * text line it falls into, with the {@code t<S>} fonts for the remainder, so it is always drawn
+ * after (on top of) all frames. Every non-empty line ends at the same x, so the client's
+ * per-line centering keeps them aligned. Consecutive glyphs with the same style are merged.
  *
  * <p>Clicks: in 26.3 the client hit-tests every glyph against its drawn box (bitmap) or its
  * line box (space), and the LAST glyph under the cursor that has a click event wins. So a
@@ -34,69 +35,27 @@ import java.util.TreeSet;
 public final class LineBuilder {
 
     private final VanillaText text;
-    private final TextComponent.Builder out = Component.text();
-    private final Set<Integer> offsets = new TreeSet<>();
-    private int cursor;
-    private int maxCursor;
+    private final int maxHeight;
+    private final TreeMap<Integer, Line> lines = new TreeMap<>();
 
-    // open segment
-    private final StringBuilder seg = new StringBuilder();
-    private @Nullable Key segFont;
-    private @Nullable TextColor segColor;
-    private @Nullable ClickEvent<?> segClick;
-    private @Nullable HoverEventSource<?> segHover;
-
-    public LineBuilder(VanillaText text) {
+    /** @param maxHeight number of {@code y<N>} fonts in the pack; frames below are clipped */
+    public LineBuilder(VanillaText text, int maxHeight) {
         this.text = text;
+        this.maxHeight = maxHeight;
+        lines.put(0, new Line());
     }
 
-    private void flush() {
-        if (seg.isEmpty()) {
-            return;
-        }
-        out.append(Component.text(seg.toString()).font(segFont).color(segColor).clickEvent(segClick).hoverEvent(segHover));
-        seg.setLength(0);
-        segFont = null;
+    private Line line(int index) {
+        return lines.computeIfAbsent(index, i -> new Line());
     }
 
-    private void emit(String chars, Key font, @Nullable TextColor color, @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
-        if (seg.isEmpty() || !font.equals(segFont) || !Objects.equals(color, segColor)
-            || !Objects.equals(click, segClick) || !Objects.equals(hover, segHover)) {
-            flush();
-            segFont = font;
-            segColor = color;
-            segClick = click;
-            segHover = hover;
-        }
-        seg.append(chars);
-    }
-
-    private void moveTo(int x) {
-        int dx = x - cursor;
-        if (dx == 0) {
-            return;
-        }
-        // Spaces exist in every shifted font. A positive space inherits the segment's events and
-        // would be clickable on the first line, so only negative moves join an interactive segment.
-        if (!seg.isEmpty() && ShiftFonts.isShiftFont(segFont) && (dx < 0 || (segClick == null && segHover == null))) {
-            seg.append(SpaceFont.of(dx));
-        } else {
-            emit(SpaceFont.of(dx), SpaceFont.KEY, null, null, null);
-        }
-        cursor = x;
-    }
-
-    private void advance(int dx) {
-        cursor += dx;
-        maxCursor = Math.max(maxCursor, cursor);
-    }
-
-    /** Draws one glyph with its top-left pixel at (x, y). */
+    /** Draws one sheet glyph with its top-left pixel at (x, y) on the first line. */
     public LineBuilder glyph(Glyph g, int x, int y, @Nullable TextColor tint, @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
-        moveTo(x);
-        offsets.add(y);
-        emit(String.valueOf(g.codepoint()), ShiftFonts.key(y), tint == null ? NamedTextColor.WHITE : tint, click, hover);
-        advance(g.advance());
+        if (y < 0 || y >= maxHeight) {
+            return this; // no font for this row
+        }
+        line(0).draw(String.valueOf(g.codepoint()), g.advance(), x, ShiftFonts.sprite(y),
+            tint == null ? NamedTextColor.WHITE : tint, click, hover);
         return this;
     }
 
@@ -117,10 +76,11 @@ public final class LineBuilder {
         return this;
     }
 
-    /** Rectangular frame of {@code w x h} pixels (rounded down to whole tiles). */
+    /** Rectangular frame of {@code w x h} pixels (rounded down to whole tiles, at least one). */
     public LineBuilder frame(Frame frame, int x, int y, int w, int h, @Nullable TextColor tint,
                              @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
-        return frame(frame, x, y, cells(w / frame.tileSize(), h / frame.tileSize()), tint, click, hover);
+        int t = frame.tileSize();
+        return frame(frame, x, y, cells(Math.max(1, w / t), Math.max(1, h / t)), tint, click, hover);
     }
 
     /** Cell mask from rows like {@code "##.."} ('#' = tile). */
@@ -145,48 +105,138 @@ public final class LineBuilder {
 
     /** Text with its top-left glyph pixel at (x, y). */
     public LineBuilder text(String s, int x, int y, TextColor color) {
-        moveTo(x);
-        offsets.add(y);
-        emit(s.replace(' ', VanillaText.NB_SPACE), ShiftFonts.key(y), color, null, null);
-        advance(text.width(s));
+        if (s.isEmpty() || y < 0) {
+            return this;
+        }
+        int index = y / ShiftFonts.LINE;
+        line(index).draw(s.replace(' ', VanillaText.NB_SPACE), text.width(s), x,
+            ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null);
         return this;
     }
 
     /** Text horizontally centered in [x, x + w). */
     public LineBuilder centered(String s, int x, int w, int y, TextColor color) {
-        int tw = text.width(s) - 1; // trailing 1px gap of the last glyph is not visible
-        return text(s, x + (w - tw) / 2, y, color);
+        return text(s, x + (w - visibleWidth(s)) / 2, y, color);
+    }
+
+    /** Width of the drawn pixels (the advance minus the trailing 1 px gap). */
+    public int visibleWidth(String s) {
+        return Math.max(0, text.width(s) - 1);
     }
 
     public int textWidth(String s) {
         return text.width(s);
     }
 
-    /** Offsets used so far; the pack must contain a font for each. */
-    public Set<Integer> offsets() {
-        return offsets;
+    /** Cuts {@code s} to fit into {@code maxWidth} pixels, adding "..." when shortened. */
+    public String fit(String s, int maxWidth) {
+        if (text.width(s) - 1 <= maxWidth) {
+            return s;
+        }
+        String dots = "...";
+        int budget = maxWidth - text.width(dots);
+        StringBuilder out = new StringBuilder();
+        int w = 0;
+        for (int i = 0; i < s.length(); ) {
+            int cp = s.codePointAt(i);
+            int cw = text.width(new String(Character.toChars(cp)));
+            if (w + cw > budget) {
+                break;
+            }
+            out.appendCodePoint(cp);
+            w += cw;
+            i += Character.charCount(cp);
+        }
+        return out.toString().stripTrailing() + dots;
     }
 
-    /** Line width in pixels. */
+    /** Widest line in pixels. */
     public int width() {
-        return maxCursor;
+        return lines.values().stream().mapToInt(l -> l.maxCursor).max().orElse(0);
     }
 
     /**
-     * The finished message: the drawn line plus enough empty lines that the text widget (and
-     * thus its click area) covers {@code height} pixels.
+     * The finished message: all lines, each ending at the same x, plus enough empty lines that the
+     * text widget (and thus its click area) covers {@code height} pixels.
      */
     public Component build(int height) {
-        moveTo(maxCursor); // the line ends at its widest point, so centering keeps the origin fixed
-        flush();
-        int lines = Math.max(1, (height + 8) / 9);
-        return Component.text()
+        int w = width();
+        int last = Math.max(lines.lastKey(), Math.max(1, (height + 8) / ShiftFonts.LINE) - 1);
+        TextComponent.Builder root = Component.text()
             .color(NamedTextColor.WHITE)
             .shadowColor(ShadowColor.none())
             .decoration(TextDecoration.ITALIC, false)
-            .decoration(TextDecoration.BOLD, false)
-            .append(out.build())
-            .append(Component.text("\n".repeat(lines - 1)))
-            .build();
+            .decoration(TextDecoration.BOLD, false);
+        for (int i = 0; i <= last; i++) {
+            if (i > 0) {
+                root.append(Component.newline());
+            }
+            Line line = lines.get(i);
+            if (line != null && line.used) {
+                line.moveTo(w);
+                root.append(line.build());
+            }
+        }
+        return root.build();
+    }
+
+    /** One text line: cursor, merged segments. */
+    private static final class Line {
+        private final TextComponent.Builder out = Component.text();
+        private final StringBuilder seg = new StringBuilder();
+        private @Nullable Key segFont;
+        private @Nullable TextColor segColor;
+        private @Nullable ClickEvent<?> segClick;
+        private @Nullable HoverEventSource<?> segHover;
+        private int cursor;
+        private int maxCursor;
+        private boolean used;
+
+        void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
+                  @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
+            used = true;
+            moveTo(x);
+            if (seg.isEmpty() || !font.equals(segFont) || !Objects.equals(color, segColor)
+                || !Objects.equals(click, segClick) || !Objects.equals(hover, segHover)) {
+                flush();
+                segFont = font;
+                segColor = color;
+                segClick = click;
+                segHover = hover;
+            }
+            seg.append(chars);
+            cursor += advance;
+            maxCursor = Math.max(maxCursor, cursor);
+        }
+
+        void moveTo(int x) {
+            int dx = x - cursor;
+            if (dx == 0) {
+                return;
+            }
+            // Spaces exist in every shifted font. A positive space inherits the segment's events
+            // and would be clickable on its line, so only negative moves join an interactive segment.
+            if (!seg.isEmpty() && ShiftFonts.isShiftFont(segFont) && (dx < 0 || (segClick == null && segHover == null))) {
+                seg.append(SpaceFont.of(dx));
+            } else {
+                flush();
+                out.append(Component.text(SpaceFont.of(dx)).font(SpaceFont.KEY));
+            }
+            cursor = x;
+        }
+
+        void flush() {
+            if (seg.isEmpty()) {
+                return;
+            }
+            out.append(Component.text(seg.toString()).font(segFont).color(segColor).clickEvent(segClick).hoverEvent(segHover));
+            seg.setLength(0);
+            segFont = null;
+        }
+
+        Component build() {
+            flush();
+            return out.build();
+        }
     }
 }

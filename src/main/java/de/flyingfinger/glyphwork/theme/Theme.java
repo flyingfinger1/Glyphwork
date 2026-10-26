@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.Sheet;
+import org.jspecify.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -108,6 +109,11 @@ public final class Theme {
 
     public int tileSize() {
         return tileSize;
+    }
+
+    /** The frame, or null if this theme does not have it. */
+    public @Nullable Frame find(String name) {
+        return frames.get(name);
     }
 
     public Frame frame(String name) {

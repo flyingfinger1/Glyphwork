@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 – conditions and templates for menus
 
 - **Conditions in YAML menus:** `show-if` on every element and list/grid item, `enabled-if` and
   `disabled-tooltip` on buttons, and a `require:` action that stops the remaining actions when its
@@ -9,7 +9,8 @@
 - **Templates for YAML menus:** reusable elements or groups in `menus/_*.yml` (for all menus) or
   under `templates:` (one menu), used with `{ use: name, x, y, key: value }` and filled in at
   `{key}` / `{key|default}`. Settings of the use entry replace those of one-element templates.
-- New example `beispiel-warps.yml` with `_beispiel-vorlagen.yml` (put into `menus/` on first start).
+- New example `beispiel-warps.yml` with `_beispiel-vorlagen.yml` (put into `menus/` on first start; existing servers find them in
+  [src/main/resources/menus/](https://github.com/flyingfinger1/Glyphwork/tree/main/src/main/resources/menus)).
 - API: `visible(Function<View, Boolean>)` on every element.
 
 ## 0.5.0 – example plugin and more skins

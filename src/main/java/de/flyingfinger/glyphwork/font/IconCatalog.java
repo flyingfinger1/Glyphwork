@@ -27,8 +27,11 @@ public final class IconCatalog {
 
     public static final int SIZE = 16;
 
-    /** One referenced texture, registered as one glyph. */
-    public record Texture(String file, int frameSize, int frames, int advance, char codepoint) {
+    /**
+     * One referenced texture, registered as one glyph. {@code fromPack}: only the server's resource
+     * pack has it (custom items), so it goes into its own fonts (see ShiftFonts).
+     */
+    public record Texture(String file, int frameSize, int frames, int advance, char codepoint, boolean fromPack) {
     }
 
     public record Layer(Texture texture, @Nullable TextColor tint) {
@@ -51,7 +54,7 @@ public final class IconCatalog {
                 JsonArray t = e.getAsJsonArray();
                 int frame = t.get(2).getAsInt();
                 c.textures.add(new Texture(t.get(0).getAsString(), frame, t.get(3).getAsInt(),
-                    advance(t.get(4).getAsInt() - 1, frame), alloc.next()));
+                    advance(t.get(4).getAsInt() - 1, frame), alloc.next(), false));
             }
             for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("items").entrySet()) {
                 List<Layer> layers = new ArrayList<>();
@@ -88,7 +91,8 @@ public final class IconCatalog {
             Texture t = textures.get(i);
             PackIcons.Measure m = pack.measure(t.file());
             if (m != null) {
-                Texture n = new Texture(t.file(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), t.codepoint());
+                Texture n = new Texture(t.file(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), t.codepoint(),
+                    t.fromPack());
                 textures.set(i, n);
                 replaced.put(t.codepoint(), n);
                 remeasured++;
@@ -112,7 +116,7 @@ public final class IconCatalog {
                     if (m == null) {
                         continue; // texture neither in the pack nor a known vanilla texture
                     }
-                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next());
+                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next(), true);
                     textures.add(t);
                     byFile.put(t.file(), t);
                     newTextures++;
@@ -148,9 +152,21 @@ public final class IconCatalog {
         return textures.size();
     }
 
-    /** Bitmap providers for the text font shifted {@code shift} px down (see ShiftFonts). */
-    public void addProviders(JsonArray target, int shift) {
+    /** Whether any texture comes only from the server's pack (then the pack needs the c fonts). */
+    public boolean hasPackTextures() {
+        return textures.stream().anyMatch(Texture::fromPack);
+    }
+
+    /**
+     * Bitmap providers for an icon font shifted {@code shift} px down (see ShiftFonts).
+     *
+     * @param fromPack true: only textures from the server's pack; false: only vanilla textures
+     */
+    public void addProviders(JsonArray target, int shift, boolean fromPack) {
         for (Texture t : textures) {
+            if (t.fromPack() != fromPack) {
+                continue;
+            }
             JsonObject p = new JsonObject();
             p.addProperty("type", "bitmap");
             p.addProperty("file", t.file() + ".png");

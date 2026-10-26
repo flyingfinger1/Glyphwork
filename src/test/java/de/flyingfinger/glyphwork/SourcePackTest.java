@@ -90,9 +90,14 @@ class SourcePackTest {
         assertEquals(stickBefore, icons.icon("stick").getFirst().texture().file());
 
         // the pack's fonts reference the new texture, animated textures use only their first frame
+        // pack-only textures live in their own fonts (a missing server pack must not break vanilla icons)
+        JsonArray fromPack = new JsonArray();
+        icons.addProviders(fromPack, 0, true);
+        assertEquals(1, fromPack.size());
+        assertEquals("myserver:item/ruby.png", fromPack.get(0).getAsJsonObject().get("file").getAsString());
         JsonArray providers = new JsonArray();
-        icons.addProviders(providers, 0);
-        assertTrue(providers.asList().stream().anyMatch(p -> p.getAsJsonObject().get("file").getAsString()
+        icons.addProviders(providers, 0, false);
+        assertTrue(providers.asList().stream().noneMatch(p -> p.getAsJsonObject().get("file").getAsString()
             .equals("myserver:item/ruby.png")));
         var emerald = providers.asList().stream().map(p -> p.getAsJsonObject())
             .filter(p -> p.get("file").getAsString().equals("minecraft:item/emerald.png")).findFirst().orElseThrow();

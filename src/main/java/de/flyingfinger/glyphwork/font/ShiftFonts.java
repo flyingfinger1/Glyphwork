@@ -39,9 +39,21 @@ public final class ShiftFonts {
         return Key.key("glyphwork", "t" + s);
     }
 
+    /**
+     * Font for item icons, s (0..8) px below their text line. Vanilla textures and textures that
+     * only the server's pack has get separate fonts: the client rejects a whole font when one
+     * texture is missing, so a missing server pack must not take vanilla icons (or text) with it.
+     */
+    public static Key icon(int s, boolean fromPack) {
+        return Key.key("glyphwork", (fromPack ? "c" : "i") + s);
+    }
+
     public static boolean isShiftFont(Key key) {
-        return key != null && key.namespace().equals("glyphwork")
-            && (key.value().startsWith("y") || key.value().startsWith("t"));
+        if (key == null || !key.namespace().equals("glyphwork") || key.value().isEmpty()) {
+            return false;
+        }
+        char c = key.value().charAt(0);
+        return c == 'y' || c == 't' || c == 'i' || c == 'c';
     }
 
     public static void write(PackFiles pack, Collection<Sheet> sheets, int maxHeight, VanillaText text,
@@ -61,10 +73,19 @@ public final class ShiftFonts {
             JsonArray providers = new JsonArray();
             providers.add(SpaceFont.provider());
             text.addShiftedProviders(providers, s);
-            if (icons != null) {
-                icons.addProviders(providers, s);
-            }
             put(pack, "t" + s, providers);
+            if (icons != null) {
+                JsonArray vanilla = new JsonArray();
+                vanilla.add(SpaceFont.provider());
+                icons.addProviders(vanilla, s, false);
+                put(pack, "i" + s, vanilla);
+                if (icons.hasPackTextures()) {
+                    JsonArray fromPack = new JsonArray();
+                    fromPack.add(SpaceFont.provider());
+                    icons.addProviders(fromPack, s, true);
+                    put(pack, "c" + s, fromPack);
+                }
+            }
         }
         pack.put("assets/glyphwork/font/space.json", GSON.toJson(SpaceFont.fontJson()));
     }

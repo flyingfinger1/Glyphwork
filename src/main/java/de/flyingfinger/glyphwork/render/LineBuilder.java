@@ -130,7 +130,7 @@ public final class LineBuilder {
         for (IconCatalog.Layer l : layers) {
             TextColor c = l.tint() == null ? NamedTextColor.WHITE : tint != null ? tint : l.tint();
             line.draw(String.valueOf(l.texture().codepoint()), l.texture().advance(), x,
-                ShiftFonts.text(y - index * ShiftFonts.LINE), c, null, null);
+                ShiftFonts.icon(y - index * ShiftFonts.LINE, l.texture().fromPack()), c, null, null);
         }
         return this;
     }

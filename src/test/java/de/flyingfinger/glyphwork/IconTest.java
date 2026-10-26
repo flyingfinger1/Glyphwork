@@ -186,6 +186,14 @@ class IconTest {
             ZipEntry e;
             while ((e = in.getNextEntry()) != null) {
                 if (e.getName().equals("assets/glyphwork/font/t3.json")) {
+                    // text fonts reference no item textures: a missing texture must not break text
+                    JsonObject t3 = JsonParser.parseString(new String(in.readAllBytes(), StandardCharsets.UTF_8)).getAsJsonObject();
+                    assertTrue(t3.getAsJsonArray("providers").asList().stream()
+                        .noneMatch(p -> p.getAsJsonObject().get("file") != null
+                            && !p.getAsJsonObject().get("file").getAsString().startsWith("minecraft:font/")),
+                        "t3 must only contain text");
+                }
+                if (e.getName().equals("assets/glyphwork/font/i3.json")) {
                     JsonObject font = JsonParser.parseString(new String(in.readAllBytes(), StandardCharsets.UTF_8)).getAsJsonObject();
                     long refs = font.getAsJsonArray("providers").asList().stream()
                         .filter(p -> p.getAsJsonObject().get("file") != null

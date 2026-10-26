@@ -68,7 +68,7 @@ final class Layout {
             for (Component child : part.children()) {
                 String s = ((TextComponent) child).content();
                 String font = child.font() == null ? "" : child.font().value();
-                int shift = font.length() > 1 && (font.startsWith("y") || font.startsWith("t")) ? Integer.parseInt(font.substring(1)) : 0;
+                int shift = font.length() > 1 && "ytic".indexOf(font.charAt(0)) >= 0 ? Integer.parseInt(font.substring(1)) : 0;
                 for (char c : s.toCharArray()) {
                     Integer space = SpaceFont.advance(c);
                     float adv;

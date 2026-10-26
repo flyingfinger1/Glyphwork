@@ -1,0 +1,52 @@
+# Glyphwork-Meldungen (Deutsch). MiniMessage-Format: https://docs.advntr.dev/minimessage/format.html
+# Es reichen die Schlüssel, die du ändern willst; fehlende kommen aus dem Plugin.
+# <name> sind Werte, die das Plugin einsetzt. Ein echtes "<" schreibt man als "\<".
+# Befehlswörter (cmd.*) gelten in jeder Sprache, vorgeschlagen werden die der Spielersprache.
+
+players-only: "<red>Das geht nur als Spieler."
+no-permission: "<red>Dafür hast du keine Berechtigung."
+player-not-found: "<red>Spieler nicht gefunden."
+
+pack.prompt: "Glyphwork braucht dieses Resource-Pack für die Menüs."
+pack.sent: "<gray>Pack gesendet."
+pack.declined: "<gray>Ohne das Glyphwork-Pack werden Menüs vereinfacht angezeigt. /glyphwork pack lädt es nachträglich."
+pack.failed: "<gray>Das Glyphwork-Pack konnte nicht geladen werden (<status>). Menüs werden vereinfacht angezeigt."
+
+menu.unknown: "<red>Menü '<id>' gibt es nicht."
+menu.usage: "<gray>/glyphwork menu \\<id> [spieler] – Menüs: <menus>"
+
+reload.menus: "<green><count> Menü(s) geladen."
+reload.pack-sent: "<green>Glyphwork neu geladen: Theme '<theme>', neues Pack an <count> Spieler gesendet."
+reload.pack-same: "<green>Glyphwork neu geladen: Theme '<theme>', Pack unverändert."
+reload.failed: "<red>Neu laden fehlgeschlagen: <error>"
+
+status.pack: "<gray>Theme '<theme>', Pack <sha1> (<hosting>)\n<url>"
+
+help.player: "<gray>/glyphwork \\<pack|darstellung>"
+help.admin: "<gray>/glyphwork \\<pack|darstellung|menu \\<id> [spieler]|test [fallback]|status|reload>"
+
+cmd.display: "darstellung"
+cmd.full: "voll"
+cmd.no-icons: "ohne-icons"
+cmd.simple: "einfach"
+
+display.usage: "<gray>/glyphwork darstellung \\<voll|ohne-icons|einfach>"
+display.set: "<green>Menü-Darstellung: <mode>"
+display.title: "Menü-Darstellung"
+display.question: "Wie sollen Menüs angezeigt werden?"
+display.full: "Voll (mit Icons)"
+display.no-icons: "Ohne Icons"
+display.simple: "Einfach"
+display.info-full: "<gray>Voll: Pixel-Menüs mit Item-Icons."
+display.info-no-icons: "<gray>Ohne Icons: falls dein Resource-Pack Item-Icons verschiebt."
+display.info-simple: "<gray>Einfach: normale Dialoge, falls dein Pack die Menüs zerreißt."
+
+dialog.close: "Schließen"
+dialog.ok: "OK"
+dialog.cancel: "Abbrechen"
+
+fallback.notice: "<gray>Vereinfachte Ansicht – Resource-Pack nicht geladen"
+fallback.previous: "◀ zurück"
+fallback.next: "weiter ▶"
+
+commands.only-players: "Nur Spieler können Menüs öffnen."

@@ -114,7 +114,9 @@ public final class PackService {
         player.sendResourcePacks(ResourcePackRequest.resourcePackRequest()
             .packs(ResourcePackInfo.resourcePackInfo(PACK_ID, URI.create(url()), sha1))
             .required(settings.required())
-            .prompt(Component.text(settings.prompt()))
+            .prompt(settings.prompt().isBlank()
+                ? de.flyingfinger.glyphwork.core.Messages.active().get(player, "pack.prompt")
+                : Component.text(settings.prompt()))
             .replace(false)
             .build());
     }

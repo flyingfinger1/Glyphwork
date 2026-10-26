@@ -35,6 +35,12 @@ sends it to everyone online; `/glyphwork status` shows who has it. See `config.y
 3. `/glyphwork test` opens the demo, `/glyphwork menu beispiel` the example YAML menu
    ([docs/menus.md](docs/menus.md)).
 
+**Languages:** Glyphwork's own messages, dialogs and command words come in English and German
+(`/glyphwork display` = `/glyphwork darstellung`). With `language: auto` (default) every player gets
+their game language, others `fallback-language` (en). Texts live in `plugins/Glyphwork/lang/*.yml`
+(MiniMessage); change any of them, or add a language as `lang/<code>.yml`, then `/glyphwork reload`.
+Menus, the demo and the example plugin are content and stay as written.
+
 ## Use it from your plugin
 
 `plugin.yml`: `depend: [Glyphwork]`. Compile against `glyphwork-api-<version>.jar` from the same

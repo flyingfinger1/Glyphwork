@@ -46,7 +46,9 @@ elements:
   a built-in web server or written to disk for your own web server / CDN.
 - **Fallback:** players who decline the pack get a plain native dialog built from the same screen.
 - **Display mode per player** (full / without icons / simple) for players whose own resource pack
-  tears the menus: `/glyphwork darstellung`, or controlled by your own system through the API.
+  tears the menus: `/glyphwork display`, or controlled by your own system through the API.
+- **English and German** messages and commands, picked per player from the game language; edit the
+  texts or add languages in `plugins/Glyphwork/lang/`.
 - `/glyphwork reload` applies config and skin changes and sends the new pack to everyone online.
 
 ## Setup

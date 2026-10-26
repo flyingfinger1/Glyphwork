@@ -1,5 +1,13 @@
 # Glyphwork – /glyphwork reload applies changes without a restart.
 
+# Language of Glyphwork's messages, its own dialogs and command words:
+#   auto = each player's game language, if there is a file for it in plugins/Glyphwork/lang/
+#          (built in: de, en; add more as lang/<code>.yml), otherwise fallback-language
+#   or a fixed language code for everyone, e.g. de or en
+# The console uses fallback-language. Edit texts in plugins/Glyphwork/lang/*.yml.
+language: auto
+fallback-language: en
+
 # Skin folder under plugins/Glyphwork/themes/. The built-in skins "vanilla", "dunkel" (dark) and
 # "pergament" (parchment) are exported there on start when their folder is missing.
 # Make your own with the skin editor: https://flyingfinger1.github.io/Glyphwork/
@@ -19,7 +27,8 @@ pack:
   send-on-join: true
   # true = the client disconnects players who decline the pack
   required: false
-  prompt: "Glyphwork braucht dieses Resource-Pack für die Menüs."
+  # Text shown when the pack is offered; empty = pack.prompt from the language files
+  prompt: ""
 
 # Built-in HTTP server for hosting: embedded. Serves only /<sha1>.zip.
 pack-server:

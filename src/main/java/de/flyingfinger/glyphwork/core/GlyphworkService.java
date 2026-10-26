@@ -163,21 +163,25 @@ public final class GlyphworkService implements Glyphwork {
         LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, name, action),
             mode != DisplayMode.NO_ICONS, hasServerPack.test(player));
         DialogFactory.show(player, DialogFactory.gui(scene.title().apply(view), line.build(scene.height()),
-            Math.max(scene.width(), line.width()), scene.exitLabel()));
+            Math.max(scene.width(), line.width()), exitLabel(player, scene)));
     }
 
     private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view) {
         FallbackRenderer.Model model = fallbackRenderer.render(scene, view);
         List<Component> lines = new ArrayList<>();
         if (displayMode(player) != DisplayMode.SIMPLE && !s.forceFallback) {
-            lines.add(Component.text("Vereinfachte Ansicht – Resource-Pack nicht geladen", NamedTextColor.GRAY));
+            lines.add(Messages.active().get(player, "fallback.notice"));
         }
         lines.addAll(model.lines());
         List<DialogFactory.FallbackButton> buttons = model.actions().stream()
             .map(a -> new DialogFactory.FallbackButton(a.label(), a.tooltip(),
                 () -> run(player, s, generation, "fallback " + scene.id(), a.onClick())))
             .toList();
-        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, scene.exitLabel()));
+        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, exitLabel(player, scene)));
+    }
+
+    private static Component exitLabel(Player player, Scene scene) {
+        return scene.exitLabel() != null ? scene.exitLabel() : Messages.active().get(player, "dialog.close");
     }
 
     private ClickEvent<?> callback(Player player, Session s, int generation, String name, Consumer<Click> action) {
@@ -269,7 +273,7 @@ public final class GlyphworkService implements Glyphwork {
                 }
             };
             DialogFactory.show(player, DialogFactory.prompt(title, initial,
-                Component.text("OK"), Component.text("Abbrechen"),
+                Messages.active().get(player, "dialog.ok"), Messages.active().get(player, "dialog.cancel"),
                 text -> Bukkit.getScheduler().runTask(plugin, () -> {
                     if (session.generation != generation) {
                         return;

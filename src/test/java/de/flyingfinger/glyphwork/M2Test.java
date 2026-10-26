@@ -79,10 +79,10 @@ class M2Test {
         TestClick view = new TestClick(demo.lists);
         FallbackRenderer.Model m = new FallbackRenderer(Logger.getLogger("test")).render(demo.lists, view);
         List<String> labels = m.actions().stream().map(a -> plain(a.label())).toList();
-        // search button, 4 fruits, "weiter" for the fruits, 12 numbers (tooltips), "weiter" for the numbers, back
+        // search button, 4 fruits, "next" for the fruits, 12 numbers (tooltips), "next" for the numbers, back
         assertEquals("Suchen...", labels.getFirst());
         assertTrue(labels.containsAll(List.of("Apfel", "Aprikose", "Banane", "Birne", "Nummer 1", "Nummer 12", "< Zurück")), labels.toString());
-        assertEquals(2, labels.stream().filter(l -> l.startsWith("weiter")).count());
+        assertEquals(2, labels.stream().filter(l -> l.startsWith("next")).count());
         assertTrue(m.lines().stream().map(M2Test::plain).anyMatch(l -> l.startsWith("Obst:")));
 
         // clicking a fruit selects it and re-renders; the selection shows up as "▶ "
@@ -94,7 +94,7 @@ class M2Test {
         assertTrue(again.contains("▶ Apfel"), again.toString());
 
         // paging
-        m.actions().stream().filter(a -> plain(a.label()).startsWith("weiter")).findFirst().orElseThrow().onClick().accept(view);
+        m.actions().stream().filter(a -> plain(a.label()).startsWith("next")).findFirst().orElseThrow().onClick().accept(view);
         assertEquals(1, view.state.get("glyphwork:page:fruits"));
     }
 

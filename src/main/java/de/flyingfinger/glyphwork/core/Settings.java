@@ -16,7 +16,12 @@ public record Settings(
     boolean fallback,
     boolean icons,
     String iconSourcePack,
-    boolean playerCommands) {
+    boolean playerCommands,
+    String language,
+    String fallbackLanguage) {
+
+    /** The prompt that config.yml had before 0.7; treated as "use the language files". */
+    private static final String OLD_PROMPT = "Glyphwork braucht dieses Resource-Pack für die Menüs.";
 
     public static Settings read(FileConfiguration c) {
         String url = c.getString("pack.url");
@@ -32,13 +37,15 @@ public record Settings(
             url,
             c.getBoolean("pack.send-on-join", true),
             c.getBoolean("pack.required", false),
-            c.getString("pack.prompt", ""),
+            OLD_PROMPT.equals(c.getString("pack.prompt", "")) ? "" : c.getString("pack.prompt", ""),
             c.getString("pack-server.bind", "0.0.0.0"),
             c.getInt("pack-server.port", 8765),
             c.getBoolean("fallback", true),
             c.getBoolean("icons", true),
             c.getString("icon-source-pack", "auto"),
-            c.getBoolean("players.commands", true));
+            c.getBoolean("players.commands", true),
+            c.getString("language", "auto"),
+            c.getString("fallback-language", "en"));
     }
 
     /** Download URL for a pack hash; without a {sha1} placeholder the hash is appended. */

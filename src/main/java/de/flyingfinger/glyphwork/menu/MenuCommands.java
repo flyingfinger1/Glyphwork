@@ -40,7 +40,7 @@ public final class MenuCommands {
         @Override
         public boolean execute(@NonNull CommandSender sender, @NonNull String label, String @NonNull [] args) {
             if (!(sender instanceof Player p)) {
-                sender.sendMessage("Only players can open menus.");
+                sender.sendMessage(de.flyingfinger.glyphwork.core.Messages.active().get(sender, "commands.only-players"));
                 return true;
             }
             if (!testPermission(p)) {

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Languages:** all messages, Glyphwork's own dialogs (display mode, plain view, text prompt) and
+  command words in English and German. `language: auto` (default) uses each player's game language,
+  everyone else gets `fallback-language` (en); or set a fixed language. Texts are MiniMessage files in
+  `plugins/Glyphwork/lang/` (exported on start): change single keys or add a language as
+  `lang/<code>.yml`. Command words work in every language (`/glyphwork display` and
+  `/glyphwork darstellung`); tab completion suggests the player's own.
+- `pack.prompt` empty (new default) = the prompt from the language files. The old German default
+  prompt in existing configs is treated the same way.
+- `/glyphwork pack` from the console answers instead of doing nothing; `/glyphwork status` shows
+  each player's language.
+
 ## 0.6.0 – conditions and templates for menus
 
 - **Conditions in YAML menus:** `show-if` on every element and list/grid item, `enabled-if` and

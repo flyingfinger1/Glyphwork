@@ -1,0 +1,52 @@
+# Glyphwork messages (English). MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+# Only the keys you want to change are needed; missing keys come from the plugin.
+# <name> are values filled in by the plugin. A literal "<" must be written as "\<".
+# Command words (cmd.*) are accepted in every language, the ones of the player's language are suggested.
+
+players-only: "<red>Only players can do that."
+no-permission: "<red>You don't have permission."
+player-not-found: "<red>Player not found."
+
+pack.prompt: "Glyphwork needs this resource pack for its menus."
+pack.sent: "<gray>Pack sent."
+pack.declined: "<gray>Without the Glyphwork pack, menus are shown in a simple form. /glyphwork pack loads it later."
+pack.failed: "<gray>The Glyphwork pack could not be loaded (<status>). Menus are shown in a simple form."
+
+menu.unknown: "<red>Menu '<id>' does not exist."
+menu.usage: "<gray>/glyphwork menu \\<id> [player] – menus: <menus>"
+
+reload.menus: "<green><count> menu(s) loaded."
+reload.pack-sent: "<green>Glyphwork reloaded: theme '<theme>', new pack sent to <count> player(s)."
+reload.pack-same: "<green>Glyphwork reloaded: theme '<theme>', pack unchanged."
+reload.failed: "<red>Reload failed: <error>"
+
+status.pack: "<gray>Theme '<theme>', pack <sha1> (<hosting>)\n<url>"
+
+help.player: "<gray>/glyphwork \\<pack|display>"
+help.admin: "<gray>/glyphwork \\<pack|display|menu \\<id> [player]|test [fallback]|status|reload>"
+
+cmd.display: "display"
+cmd.full: "full"
+cmd.no-icons: "no-icons"
+cmd.simple: "simple"
+
+display.usage: "<gray>/glyphwork display \\<full|no-icons|simple>"
+display.set: "<green>Menu display: <mode>"
+display.title: "Menu display"
+display.question: "How should menus be shown?"
+display.full: "Full (with icons)"
+display.no-icons: "Without icons"
+display.simple: "Simple"
+display.info-full: "<gray>Full: pixel menus with item icons."
+display.info-no-icons: "<gray>Without icons: if your resource pack moves item icons."
+display.info-simple: "<gray>Simple: plain dialogs, if your pack breaks the menus."
+
+dialog.close: "Close"
+dialog.ok: "OK"
+dialog.cancel: "Cancel"
+
+fallback.notice: "<gray>Simple view – resource pack not loaded"
+fallback.previous: "◀ back"
+fallback.next: "next ▶"
+
+commands.only-players: "Only players can open menus."

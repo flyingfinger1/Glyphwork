@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.menu;
 
 import de.flyingfinger.glyphwork.api.Click;
+import de.flyingfinger.glyphwork.core.Messages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -103,9 +104,9 @@ final class Actions {
                 yield go((c, in) -> {
                     Menus.Menu next = menus.apply(id);
                     if (next == null) {
-                        c.player().sendMessage(Component.text("Menü '" + id + "' gibt es nicht."));
+                        c.player().sendMessage(Messages.active().get(c.player(), "menu.unknown", "id", id));
                     } else if (!next.allowed(c.player())) {
-                        c.player().sendMessage(Component.text("Dafür hast du keine Berechtigung."));
+                        c.player().sendMessage(Messages.active().get(c.player(), "no-permission"));
                     } else {
                         c.open(next.scene());
                     }

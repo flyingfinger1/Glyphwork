@@ -31,7 +31,7 @@ public final class DialogFactory {
      * screen open, the server answers with a freshly rendered dialog.
      */
     public static Dialog gui(Component title, Component body, int width, @Nullable Component exitLabel) {
-        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Schließen"))
+        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Close"))
             .action(DialogAction.customClick((view, audience) -> audience.closeDialog(), callbackOptions()))
             .build();
         return Dialog.create(factory -> factory.empty()
@@ -55,7 +55,7 @@ public final class DialogFactory {
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
                                   @Nullable Component exitLabel) {
-        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Schließen"))
+        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Close"))
             .action(DialogAction.customClick((view, audience) -> audience.closeDialog(), callbackOptions()))
             .build();
         Component body = Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), lines);

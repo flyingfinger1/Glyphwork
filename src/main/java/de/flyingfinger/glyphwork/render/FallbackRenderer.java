@@ -1,5 +1,6 @@
 package de.flyingfinger.glyphwork.render;
 
+import de.flyingfinger.glyphwork.core.Messages;
 import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
@@ -118,7 +119,7 @@ public final class FallbackRenderer {
             Component label = Component.text(item.equals(selected) ? "▶ " + text : text);
             actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onSelect().accept(c, item)));
         }
-        pager(l.id(), page, pages, actions);
+        pager(l.id(), page, pages, actions, view);
     }
 
     private static <T> void grid(Grid<T> g, View view, List<Action> actions) {
@@ -141,7 +142,7 @@ public final class FallbackRenderer {
             actions.add(new Action(Component.text(item.equals(selected) ? "▶ " + text : text), tip,
                 c -> g.onClick().accept(c, item)));
         }
-        pager(g.id(), page, pages, actions);
+        pager(g.id(), page, pages, actions, view);
     }
 
     /** "minecraft:diamond_sword" -> "Diamond Sword" (for icons without text). */
@@ -159,17 +160,19 @@ public final class FallbackRenderer {
         return sb.toString();
     }
 
-    private static void pager(String id, int page, int pages, List<Action> actions) {
+    private static void pager(String id, int page, int pages, List<Action> actions, View view) {
         if (pages <= 1) {
             return;
         }
         String key = "glyphwork:page:" + id;
         Component info = Component.text(" (" + (page + 1) + "/" + pages + ")", NamedTextColor.GRAY);
         if (page > 0) {
-            actions.add(new Action(Component.text("◀ zurück").append(info), null, c -> { c.set(key, page - 1); c.reopen(); }));
+            actions.add(new Action(Messages.active().get(view.player(), "fallback.previous").append(info), null,
+                c -> { c.set(key, page - 1); c.reopen(); }));
         }
         if (page < pages - 1) {
-            actions.add(new Action(Component.text("weiter ▶").append(info), null, c -> { c.set(key, page + 1); c.reopen(); }));
+            actions.add(new Action(Messages.active().get(view.player(), "fallback.next").append(info), null,
+                c -> { c.set(key, page + 1); c.reopen(); }));
         }
     }
 }

@@ -3,6 +3,7 @@ package de.flyingfinger.glyphwork;
 import de.flyingfinger.glyphwork.api.DisplayMode;
 import de.flyingfinger.glyphwork.api.Glyphwork;
 import de.flyingfinger.glyphwork.core.GlyphworkService;
+import de.flyingfinger.glyphwork.core.Messages;
 import de.flyingfinger.glyphwork.core.Settings;
 import de.flyingfinger.glyphwork.demo.Demo;
 import de.flyingfinger.glyphwork.dialog.DialogFactory;
@@ -37,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
@@ -100,12 +102,16 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         return menus.errors();
     }
 
+    private static Messages msg() {
+        return Messages.active();
+    }
+
     private void openMenu(Player player, String id) {
         Menus.Menu m = menus.get(id);
         if (m == null) {
-            player.sendMessage(Component.text("Menü '" + id + "' gibt es nicht.", NamedTextColor.RED));
+            player.sendMessage(msg().get(player, "menu.unknown", "id", id));
         } else if (!m.allowed(player)) {
-            player.sendMessage(Component.text("Dafür hast du keine Berechtigung.", NamedTextColor.RED));
+            player.sendMessage(msg().get(player, "no-permission"));
         } else {
             service.open(player, m.scene());
         }
@@ -161,6 +167,13 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private void apply(Build b) {
         settings = b.settings();
         themeName = b.themeName();
+        Path lang = getDataFolder().toPath().resolve("lang");
+        try {
+            Messages.export(lang);
+        } catch (IOException e) {
+            getLogger().warning("Could not export the language files: " + e);
+        }
+        Messages.activate(Messages.load(lang, settings.language(), settings.fallbackLanguage(), getLogger()));
         // players.commands: false -> only admins see /glyphwork (also in tab completion and /help)
         org.bukkit.command.PluginCommand cmd = getCommand("glyphwork");
         if (cmd != null) {
@@ -207,21 +220,19 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             apply(b);
             service.reconfigure(b.renderer(), b.settings().maxHeight(), b.settings().fallback());
             List<String> menuErrors = loadMenus();
-            sender.sendMessage(Component.text(menus.all().size() + " Menü(s) geladen.", NamedTextColor.GREEN));
+            sender.sendMessage(msg().get(sender, "reload.menus", "count", menus.all().size()));
             for (String e : menuErrors) {
                 sender.sendMessage(Component.text("  " + e, NamedTextColor.RED));
             }
             if (changed) {
                 int n = packs.sendToAll();
-                sender.sendMessage(Component.text("Glyphwork neu geladen: Theme '" + themeName + "', neues Pack an "
-                    + n + " Spieler gesendet.", NamedTextColor.GREEN));
+                sender.sendMessage(msg().get(sender, "reload.pack-sent", "theme", themeName, "count", n));
             } else {
-                sender.sendMessage(Component.text("Glyphwork neu geladen: Theme '" + themeName
-                    + "', Pack unverändert.", NamedTextColor.GREEN));
+                sender.sendMessage(msg().get(sender, "reload.pack-same", "theme", themeName));
             }
         } catch (IOException | RuntimeException e) {
             getLogger().warning("Reload failed: " + e);
-            sender.sendMessage(Component.text("Reload fehlgeschlagen: " + e.getMessage(), NamedTextColor.RED));
+            sender.sendMessage(msg().get(sender, "reload.failed", "error", String.valueOf(e.getMessage())));
         }
     }
 
@@ -257,40 +268,50 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         packs.status(p, event.getStatus());
         getLogger().info(p.getName() + " pack status: " + event.getStatus());
         switch (event.getStatus()) {
-            case DECLINED -> p.sendMessage(Component.text("Ohne das Glyphwork-Pack werden Menüs vereinfacht angezeigt. "
-                + "/glyphwork pack lädt es nachträglich.", NamedTextColor.GRAY));
-            case FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED -> p.sendMessage(Component.text(
-                "Das Glyphwork-Pack konnte nicht geladen werden (" + event.getStatus() + "). Menüs werden vereinfacht angezeigt.",
-                NamedTextColor.GRAY));
+            case DECLINED -> p.sendMessage(msg().get(p, "pack.declined"));
+            case FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED ->
+                p.sendMessage(msg().get(p, "pack.failed", "status", event.getStatus()));
             default -> {
             }
         }
     }
 
+    /** The command word {@code key} (cmd.*) in any language, e.g. "display" or "darstellung". */
+    private static boolean is(String arg, String key) {
+        return msg().everyLanguage(key).contains(arg.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    private static @org.jspecify.annotations.Nullable DisplayMode mode(String arg) {
+        return is(arg, "cmd.full") || arg.equalsIgnoreCase("full") ? DisplayMode.FULL
+            : is(arg, "cmd.no-icons") || arg.equalsIgnoreCase("no-icons") ? DisplayMode.NO_ICONS
+            : is(arg, "cmd.simple") || arg.equalsIgnoreCase("simple") ? DisplayMode.SIMPLE
+            : null;
+    }
+
     @Override
     public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String @NonNull [] args) {
         String sub = args.length > 0 ? args[0].toLowerCase() : "help";
+        if (is(sub, "cmd.display") || sub.equals("display")) {
+            sub = "display";
+        }
         switch (sub) {
             case "pack" -> {
                 if (sender instanceof Player player) {
                     packs.send(player);
-                    player.sendMessage(Component.text("Pack gesendet.", NamedTextColor.GRAY));
+                    player.sendMessage(msg().get(player, "pack.sent"));
+                } else {
+                    sender.sendMessage(msg().get(sender, "players-only"));
                 }
             }
-            case "darstellung", "display" -> {
+            case "display" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("Nur für Spieler.");
+                    sender.sendMessage(msg().get(sender, "players-only"));
                 } else if (args.length < 2) {
                     chooseDisplay(player);
                 } else {
-                    DisplayMode mode = switch (args[1].toLowerCase()) {
-                        case "voll", "full" -> DisplayMode.FULL;
-                        case "ohne-icons", "no-icons" -> DisplayMode.NO_ICONS;
-                        case "einfach", "simple" -> DisplayMode.SIMPLE;
-                        default -> null;
-                    };
+                    DisplayMode mode = mode(args[1]);
                     if (mode == null) {
-                        player.sendMessage(Component.text("/glyphwork darstellung <voll|ohne-icons|einfach>", NamedTextColor.GRAY));
+                        player.sendMessage(msg().get(player, "display.usage"));
                     } else {
                         setDisplay(player, mode);
                     }
@@ -298,7 +319,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             }
             case "test" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("Nur für Spieler.");
+                    sender.sendMessage(msg().get(sender, "players-only"));
                 } else if (!sender.hasPermission(ADMIN)) {
                     noPermission(sender);
                 } else {
@@ -309,15 +330,15 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 if (!sender.hasPermission(ADMIN)) {
                     noPermission(sender);
                 } else if (args.length < 2) {
-                    sender.sendMessage(Component.text("/glyphwork menu <id> [spieler] – Menüs: "
-                        + String.join(", ", menus.all().stream().map(Menus.Menu::id).toList()), NamedTextColor.GRAY));
+                    sender.sendMessage(msg().get(sender, "menu.usage",
+                        "menus", String.join(", ", menus.all().stream().map(Menus.Menu::id).toList())));
                 } else {
                     Player target = args.length > 2 ? getServer().getPlayerExact(args[2])
                         : sender instanceof Player p ? p : null;
                     if (target == null) {
-                        sender.sendMessage(Component.text("Spieler nicht gefunden.", NamedTextColor.RED));
+                        sender.sendMessage(msg().get(sender, "player-not-found"));
                     } else if (menus.get(args[1]) == null) {
-                        sender.sendMessage(Component.text("Menü '" + args[1] + "' gibt es nicht.", NamedTextColor.RED));
+                        sender.sendMessage(msg().get(sender, "menu.unknown", "id", args[1]));
                     } else {
                         service.open(target, menus.get(args[1]).scene());
                     }
@@ -335,60 +356,61 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                     noPermission(sender);
                     return true;
                 }
-                sender.sendMessage(Component.text("Theme '" + themeName + "', pack " + packs.sha1() + " ("
-                    + (settings.external() ? "external" : "embedded") + ")\n" + packs.url(), NamedTextColor.GRAY));
+                sender.sendMessage(msg().get(sender, "status.pack", "theme", themeName, "sha1", packs.sha1(),
+                    "hosting", settings.external() ? "external" : "embedded", "url", packs.url()));
                 for (Player p : getServer().getOnlinePlayers()) {
                     Status st = packs.status(p);
-                    sender.sendMessage(Component.text("  " + p.getName() + ": " + (st == null ? "-" : st),
+                    sender.sendMessage(Component.text("  " + p.getName() + ": " + (st == null ? "-" : st)
+                            + " (" + msg().language(p) + ")",
                         st == Status.SUCCESSFULLY_LOADED ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
                 }
             }
-            default -> sender.sendMessage(Component.text(sender.hasPermission(ADMIN)
-                ? "/glyphwork <pack|darstellung|menu <id> [spieler]|test [fallback]|status|reload>"
-                : "/glyphwork <pack|darstellung>", NamedTextColor.GRAY));
+            default -> sender.sendMessage(msg().get(sender, sender.hasPermission(ADMIN) ? "help.admin" : "help.player"));
         }
         return true;
     }
 
-    private static String displayName(DisplayMode m) {
-        return switch (m) {
-            case FULL -> "Voll (mit Icons)";
-            case NO_ICONS -> "Ohne Icons";
-            case SIMPLE -> "Einfach";
-        };
+    private static String displayName(CommandSender to, DisplayMode m) {
+        return msg().plain(to, switch (m) {
+            case FULL -> "display.full";
+            case NO_ICONS -> "display.no-icons";
+            case SIMPLE -> "display.simple";
+        });
     }
 
     private void setDisplay(Player player, DisplayMode mode) {
         service.displayMode(player, mode);
-        player.sendMessage(Component.text("Menü-Darstellung: " + displayName(mode), NamedTextColor.GREEN));
+        player.sendMessage(msg().get(player, "display.set", "mode", displayName(player, mode)));
     }
 
     /** Native dialog (works even if a resource pack breaks the pixel GUI). */
     private void chooseDisplay(Player player) {
         DisplayMode current = service.displayMode(player);
         List<Component> lines = List.of(
-            Component.text("Wie sollen Menüs angezeigt werden?"),
-            Component.text("Voll: Pixel-Menüs mit Item-Icons.", NamedTextColor.GRAY),
-            Component.text("Ohne Icons: falls dein Resource-Pack Item-Icons verschiebt.", NamedTextColor.GRAY),
-            Component.text("Einfach: normale Dialoge, falls dein Pack die Menüs zerreißt.", NamedTextColor.GRAY));
+            msg().get(player, "display.question"),
+            msg().get(player, "display.info-full"),
+            msg().get(player, "display.info-no-icons"),
+            msg().get(player, "display.info-simple"));
         List<DialogFactory.FallbackButton> buttons = new ArrayList<>();
         for (DisplayMode m : DisplayMode.values()) {
-            String label = (m == current ? "\u25b6 " : "") + displayName(m);
+            String label = (m == current ? "\u25b6 " : "") + displayName(player, m);
             buttons.add(new DialogFactory.FallbackButton(Component.text(label), null,
                 () -> getServer().getScheduler().runTask(this, () -> {
                     setDisplay(player, m);
                     player.closeDialog();
                 })));
         }
-        DialogFactory.show(player, DialogFactory.fallback(Component.text("Menü-Darstellung"), lines, buttons, null));
+        DialogFactory.show(player, DialogFactory.fallback(msg().get(player, "display.title"), lines, buttons,
+            msg().get(player, "dialog.close")));
     }
 
     private static void noPermission(CommandSender sender) {
-        sender.sendMessage(Component.text("Keine Berechtigung.", NamedTextColor.RED));
+        sender.sendMessage(msg().get(sender, "no-permission"));
     }
 
     @Override
     public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
+        String lang = msg().language(sender);
         if (args.length == 2 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(ADMIN)) {
             return menus.all().stream().map(Menus.Menu::id).filter(id -> id.startsWith(args[1].toLowerCase())).toList();
         }
@@ -396,8 +418,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             return getServer().getOnlinePlayers().stream().map(Player::getName)
                 .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase())).toList();
         }
-        if (args.length == 2 && args[0].equalsIgnoreCase("darstellung")) {
-            return List.of("voll", "ohne-icons", "einfach").stream().filter(s -> s.startsWith(args[1].toLowerCase())).toList();
+        if (args.length == 2 && (is(args[0], "cmd.display") || args[0].equalsIgnoreCase("display"))) {
+            return Stream.of("cmd.full", "cmd.no-icons", "cmd.simple").map(k -> msg().raw(lang, k))
+                .filter(s -> s.startsWith(args[1].toLowerCase())).toList();
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("test") && sender.hasPermission(ADMIN)) {
             return "fallback".startsWith(args[1].toLowerCase()) ? List.of("fallback") : List.of();
@@ -405,8 +428,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         if (args.length != 1) {
             return List.of();
         }
-        List<String> subs = sender.hasPermission(ADMIN) ? List.of("darstellung", "menu", "pack", "reload", "status", "test")
-            : List.of("darstellung", "pack");
+        String display = msg().raw(lang, "cmd.display");
+        List<String> subs = sender.hasPermission(ADMIN) ? List.of(display, "menu", "pack", "reload", "status", "test")
+            : List.of(display, "pack");
         return subs.stream().filter(s -> s.startsWith(args[0].toLowerCase())).toList();
     }
 }

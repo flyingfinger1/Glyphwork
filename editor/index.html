@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glyphwork Skin-Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1 data-i18n="title">Glyphwork Skin-Editor</h1>
+  <span class="saved" data-i18n="saved"></span>
+  <button id="lang" class="ghost"></button>
+</header>
+
+<main>
+  <aside class="panel">
+    <h2 data-i18n="theme">Theme</h2>
+    <label><span data-i18n="themeName">Name</span>
+      <input id="themeName" type="text" maxlength="40"></label>
+    <label><span data-i18n="tileSize">Kachelgröße</span>
+      <select id="tileSize"></select></label>
+    <div class="row">
+      <button id="newTheme" data-i18n="newTheme">Neu</button>
+      <button id="importBtn" data-i18n="importBtn" data-i18n-title="importHint">Importieren</button>
+      <input id="importFile" type="file" accept=".zip,.png" hidden>
+    </div>
+    <button id="exportBtn" class="primary" data-i18n="exportBtn">Als ZIP exportieren</button>
+
+    <h2 data-i18n="frames">Rahmen</h2>
+    <ul id="frames"></ul>
+    <div class="row wrap">
+      <button id="addFrame" data-i18n="addFrame">+ Rahmen</button>
+      <button id="renameFrame" data-i18n="renameFrame">Umbenennen</button>
+      <button id="deleteFrame" data-i18n="deleteFrame">Löschen</button>
+      <button id="resetFrame" data-i18n="resetFrame">Auf Vanilla zurücksetzen</button>
+    </div>
+  </aside>
+
+  <section class="panel editor">
+    <h2><span data-i18n="sheet">A2-Blatt</span>: <span id="frameTitle"></span></h2>
+    <div class="toolbar" id="tools">
+      <button data-tool="pencil" data-i18n-title="toolPencil">✏️</button>
+      <button data-tool="eraser" data-i18n-title="toolEraser">🧽</button>
+      <button data-tool="fill" data-i18n-title="toolFill">🪣</button>
+      <button data-tool="line" data-i18n-title="toolLine">╱</button>
+      <button data-tool="rect" data-i18n-title="toolRect">▭</button>
+      <button data-tool="picker" data-i18n-title="toolPicker">💧</button>
+      <span class="sep"></span>
+      <button id="undo" data-i18n-title="undo">↶</button>
+      <button id="redo" data-i18n-title="redo">↷</button>
+      <span class="sep"></span>
+      <label class="inline"><span data-i18n="color">Farbe</span> <input id="color" type="color" value="#c6c6c6"></label>
+      <label class="inline"><span data-i18n="alpha">Deckkraft</span> <input id="alpha" type="range" min="0" max="255" value="255"></label>
+      <span id="swatch" class="swatch big"></span>
+      <label class="inline"><input id="grid" type="checkbox" checked> <span data-i18n="grid">Raster</span></label>
+    </div>
+    <div class="sheetWrap" id="sheetWrap"><canvas id="sheet"></canvas></div>
+    <div class="status" id="status"></div>
+    <div class="paletteRow"><span data-i18n="sheetColors">Farben im Blatt:</span> <span id="palette"></span></div>
+  </section>
+
+  <section class="panel previewPanel">
+    <h2 data-i18n="preview">Vorschau</h2>
+    <div class="toolbar">
+      <label class="inline"><span data-i18n="zoom">Zoom</span>
+        <select id="zoom"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label>
+      <label class="inline"><span data-i18n="background">Hintergrund</span>
+        <select id="bg">
+          <option value="dark" data-i18n="bgDark">dunkel</option>
+          <option value="light" data-i18n="bgLight">hell</option>
+          <option value="checker" data-i18n="bgChecker">kariert</option>
+        </select></label>
+      <label class="inline"><input id="tintOn" type="checkbox"> <span data-i18n="tint">Einfärben</span></label>
+      <input id="tint" type="color" value="#ff5050">
+    </div>
+    <div class="toolbar" id="presets"><span data-i18n="presets">Formen:</span></div>
+    <div class="previewWrap"><canvas id="preview"></canvas></div>
+    <p class="hint" data-i18n="shapeHint"></p>
+    <h3 data-i18n="allTiles">Alle 47 Kacheln</h3>
+    <canvas id="tiles"></canvas>
+  </section>
+</main>
+
+<div id="toast" role="status"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

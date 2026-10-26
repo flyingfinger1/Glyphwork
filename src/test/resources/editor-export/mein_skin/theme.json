@@ -1,0 +1,9 @@
+{
+  "name": "Mein Skin",
+  "tileSize": 8,
+  "frames": {
+    "panel": "panel.png",
+    "button": "button.png",
+    "slot": "slot.png"
+  }
+}

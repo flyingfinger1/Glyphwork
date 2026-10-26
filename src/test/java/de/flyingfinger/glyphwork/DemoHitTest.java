@@ -87,6 +87,11 @@ class DemoHitTest {
     void writesPreview() throws Exception {
         layout().writePreview(Path.of("build/preview/demo.png"), DemoScreen.W, DemoScreen.H, 4);
         theme.save(Path.of("build/preview/theme"));
+        // the 47 generated tiles per frame (8 per row), for tools/editor-parity.mjs
+        java.nio.file.Files.createDirectories(Path.of("build/preview/tiles"));
+        for (var sheet : theme.sheets()) {
+            java.nio.file.Files.write(Path.of("build/preview/tiles/" + sheet.name() + ".png"), sheet.png());
+        }
     }
 
     @Test

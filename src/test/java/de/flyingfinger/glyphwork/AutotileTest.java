@@ -70,4 +70,15 @@ class AutotileTest {
         assertEquals("Vanilla", loaded.name());
         assertEquals(47, loaded.frame("button").sheet().size());
     }
+
+    @Test
+    void loadsAThemeExportedByTheEditor() throws Exception {
+        // src/test/resources/editor-export/mein_skin was exported by editor/ (red line on the panel's top edge)
+        Path dir = Path.of(getClass().getResource("/editor-export/mein_skin").toURI());
+        Theme t = Theme.load(dir, new GlyphAllocator());
+        assertEquals("Mein Skin", t.name());
+        BufferedImage a2 = t.frame("panel").a2();
+        assertEquals(0xFFFF0000, a2.getRGB(6, 10)); // painted pixel in the top-edge quarter
+        assertEquals(47, t.frame("slot").sheet().size());
+    }
 }

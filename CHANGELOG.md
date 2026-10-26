@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 – example plugin and more skins
 
 - **Example plugin** ([example/](example/)): a trader (`/haendler`) built against `glyphwork-api`
   the way another plugin would use it: item icons in a grid, amount buttons and a text prompt, a buy

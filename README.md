@@ -4,7 +4,8 @@ Clickable, pixel-positioned GUIs inside the vanilla **dialog** screen (Paper 26.
 The whole GUI is one `plain_message`; the plugin generates a resource pack with bitmap fonts,
 serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.md).
 
-**Status: M3** (primitives proven in a vanilla client, autotiled skins, public scene API). Other
+**Status:** all spec milestones (M0–M5) done: primitives proven in a vanilla client, autotiled
+skins with an editor, public scene API, YAML menus, item icons, an example plugin. Other
 plugins build screens with panels, labels, buttons, lists, grids, navigation and text input:
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
@@ -40,7 +41,7 @@ release (do not shade it; the classes come with the Glyphwork plugin), e.g. with
 
 ```groovy
 dependencies {
-    compileOnly files('libs/glyphwork-api-0.4.0.jar')
+    compileOnly files('libs/glyphwork-api-0.5.0.jar')
 }
 ```
 

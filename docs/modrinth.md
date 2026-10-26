@@ -37,9 +37,10 @@ elements:
   client already has. Icons follow your server's resource pack: replaced textures are measured,
   and the pack's own items (`myserver:ruby`) work as icons.
 - **Pixel-exact clicks**, also off the 9 px text grid.
-- **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. A vanilla-style
-  skin is built in; make your own with the browser-based
+- **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. Three skins are
+  built in (vanilla, dark, parchment); make your own with the browser-based
   [skin editor](https://flyingfinger1.github.io/Glyphwork/).
+- **Example plugin** to copy from: a small trader built against the API, attached to every release.
 - **Resource pack handled for you:** generated on start, stable hash (no re-downloads), served by
   a built-in web server or written to disk for your own web server / CDN.
 - **Fallback:** players who decline the pack get a plain native dialog built from the same screen.

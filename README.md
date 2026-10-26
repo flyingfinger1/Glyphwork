@@ -33,3 +33,13 @@ JAVA_HOME="/c/Program Files/Java/jdk-25.0.3" ./gradlew build
 vanilla char grids and advances when Minecraft changes its fonts.
 
 Config (`config.yml`): pack server bind/port/public URL, send on join, required, prompt.
+
+## Credits & licensing
+
+- The technique (one `plain_message`, negative-space glyphs, one font per vertical shift, served
+  resource pack) goes back to a public description by the developer of the HugoSMP server in the
+  PaperMC Discord. Glyphwork is an independent implementation; no code or assets were taken from it.
+- Glyphwork's own code is MIT-licensed (see [LICENSE](LICENSE)).
+- `src/main/resources/vanilla_text.json` holds character grids and glyph widths read from
+  Minecraft's font data. It is not covered by the MIT license; it is Mojang's data and only
+  references the client's own textures (no Minecraft textures are shipped).

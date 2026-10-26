@@ -13,7 +13,7 @@ plugins build screens with panels, labels, buttons, lists, grids, navigation and
 ## How it works (as verified against the 26.3 client)
 
 - **x (P1):** font `glyphwork:space` maps private-use chars to advances of +-2^k px; any offset is a
-  combination of them. All elements are layered on the **first text line** in paint order.
+  combination of them. All frames are layered on the **first text line** in paint order.
 - **y (P2):** frames are drawn on the first text line; one font per pixel row (`glyphwork:y<N>`,
   N < `max-height`) registers every glyph sheet with `ascent = 7 - N`, so their paint order is exact.
   Text goes on the text line it falls into, with 9 fonts (`glyphwork:t0..8`) that re-register the

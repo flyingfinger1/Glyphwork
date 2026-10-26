@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 – item icons and display modes
 
 - **Item icons:** `Icon` element, `Grid.icon`, `Button.icon`, `ListView.icon`, and `icon:` in YAML
   menus (element, button, list and grid items). The pack only references the item and block
@@ -12,6 +12,10 @@
   tears the menus: `/glyphwork darstellung` (native dialog, works even when the pixel GUI breaks),
   API `Glyphwork#displayMode` and `#sendPack`, and `players.commands: false` to hide `/glyphwork`
   from players so servers can offer it in their own system.
+
+Known limit: icon (and text) widths are taken from the vanilla textures. A resource pack that crops
+item textures very differently can shift icons on a line by a few pixels; players can switch to
+"Ohne Icons" or "Einfach".
 
 ## 0.2.0 – menus without code
 

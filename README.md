@@ -39,7 +39,7 @@ release (do not shade it; the classes come with the Glyphwork plugin), e.g. with
 
 ```groovy
 dependencies {
-    compileOnly files('libs/glyphwork-api-0.2.0.jar')
+    compileOnly files('libs/glyphwork-api-0.3.0.jar')
 }
 ```
 

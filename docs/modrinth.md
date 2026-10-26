@@ -33,6 +33,8 @@ elements:
 - **Scene API** for plugin developers: panels of any tile shape, labels, buttons, invisible
   hitboxes, lists and grids with automatic paging, tooltips, colors, per-player state, navigation
   (open / back / reopen / close) and text input through a small native dialog.
+- **Item icons** for 1595 items in grids, buttons, lists and menus, drawn from the textures every
+  client already has.
 - **Pixel-exact clicks**, also off the 9 px text grid.
 - **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. A vanilla-style
   skin is built in; make your own with the browser-based
@@ -40,6 +42,8 @@ elements:
 - **Resource pack handled for you:** generated on start, stable hash (no re-downloads), served by
   a built-in web server or written to disk for your own web server / CDN.
 - **Fallback:** players who decline the pack get a plain native dialog built from the same screen.
+- **Display mode per player** (full / without icons / simple) for players whose own resource pack
+  tears the menus: `/glyphwork darstellung`, or controlled by your own system through the API.
 - `/glyphwork reload` applies config and skin changes and sends the new pack to everyone online.
 
 ## Setup
@@ -71,7 +75,8 @@ Documentation: [API](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/a
 ## Limits
 
 - Paper 26.3 only for now; the API may still change before 1.0.
-- Text is always drawn on top of frames; no item icons yet.
+- Text and icons are always drawn on top of frames; blocks show one face (no 3D), items drawn by
+  special renderers (heads, chests, beds, banners) have no icon.
 
 The technique goes back to a public description by the developer of the HugoSMP server; Glyphwork
 is an independent, MIT-licensed implementation.

@@ -34,7 +34,8 @@ elements:
   hitboxes, lists and grids with automatic paging, tooltips, colors, per-player state, navigation
   (open / back / reopen / close) and text input through a small native dialog.
 - **Item icons** for 1595 items in grids, buttons, lists and menus, drawn from the textures every
-  client already has.
+  client already has. Icons follow your server's resource pack: replaced textures are measured,
+  and the pack's own items (`myserver:ruby`) work as icons.
 - **Pixel-exact clicks**, also off the 9 px text grid.
 - **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. A vanilla-style
   skin is built in; make your own with the browser-based

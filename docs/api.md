@@ -55,7 +55,10 @@ icons are drawn above frames.
 If the server sends its own resource pack (`resource-pack=` in server.properties), Glyphwork reads
 it on start (`icon-source-pack: auto`): textures it replaces are measured so icons line up, and the
 pack's own items work as icons, e.g. `Icon.of(x, y, "myserver:ruby")` for
-`assets/myserver/items/ruby.json`. Players see those only with the server pack loaded.
+`assets/myserver/items/ruby.json`. Players see those only with the server pack loaded; for players
+who declined it they are left out (a grid cell shows a short name instead). Like in the inventory,
+the whole 16×16 texture is drawn at a fixed spot, so art that the pack draws off-center stays
+off-center.
 
 `y` of a label is the top of the glyphs; capitals are 7 px high, so text centered in a 16 px
 button starts 4 px below the button's top.

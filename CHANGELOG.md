@@ -1,11 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 – icons from the server's resource pack
 
 - **Icons match the server's resource pack:** `icon-source-pack: auto` (default) reads the pack
   from server.properties on start (download cached by hash; also a zip path or URL). Textures it
   replaces are measured, so icons line up; items it defines become icons (`"myserver:ruby"`), and
-  vanilla items it re-models show the new texture.
+  vanilla items it re-models show the new texture. Icons are placed like in the inventory: the
+  whole 16×16 texture at a fixed spot, so the art sits where the texture draws it.
+- **No broken boxes without the server pack:** Glyphwork checks whether a player loaded the server
+  pack and leaves out icons that need its textures for players who did not (grid cells show a
+  short name instead).
+- **Sturdier fonts:** text, vanilla icons and server-pack icons are separate fonts in the pack.
+  The client throws away a whole font when one texture is missing, so a missing texture can no
+  longer take text or vanilla icons with it.
+
+Note for testing: client mods that take over server resource packs (e.g. "Server Resource Pack
+Checker") can drop the server pack as soon as Glyphwork's pack arrives. Glyphwork cannot see that;
+those players get boxes for server-pack icons, or can switch to "Ohne Icons".
 
 ## 0.3.0 – item icons and display modes
 

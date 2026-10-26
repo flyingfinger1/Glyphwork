@@ -9,7 +9,8 @@ plugins build screens with panels, labels, buttons, lists, grids, navigation and
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
 **Item icons:** 16 x 16 icons for 1595 items (in grids, buttons, lists, menus), drawn from the
-textures every client already has.
+textures every client already has. They follow your server's resource pack: replaced textures
+are measured, and the pack's own items (`myserver:ruby`) work as icons.
 
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus or ask for input, PlaceholderAPI support and a
@@ -39,7 +40,7 @@ release (do not shade it; the classes come with the Glyphwork plugin), e.g. with
 
 ```groovy
 dependencies {
-    compileOnly files('libs/glyphwork-api-0.3.0.jar')
+    compileOnly files('libs/glyphwork-api-0.4.0.jar')
 }
 ```
 

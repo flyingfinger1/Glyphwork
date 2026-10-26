@@ -10,3 +10,6 @@ pack:
   # true = players who decline are kicked by the client
   required: false
   prompt: "Glyphwork braucht dieses Resource-Pack für die Menüs."
+
+# Skin folder under plugins/Glyphwork/themes/. "vanilla" is exported from the built-in skin on first start.
+theme: vanilla

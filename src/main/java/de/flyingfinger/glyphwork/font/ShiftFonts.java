@@ -7,14 +7,14 @@ import de.flyingfinger.glyphwork.pack.PackFiles;
 import net.kyori.adventure.key.Key;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
- * Ascent matrix (primitive P2): one font per vertical offset y, each containing every sprite
- * and the vanilla text glyphs with {@code ascent = normal - y}. Everything is drawn on the first
- * text line; y moves it down in pixels.
+ * Ascent matrix (primitive P2): one font per vertical offset y. Each contains the cursor spaces,
+ * every sheet and the vanilla text glyphs with {@code ascent = normal - y}. Everything is drawn on
+ * the first text line; y moves it down in pixels. Because spaces live in every font, a whole row of
+ * tiles can be one text component.
  */
 public final class ShiftFonts {
 
@@ -27,23 +27,20 @@ public final class ShiftFonts {
         return Key.key("glyphwork", "y" + y);
     }
 
-    public static void write(PackFiles pack, Collection<Sprite> sprites, Collection<Integer> offsets, VanillaText text) {
+    public static boolean isShiftFont(Key key) {
+        return key != null && key.namespace().equals("glyphwork") && key.value().startsWith("y");
+    }
+
+    public static void write(PackFiles pack, Collection<Sheet> sheets, Collection<Integer> offsets, VanillaText text) {
         SortedSet<Integer> ys = new TreeSet<>(offsets);
-        for (Sprite s : sprites) {
+        for (Sheet s : sheets) {
             pack.put(s.texturePath(), s.png());
         }
         for (int y : ys) {
             JsonArray providers = new JsonArray();
-            for (Sprite s : sprites) {
-                JsonObject p = new JsonObject();
-                p.addProperty("type", "bitmap");
-                p.addProperty("file", s.textureId());
-                p.addProperty("height", s.height());
-                p.addProperty("ascent", 7 - y);
-                JsonArray chars = new JsonArray();
-                chars.add(String.valueOf(s.codepoint()));
-                p.add("chars", chars);
-                providers.add(p);
+            providers.add(SpaceFont.provider());
+            for (Sheet s : sheets) {
+                providers.add(s.provider(y));
             }
             text.addShiftedProviders(providers, y);
             JsonObject font = new JsonObject();
@@ -51,9 +48,5 @@ public final class ShiftFonts {
             pack.put("assets/glyphwork/font/y" + y + ".json", GSON.toJson(font));
         }
         pack.put("assets/glyphwork/font/space.json", GSON.toJson(SpaceFont.fontJson()));
-    }
-
-    public static List<Integer> sorted(Collection<Integer> offsets) {
-        return List.copyOf(new TreeSet<>(offsets));
     }
 }

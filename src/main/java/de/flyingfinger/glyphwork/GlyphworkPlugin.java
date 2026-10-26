@@ -1,12 +1,14 @@
 package de.flyingfinger.glyphwork;
 
+import de.flyingfinger.glyphwork.demo.DemoScreen;
 import de.flyingfinger.glyphwork.dialog.DialogFactory;
+import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.VanillaText;
-import de.flyingfinger.glyphwork.m0.M0Screen;
 import de.flyingfinger.glyphwork.pack.PackFiles;
 import de.flyingfinger.glyphwork.render.LineBuilder;
 import de.flyingfinger.glyphwork.serve.PackServer;
+import de.flyingfinger.glyphwork.theme.Theme;
 import net.kyori.adventure.resource.ResourcePackInfo;
 import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.text.Component;
@@ -37,22 +39,24 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private static final UUID PACK_ID = UUID.nameUUIDFromBytes("Glyphwork".getBytes());
 
     private PackServer server;
-    private M0Screen m0;
+    private DemoScreen demo;
     private String sha1;
-    private final Map<UUID, M0Screen.State> states = new HashMap<>();
+    private final Map<UUID, DemoScreen.State> states = new HashMap<>();
     private final Map<UUID, PlayerResourcePackStatusEvent.Status> packStatus = new HashMap<>();
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         VanillaText text = VanillaText.load();
-        m0 = new M0Screen(text);
+        GlyphAllocator alloc = new GlyphAllocator();
+        Theme theme = loadTheme(alloc);
+        demo = new DemoScreen(text, theme);
 
         PackFiles pack = new PackFiles();
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
-        ShiftFonts.write(pack, m0.sprites(), m0.offsets(), text);
+        ShiftFonts.write(pack, theme.sheets(), demo.offsets(), text);
         byte[] zip = pack.toZip();
         sha1 = PackFiles.sha1(zip);
         try {
@@ -67,9 +71,32 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             return;
         }
         server.publish(zip, sha1);
-        getLogger().info("Pack " + sha1 + " (" + zip.length + " bytes, offsets " + m0.offsets() + ") at " + packUrl());
+        getLogger().info("Theme '" + theme.name() + "', pack " + sha1 + " (" + zip.length + " bytes, "
+            + demo.offsets().size() + " shift fonts) at " + packUrl());
 
         getServer().getPluginManager().registerEvents(this, this);
+    }
+
+    /**
+     * Exports the built-in skin to themes/vanilla on first start (as a template for own skins),
+     * then loads the configured theme; falls back to the built-in one if that fails.
+     */
+    private Theme loadTheme(GlyphAllocator alloc) {
+        Path themes = getDataFolder().toPath().resolve("themes");
+        try {
+            if (!Files.exists(themes.resolve("vanilla"))) {
+                Theme.builtin(new GlyphAllocator()).save(themes.resolve("vanilla"));
+            }
+        } catch (IOException e) {
+            getLogger().warning("Could not export the built-in theme: " + e);
+        }
+        String id = getConfig().getString("theme", "vanilla");
+        try {
+            return Theme.load(themes.resolve(id), alloc);
+        } catch (IOException | RuntimeException e) {
+            getLogger().warning("Theme '" + id + "' not loaded (" + e.getMessage() + "), using the built-in skin");
+            return Theme.builtin(alloc);
+        }
     }
 
     @Override
@@ -132,28 +159,28 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                     player.sendMessage(Component.text("Pack noch nicht geladen (Status: "
                         + packStatus.get(player.getUniqueId()) + ") – /glyphwork pack", NamedTextColor.YELLOW));
                 }
-                openM0(player);
+                openDemo(player);
             }
             default -> player.sendMessage(Component.text("/glyphwork <test|pack>", NamedTextColor.GRAY));
         }
         return true;
     }
 
-    private void openM0(Player player) {
-        M0Screen.State state = states.computeIfAbsent(player.getUniqueId(), id -> new M0Screen.State());
-        LineBuilder line = m0.render(state, target -> ClickEvent.callback(audience -> {
+    private void openDemo(Player player) {
+        DemoScreen.State state = states.computeIfAbsent(player.getUniqueId(), id -> new DemoScreen.State());
+        LineBuilder line = demo.render(state, target -> ClickEvent.callback(audience -> {
             // callbacks may arrive off the main thread
-            Bukkit.getScheduler().runTask(this, () -> onM0Click(player, state, target));
+            Bukkit.getScheduler().runTask(this, () -> onDemoClick(player, state, target));
         }, DialogFactory.callbackOptions()));
-        DialogFactory.show(player, DialogFactory.gui(Component.text("Glyphwork M0"),
-            line.build(M0Screen.H), line.width()));
+        DialogFactory.show(player, DialogFactory.gui(Component.text("Glyphwork"),
+            line.build(DemoScreen.H), line.width()));
     }
 
-    private void onM0Click(Player player, M0Screen.State state, M0Screen.Target target) {
+    private void onDemoClick(Player player, DemoScreen.State state, DemoScreen.Target target) {
         if (!player.isOnline()) {
             return;
         }
-        getLogger().info("M0 click " + player.getName() + ": " + target);
+        getLogger().info("Demo click " + player.getName() + ": " + target);
         switch (target) {
             case CLOSE -> {
                 player.closeDialog();
@@ -161,16 +188,17 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             }
             case TOGGLE -> state.soundOn = !state.soundOn;
             case COUNTER -> state.count++;
-            case PANEL -> {
+            case PANEL, WELL -> {
             }
-            default -> state.selectedSlot = target.ordinal() - M0Screen.Target.SLOT_0.ordinal();
+            default -> state.selectedSlot = target.ordinal() - DemoScreen.Target.SLOT_0.ordinal();
         }
         state.lastClick = switch (target) {
             case PANEL -> "Panel";
+            case WELL -> "L-Form";
             case TOGGLE -> "Umschalter";
             case COUNTER -> "Zähler";
             default -> "Zelle " + (state.selectedSlot + 1);
         };
-        openM0(player);
+        openDemo(player);
     }
 }

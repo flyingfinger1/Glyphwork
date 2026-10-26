@@ -6,7 +6,8 @@ import net.kyori.adventure.key.Key;
 
 /**
  * Cursor movement (primitive P1): a space provider with advances of +-2^k pixels.
- * Any horizontal offset is the sum of at most ~10 of these characters.
+ * Any horizontal offset is the sum of at most ~11 of these characters. The provider is part of
+ * every shifted font and also available alone as {@link #KEY}.
  */
 public final class SpaceFont {
 
@@ -34,7 +35,18 @@ public final class SpaceFont {
         return sb.toString();
     }
 
-    public static JsonObject fontJson() {
+    /** Advance of a cursor-space character, or {@code null} if {@code c} is none. */
+    public static Integer advance(char c) {
+        if (c >= POS_BASE && c < POS_BASE + BITS) {
+            return 1 << (c - POS_BASE);
+        }
+        if (c >= NEG_BASE && c < NEG_BASE + BITS) {
+            return -(1 << (c - NEG_BASE));
+        }
+        return null;
+    }
+
+    public static JsonObject provider() {
         JsonObject advances = new JsonObject();
         for (int k = 0; k < BITS; k++) {
             advances.addProperty(String.valueOf((char) (POS_BASE + k)), 1 << k);
@@ -43,8 +55,12 @@ public final class SpaceFont {
         JsonObject provider = new JsonObject();
         provider.addProperty("type", "space");
         provider.add("advances", advances);
+        return provider;
+    }
+
+    public static JsonObject fontJson() {
         JsonArray providers = new JsonArray();
-        providers.add(provider);
+        providers.add(provider());
         JsonObject font = new JsonObject();
         font.add("providers", providers);
         return font;

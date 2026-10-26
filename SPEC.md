@@ -251,12 +251,15 @@ Leitplanken:
 ## 11. Offene Entscheidungen (in der neuen Session klären)
 
 - [x] **Projektname**: **Glyphwork** (2026-10-26; frei auf Modrinth, Hangar, SpigotMC).
-- [ ] **Public/MIT Repo** unter `flyingfinger1` + GHCR nicht nötig (ist ein Plugin-Jar, kein
-      Container) — aber CI-Release (GitHub-Release → Jar-Asset, evtl. Modrinth/Hangar)?
-- [ ] **Autotile-Format**: eigenes 48-Blob-Sheet zeichnen vs. Platzhalter-Skin zum Start.
-- [ ] **Item-Atlas** überhaupt in v1? (schwer; M4/optional).
-- [ ] **Pack-Hosting**: nur embedded HTTP, oder auch „externe URL"-Modus?
-- [ ] **Klick-Mechanismus** in 26.3 für Dialog-interne Text-Klicks final verifizieren.
+- [x] **Public/MIT Repo**: github.com/flyingfinger1/Glyphwork (MIT). Release-Workflow baut bei
+      GitHub-Release das Plugin- und API-Jar und lädt auf Modrinth hoch (Slug `glyphwork`).
+- [x] **Autotile-Format**: RPG-Maker-A2-Blatt (2×3 Kacheln) pro Rahmen → 47 Blob-Kacheln;
+      eingebauter Vanilla-Skin + Browser-Skin-Editor (docs/skin-format.md, docs/skin-editor.md).
+- [x] **Item-Atlas**: ja, ohne Atlas: das Pack verweist nur auf die Texturen, die jeder Client
+      hat (1595 Items, v0.3.0); seit v0.4.0 auch passend zum Server-Pack.
+- [x] **Pack-Hosting**: eingebauter HTTP-Server oder externe URL (`pack.hosting: external`, v0.1.0).
+- [x] **Klick-Mechanismus** in 26.3 verifiziert: der Client prüft die Box jeder Glyphe, die
+      letzte Glyphe mit Klick-Event gewinnt (P3 gilt in 26.3 nicht).
 
 ---
 

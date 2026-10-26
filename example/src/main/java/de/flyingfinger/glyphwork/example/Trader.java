@@ -167,25 +167,30 @@ public final class Trader {
     }
 
     private static Scene buildOptions() {
-        return Scene.builder("example:trader-options", 176, 112)
+        // the display mode belongs to Glyphwork and applies to every Glyphwork screen;
+        // one button per mode, the active one is marked (also readable in the plain "Einfach" dialog)
+        return Scene.builder("example:trader-options", 176, 136)
             .title(Component.text("Händler - Optionen"))
             .background()
             .add(Label.of(8, 7, "Optionen"))
-            .add(Label.of(8, 24, "Darstellung der Menüs:"))
-            // the display mode belongs to Glyphwork and applies to every Glyphwork screen
-            .add(Button.of(8, 38, 160, 16)
-                .text(v -> modeName(Glyphwork.get().displayMode(v.player())))
-                .tooltip("Klick wechselt: Voll, Ohne Icons, Einfach")
-                .onClick(c -> {
-                    DisplayMode[] all = DisplayMode.values();
-                    DisplayMode now = Glyphwork.get().displayMode(c.player());
-                    Glyphwork.get().displayMode(c.player(), all[(now.ordinal() + 1) % all.length]);
-                    c.reopen();
-                }))
-            .add(Label.of(8, 62, "Verrutschen Icons oder Text?"))
-            .add(Label.of(8, 74, "Dann \"Ohne Icons\" oder \"Einfach\"."))
-            .add(Button.of(8, 90, 64, 16).text("< Zurück").onClick(Click::back))
+            .add(Label.of(8, 22, "Darstellung der Menüs:"))
+            .add(modeButton(DisplayMode.FULL, 34))
+            .add(modeButton(DisplayMode.NO_ICONS, 52))
+            .add(modeButton(DisplayMode.SIMPLE, 70))
+            .add(Label.of(8, 92, "Icons oder Text verrutscht? Dann"))
+            .add(Label.of(8, 102, "\"Ohne Icons\" oder \"Einfach\" nehmen."))
+            .add(Button.of(8, 114, 64, 16).text("< Zurück").onClick(Click::back))
             .build();
+    }
+
+    private static Button modeButton(DisplayMode mode, int y) {
+        return Button.of(8, y, 160, 16)
+            .text(v -> Glyphwork.get().displayMode(v.player()) == mode ? "> " + modeName(mode) + " <" : modeName(mode))
+            .tint(v -> Glyphwork.get().displayMode(v.player()) == mode ? GREEN : Button.GRAY)
+            .onClick(c -> {
+                Glyphwork.get().displayMode(c.player(), mode);
+                c.reopen();                                 // shows this screen in the new mode
+            });
     }
 
     private static String modeName(DisplayMode mode) {

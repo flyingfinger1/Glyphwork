@@ -1,6 +1,7 @@
 # Glyphwork – /glyphwork reload applies changes without a restart.
 
-# Skin folder under plugins/Glyphwork/themes/. "vanilla" is exported from the built-in skin on first start.
+# Skin folder under plugins/Glyphwork/themes/. The built-in skins "vanilla", "dunkel" (dark) and
+# "pergament" (parchment) are exported there on start when their folder is missing.
 # Make your own with the skin editor: https://flyingfinger1.github.io/Glyphwork/
 theme: vanilla
 

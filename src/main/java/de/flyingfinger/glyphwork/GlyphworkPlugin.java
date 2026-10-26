@@ -174,14 +174,16 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     }
 
     /**
-     * Exports the built-in skin to themes/vanilla on first start (as a template for own skins),
+     * Exports the built-in skins to themes/<id> when their folder is missing (as templates for own skins),
      * then loads the configured theme; falls back to the built-in one if that fails.
      */
     private Theme loadTheme(String id, GlyphAllocator alloc) {
         Path themes = getDataFolder().toPath().resolve("themes");
         try {
-            if (!Files.exists(themes.resolve("vanilla"))) {
-                Theme.builtin(new GlyphAllocator()).save(themes.resolve("vanilla"));
+            for (Theme.Builtin b : Theme.BUILTINS) {
+                if (!Files.exists(themes.resolve(b.id()))) {
+                    Theme.builtin(b, new GlyphAllocator()).save(themes.resolve(b.id()));
+                }
             }
         } catch (IOException e) {
             getLogger().warning("Could not export the built-in theme: " + e);

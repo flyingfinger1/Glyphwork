@@ -37,7 +37,6 @@ public final class SceneRenderer {
     }
 
     private static final TextColor WHITE = TextColor.color(0xFFFFFF);
-    private static final TextColor PAGER_TEXT = Label.DARK;
 
     private final VanillaText text;
     private final Theme theme;
@@ -114,6 +113,11 @@ public final class SceneRenderer {
         return line;
     }
 
+    /** Label.DARK stands for "the skin's text color" (dark gray in vanilla, light on dark skins). */
+    private TextColor skinText(TextColor color) {
+        return Label.DARK.equals(color) ? TextColor.color(theme.text()) : color;
+    }
+
     /** Draws an item icon; unknown items (or icons disabled) draw nothing. Returns whether it drew. */
     private boolean icon(LineBuilder line, @Nullable String item, int x, int y, @Nullable TextColor tint) {
         if (item == null || item.isBlank() || !iconsThisPass) {
@@ -183,7 +187,7 @@ public final class SceneRenderer {
                 case RIGHT -> l.width() - w;
             };
         }
-        line.text(s, x, l.y(), l.color().apply(view));
+        line.text(s, x, l.y(), skinText(l.color().apply(view)));
     }
 
     private void button(LineBuilder line, Button b, View view, Binder binder, String name) {
@@ -342,6 +346,6 @@ public final class SceneRenderer {
         }
         line.centered("<", x, 16, y + 4, WHITE);
         line.centered(">", x + w - 16, 16, y + 4, WHITE);
-        line.centered((page + 1) + "/" + pages, x, w, y + 4, PAGER_TEXT);
+        line.centered((page + 1) + "/" + pages, x, w, y + 4, skinText(Label.DARK));
     }
 }

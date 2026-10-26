@@ -4,8 +4,8 @@ The easiest way to make one is the [skin editor](https://flyingfinger1.github.io
 ([guide](skin-editor.md)); this page describes the format itself.
 
 A **theme** (skin) is a folder in `plugins/Glyphwork/themes/<id>/`. Select it with `theme: <id>` in
-`config.yml`. On first start the built-in skin is exported to `themes/vanilla/`; copy that folder
-as a starting point.
+`config.yml`. The built-in skins `vanilla`, `dunkel` and `pergament` are exported to `themes/` on
+start when their folder is missing; copy one as a starting point.
 
 ```
 themes/my_skin/
@@ -21,11 +21,15 @@ themes/my_skin/
 {
   "name": "My Skin",
   "tileSize": 8,
+  "text": "#404040",
   "frames": { "panel": "panel.png", "button": "button.png", "slot": "slot.png" }
 }
 ```
 
 - `tileSize`: even, at least 8. All frames of a theme share it.
+- `text` (optional, default `#404040`): color of labels that use the default color (and the page
+  numbers of lists and grids). On a dark panel choose a light color. In code, `Label.DARK` stands
+  for this color; labels with another color keep it.
 - Required frames: `panel`, `button`, `slot`. More frames may be added; they become available to
   scenes under their key.
 - Buttons are drawn **tinted**: the scene's color multiplies the texture. Keep `button.png` light

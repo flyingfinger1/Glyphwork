@@ -27,6 +27,16 @@ public record Style(int fill, @Nullable Integer outline, boolean round,
     /** Sunken inventory slot. */
     public static final Style SLOT = new Style(0xFF8B8B8B, null, false, 1, 0xFF373737, 1, 0xFFFFFFFF);
 
+    /** "Dunkel": dark slate window, light text. */
+    public static final Style DARK_PANEL = new Style(0xFF2E3138, 0xFF0A0B0D, true, 2, 0xFF4A4F5A, 2, 0xFF1A1C20);
+    public static final Style DARK_BUTTON = new Style(0xFF7A7F8A, 0xFF0A0B0D, false, 1, 0xFFA8AEB8, 2, 0xFF464A52);
+    public static final Style DARK_SLOT = new Style(0xFF484C55, null, false, 1, 0xFF1A1C20, 1, 0xFF6A707A);
+
+    /** "Pergament": parchment window with a brown ink outline. */
+    public static final Style PARCHMENT_PANEL = new Style(0xFFE9DDB8, 0xFF4A3420, true, 2, 0xFFFBF3DC, 2, 0xFFB79F6E);
+    public static final Style PARCHMENT_BUTTON = new Style(0xFFD6C49A, 0xFF4A3420, false, 1, 0xFFF4EAD0, 2, 0xFF9C8458);
+    public static final Style PARCHMENT_SLOT = new Style(0xFFB8A27A, null, false, 1, 0xFF7A6040, 1, 0xFFF4EAD0);
+
     /** Renders the shape {@code inside[y][x]}; pixels outside the array count as outside. */
     public BufferedImage render(boolean[][] inside) {
         int h = inside.length;

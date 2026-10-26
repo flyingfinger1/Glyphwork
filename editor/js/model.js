@@ -2,12 +2,16 @@
 // autosave to localStorage, import/export in the plugin's on-disk format.
 
 import { Pix } from './pix.js';
-import { STYLES, a2FromStyle } from './style.js';
+import { SKINS, a2FromStyle } from './style.js';
 import { encodePng, decodePng } from './png.js';
 import { writeZip, readZip } from './zip.js';
 import { t as tr } from './i18n.js';
 
 export const REQUIRED = ['panel', 'button', 'slot'];
+/** Default label color (ARGB), like Theme.DEFAULT_TEXT in the plugin. */
+export const DEFAULT_TEXT = 0xff404040;
+
+const hex6 = (argb) => '#' + (argb & 0xffffff).toString(16).padStart(6, '0').toUpperCase();
 const STORE_KEY = 'glyphwork-editor-theme';
 
 export function slug(s) {
@@ -18,12 +22,16 @@ export class Theme {
   constructor(name, tileSize) {
     this.name = name;
     this.tileSize = tileSize;
+    this.text = DEFAULT_TEXT;
     this.frames = new Map();
   }
 
-  static fresh(name = 'Mein Skin', tileSize = 8) {
+  /** A new theme from one of the built-in skins (SKINS key). */
+  static fresh(name = 'Mein Skin', tileSize = 8, skin = 'vanilla') {
+    const s = SKINS[skin] || SKINS.vanilla;
     const t = new Theme(name, tileSize);
-    for (const f of REQUIRED) t.frames.set(f, a2FromStyle(STYLES[f], tileSize));
+    t.text = s.text;
+    for (const f of REQUIRED) t.frames.set(f, a2FromStyle(s[f], tileSize));
     return t;
   }
 
@@ -41,11 +49,12 @@ export class Theme {
       for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
       frames[k] = btoa(s);
     }
-    return { name: this.name, tileSize: this.tileSize, frames };
+    return { name: this.name, tileSize: this.tileSize, text: this.text, frames };
   }
 
   static fromJSON(o) {
     const t = new Theme(o.name, o.tileSize);
+    if (Number.isInteger(o.text)) t.text = o.text >>> 0;
     for (const [k, b64] of Object.entries(o.frames)) {
       const s = atob(b64);
       const bytes = new Uint8Array(s.length);
@@ -79,7 +88,7 @@ export class Theme {
       frames[k] = `${k}.png`;
       entries.push({ name: `${id}/${k}.png`, data: await encodePng(p) });
     }
-    const json = { name: this.name, tileSize: this.tileSize, frames };
+    const json = { name: this.name, tileSize: this.tileSize, text: hex6(this.text), frames };
     entries.unshift({ name: `${id}/theme.json`, data: enc.encode(JSON.stringify(json, null, 2) + '\n') });
     return { id, bytes: writeZip(entries) };
   }
@@ -93,6 +102,9 @@ export class Theme {
     const json = JSON.parse(new TextDecoder().decode(files.get(jsonName)));
     const t = new Theme(json.name || 'Import', json.tileSize);
     validateTileSize(t.tileSize);
+    if (typeof json.text === 'string' && /^#[0-9a-f]{6}$/i.test(json.text.trim())) {
+      t.text = (0xff000000 | parseInt(json.text.trim().slice(1), 16)) >>> 0;
+    }
     for (const [k, file] of Object.entries(json.frames || {})) {
       const data = files.get(base + file);
       if (!data) throw new Error(tr('errMissingFile', { file }));

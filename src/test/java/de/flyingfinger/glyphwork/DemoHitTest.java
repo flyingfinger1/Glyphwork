@@ -184,6 +184,42 @@ class DemoHitTest {
         for (var sheet : theme.sheets()) {
             java.nio.file.Files.write(Path.of("build/preview/tiles/" + sheet.name() + ".png"), sheet.png());
         }
+        // every built-in skin: its files and the demo drawn with it
+        for (Theme.Builtin b : Theme.BUILTINS) {
+            GlyphAllocator a = new GlyphAllocator();
+            Theme t = Theme.builtin(b, a);
+            t.save(Path.of("build/preview/themes/" + b.id()));
+            Sheet h = Sheet.invisible(a);
+            SceneRenderer r = new SceneRenderer(text, t, h.glyph(), MAX_HEIGHT, Logger.getLogger("test"));
+            List<Sheet> s = new ArrayList<>(t.sheets());
+            s.add(h);
+            for (var e : java.util.Map.of("demo", demo.main, "demo-lists", demo.lists).entrySet()) {
+                Scene sc = e.getValue();
+                Component msg = r.render(sc, new TestView(sc), (name, action) -> ClickEvent.runCommand(name)).build(sc.height());
+                new Layout(msg, s, text).writePreview(Path.of("build/preview/skin-" + b.id() + "-" + e.getKey() + ".png"),
+                    sc.width(), sc.height(), 4);
+            }
+            for (var sheet : t.sheets()) {
+                java.nio.file.Files.write(Path.of("build/preview/tiles/" + sheet.name() + ".png"), sheet.png());
+            }
+        }
+    }
+
+    @Test
+    void skinsUseTheirTextColorForDefaultLabels() {
+        Theme dark = Theme.builtin(Theme.BUILTINS.get(1), new GlyphAllocator());
+        assertEquals(0xE0E0E0, dark.text());
+        GlyphAllocator a = new GlyphAllocator();
+        Theme t = Theme.builtin(Theme.BUILTINS.get(1), a);
+        Sheet h = Sheet.invisible(a);
+        SceneRenderer r = new SceneRenderer(text, t, h.glyph(), MAX_HEIGHT, Logger.getLogger("test"));
+        List<Sheet> s = new ArrayList<>(t.sheets());
+        s.add(h);
+        Layout l = new Layout(r.render(demo.main, new TestView(demo.main), (n, x) -> ClickEvent.runCommand(n))
+            .build(demo.main.height()), s, text);
+        assertTrue(l.textRuns.stream().anyMatch(run -> run[0] == 8 && run[1] == 54 && run[3] == 0xE0E0E0),
+            "default label in the skin's text color");
+        assertTrue(l.textRuns.stream().noneMatch(run -> run[3] == 0x404040), "no vanilla dark gray left");
     }
 
     @Test

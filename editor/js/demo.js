@@ -25,9 +25,10 @@ const full = (cols, rows) => Array.from({ length: rows }, () => new Array(cols).
 
 /**
  * @param frames Map(name -> A2 Pix)
+ * @param text   ARGB color of labels (the theme's text color)
  * @returns { pix, targets: [{x, y, w, h, id}] }  later targets are on top
  */
-export function renderDemo(frames, t, s, lang = 'de') {
+export function renderDemo(frames, t, s, lang = 'de', text = DARK) {
   const pix = new Pix(W, H);
   const targets = [];
   const cache = new Map();
@@ -54,7 +55,7 @@ export function renderDemo(frames, t, s, lang = 'de') {
   const de = lang === 'de';
 
   rect('panel', 0, 0, W, H, null, 'panel');
-  drawText(pix, 'Glyphwork - Demo', 8, 7, DARK);
+  drawText(pix, 'Glyphwork - Demo', 8, 7, text);
 
   rect('button', 152, 4, 16, 16, RED, 'close');
   centered('x', 152, 16, 7, WHITE);
@@ -65,8 +66,8 @@ export function renderDemo(frames, t, s, lang = 'de') {
   rect('button', 96, 31, 64, 16, BLUE, 'counter');
   centered('+1', 96, 64, 35, WHITE);
 
-  drawText(pix, (de ? 'Zähler: ' : 'Counter: ') + s.count, 8, 54, DARK);
-  drawText(pix, (de ? 'Letzter Klick: ' : 'Last click: ') + s.last, 8, 65, DARK);
+  drawText(pix, (de ? 'Zähler: ' : 'Counter: ') + s.count, 8, 54, text);
+  drawText(pix, (de ? 'Letzter Klick: ' : 'Last click: ') + s.last, 8, 65, text);
 
   for (let i = 0; i < 8; i++) rect('slot', 8 + i * 20, 78, 16, 16, i === s.selected ? GOLD : null, 'slot' + i);
   frame('slot', 8, 100, WELL.map((r) => [...r].map((c) => c === '#')), null, 'well');

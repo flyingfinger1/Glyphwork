@@ -2,11 +2,33 @@
 
 import { Pix } from './pix.js';
 
-export const STYLES = {
-  panel: { fill: 0xffc6c6c6, outline: 0xff000000, round: true, lightWidth: 2, light: 0xffffffff, shadeWidth: 2, shade: 0xff555555 },
-  button: { fill: 0xffc8c8c8, outline: 0xff000000, round: false, lightWidth: 1, light: 0xffffffff, shadeWidth: 2, shade: 0xff6e6e6e },
-  slot: { fill: 0xff8b8b8b, outline: null, round: false, lightWidth: 1, light: 0xff373737, shadeWidth: 1, shade: 0xffffffff },
+const st = (fill, outline, round, lightWidth, light, shadeWidth, shade) =>
+  ({ fill, outline, round, lightWidth, light, shadeWidth, shade });
+
+/** The skins built into the plugin (Theme.BUILTINS, Style.java); text = default label color. */
+export const SKINS = {
+  vanilla: {
+    name: 'Vanilla', text: 0xff404040,
+    panel: st(0xffc6c6c6, 0xff000000, true, 2, 0xffffffff, 2, 0xff555555),
+    button: st(0xffc8c8c8, 0xff000000, false, 1, 0xffffffff, 2, 0xff6e6e6e),
+    slot: st(0xff8b8b8b, null, false, 1, 0xff373737, 1, 0xffffffff),
+  },
+  dunkel: {
+    name: 'Dunkel', text: 0xffe0e0e0,
+    panel: st(0xff2e3138, 0xff0a0b0d, true, 2, 0xff4a4f5a, 2, 0xff1a1c20),
+    button: st(0xff7a7f8a, 0xff0a0b0d, false, 1, 0xffa8aeb8, 2, 0xff464a52),
+    slot: st(0xff484c55, null, false, 1, 0xff1a1c20, 1, 0xff6a707a),
+  },
+  pergament: {
+    name: 'Pergament', text: 0xff4a3420,
+    panel: st(0xffe9ddb8, 0xff4a3420, true, 2, 0xfffbf3dc, 2, 0xffb79f6e),
+    button: st(0xffd6c49a, 0xff4a3420, false, 1, 0xfff4ead0, 2, 0xff9c8458),
+    slot: st(0xffb8a27a, null, false, 1, 0xff7a6040, 1, 0xfff4ead0),
+  },
 };
+
+/** Styles of the vanilla skin (defaults for new frames and the generator). */
+export const STYLES = { panel: SKINS.vanilla.panel, button: SKINS.vanilla.button, slot: SKINS.vanilla.slot };
 
 const at = (a, x, y) => y >= 0 && y < a.length && x >= 0 && x < a[0].length && a[y][x];
 

@@ -1,5 +1,5 @@
 import { Pix, hex, toImageData } from './pix.js';
-import { STYLES, a2FromStyle } from './style.js';
+import { STYLES, SKINS, a2FromStyle } from './style.js';
 import { decodePng } from './png.js';
 import { Theme, History, REQUIRED, slug, validateTileSize, checkSize } from './model.js';
 import { SheetEditor } from './sheet-editor.js';
@@ -125,6 +125,7 @@ function refresh(structure) {
     renderFrames();
     $('themeName').value = theme.name;
     $('tileSize').value = theme.tileSize;
+    $('textColor').value = '#' + (theme.text & 0xffffff).toString(16).padStart(6, '0');
     fitEditor();
   } else {
     editor.render();
@@ -173,12 +174,27 @@ $('tileSize').addEventListener('change', (e) => {
     return;
   }
   const next = new Theme(theme.name, size);
+  next.text = theme.text;
   for (const name of theme.frames.keys()) next.frames.set(name, a2FromStyle(styleFor(name), size));
   replaceTheme(next);
 });
 
+for (const [id, s] of Object.entries(SKINS)) {
+  const o = document.createElement('option');
+  o.value = id;
+  o.textContent = s.name;
+  $('template').append(o);
+}
+
+$('textColor').addEventListener('input', (e) => {
+  theme.text = (0xff000000 | parseInt(e.target.value.slice(1), 16)) >>> 0;
+  refresh(false);
+});
+
 $('newTheme').addEventListener('click', () => {
-  if (confirm(t('confirmNew'))) replaceTheme(Theme.fresh(getLang() === 'de' ? 'Mein Skin' : 'My Skin', theme.tileSize));
+  if (confirm(t('confirmNew'))) {
+    replaceTheme(Theme.fresh(getLang() === 'de' ? 'Mein Skin' : 'My Skin', theme.tileSize, $('template').value));
+  }
 });
 
 $('addFrame').addEventListener('click', () => {
@@ -373,7 +389,7 @@ let demoTargets = [];
 
 function renderDemoTab() {
   const z = preview.zoom;
-  const { pix, targets } = renderDemo(theme.frames, theme.tileSize, demoState, getLang());
+  const { pix, targets } = renderDemo(theme.frames, theme.tileSize, demoState, getLang(), theme.text);
   demoTargets = targets;
   const c = $('demo');
   c.width = pix.w * z;

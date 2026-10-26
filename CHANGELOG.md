@@ -6,6 +6,11 @@
   the way another plugin would use it: item icons in a grid, amount buttons and a text prompt, a buy
   button that is only active when the player can pay, and an options screen for the display mode.
   Releases attach it as `glyphwork-example-<version>.jar`.
+- **Two more built-in skins:** `dunkel` (dark, light text) and `pergament` (parchment), next to
+  `vanilla`. All built-in skins are exported to `themes/` on start when their folder is missing.
+- **Text color per skin:** `"text": "#RRGGBB"` in `theme.json` colors labels that use the default
+  color (`Label.DARK`) and the page numbers, so dark skins stay readable. The skin editor has a text
+  color field and a template choice (Vanilla, Dunkel, Pergament) for *New*.
 - CI: GitHub Actions updated to their current versions.
 
 ## 0.4.0 – icons from the server's resource pack

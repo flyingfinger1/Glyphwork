@@ -47,6 +47,9 @@ public final class FallbackRenderer {
         List<Action> actions = new ArrayList<>();
         for (Element e : scene.elements()) {
             try {
+                if (!Boolean.TRUE.equals(e.visible().apply(view))) {
+                    continue;
+                }
                 switch (e) {
                     case Label l -> labels.add(l);
                     case Button b -> button(b, view, actions);

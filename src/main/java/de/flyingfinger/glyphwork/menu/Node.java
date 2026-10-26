@@ -24,6 +24,11 @@ final class Node {
         return new MenuException(path + (key.isEmpty() ? "" : "." + key) + ": " + message);
     }
 
+    /** The map itself (for templates, which copy and fill it). */
+    Map<?, ?> raw() {
+        return map;
+    }
+
     boolean has(String key) {
         return map.containsKey(key) && map.get(key) != null;
     }

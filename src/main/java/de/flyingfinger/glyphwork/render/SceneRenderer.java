@@ -91,6 +91,9 @@ public final class SceneRenderer {
         for (Element e : scene.elements()) {
             String name = scene.id() + "#" + i++;
             try {
+                if (!Boolean.TRUE.equals(e.visible().apply(view))) {
+                    continue;                      // the name index still counts it, so click names stay stable
+                }
                 switch (e) {
                     case Panel p -> panel(line, p, view, binder, name);
                     case Label l -> label(line, l, view);

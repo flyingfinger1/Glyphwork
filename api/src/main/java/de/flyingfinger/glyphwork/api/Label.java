@@ -10,6 +10,8 @@ import java.util.function.Function;
  */
 public final class Label implements Element {
 
+    private Function<View, Boolean> visible = v -> true;
+
     public enum Align { LEFT, CENTER, RIGHT }
 
     /** Default label color (vanilla GUI dark gray). */
@@ -86,5 +88,16 @@ public final class Label implements Element {
 
     public Align align() {
         return align;
+    }
+
+    /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
+    public Label visible(Function<View, Boolean> visible) {
+        this.visible = visible;
+        return this;
+    }
+
+    @Override
+    public Function<View, Boolean> visible() {
+        return visible;
     }
 }

@@ -84,6 +84,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
         saveResource("menus/beispiel.yml", false);
         saveResource("menus/beispiel-regeln.yml", false);
+        saveResource("menus/beispiel-warps.yml", false);
+        saveResource("menus/_beispiel-vorlagen.yml", false);
     }
 
     /** (Re)loads menus/*.yml and their commands; returns the problems found. */

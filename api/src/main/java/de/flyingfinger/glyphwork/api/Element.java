@@ -1,5 +1,7 @@
 package de.flyingfinger.glyphwork.api;
 
+import java.util.function.Function;
+
 /**
  * A part of a {@link Scene}. Elements are drawn in the order they were added (later = on top);
  * text is always drawn above frames. Coordinates are GUI pixels from the scene's top-left corner.
@@ -10,4 +12,7 @@ public sealed interface Element permits Panel, Label, Button, Hitbox, Icon, List
     int x();
 
     int y();
+
+    /** Whether the element is shown for this view (default: always); set with {@code .visible(v -> ...)}. */
+    Function<View, Boolean> visible();
 }

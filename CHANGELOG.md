@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **Conditions in YAML menus:** `show-if` on every element and list/grid item, `enabled-if` and
+  `disabled-tooltip` on buttons, and a `require:` action that stops the remaining actions when its
+  condition does not hold. Conditions compare placeholders and values (`== != > >= < <= contains
+  !contains`, numbers as numbers); a list means all must hold.
+- **Templates for YAML menus:** reusable elements or groups in `menus/_*.yml` (for all menus) or
+  under `templates:` (one menu), used with `{ use: name, x, y, key: value }` and filled in at
+  `{key}` / `{key|default}`. Settings of the use entry replace those of one-element templates.
+- New example `beispiel-warps.yml` with `_beispiel-vorlagen.yml` (put into `menus/` on first start).
+- API: `visible(Function<View, Boolean>)` on every element.
+
 ## 0.5.0 – example plugin and more skins
 
 - **Example plugin** ([example/](example/)): a trader (`/haendler`) built against `glyphwork-api`

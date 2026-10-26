@@ -1,0 +1,16 @@
+# Vorlagen für alle Menüs. Dateien, deren Name mit _ beginnt, sind keine Menüs, sondern Vorlagen.
+# Einsetzen in einem Menü:   - { use: warp, x: 8, y: 22, name: Spawn, ziel: spawn, item: compass }
+# {name} wird durch den Wert aus dem use-Eintrag ersetzt, {farbe|gray} hat "gray" als Standard.
+# Anleitung: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#templates
+
+warp:
+  type: button
+  width: 160
+  height: 24
+  icon: "{item}"
+  text: "{name}"
+  tint: "{farbe|gray}"
+  tooltip: "Teleport nach {name}"
+  actions:
+    - "player: warp {ziel}"      # braucht ein Warp-Plugin
+    - "close"

@@ -1,0 +1,50 @@
+# Beispiel für Vorlagen und Bedingungen – öffnen mit /glyphwork menu beispiel-warps
+# Die Vorlage "warp" steht in _beispiel-vorlagen.yml.
+# Anleitung: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md
+
+title: "<gold>Warps"
+width: 176
+height: 152
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "Wohin, %player%?"
+
+  # dreimal dieselbe Vorlage, nur mit anderen Werten
+  - { use: warp, x: 8, y: 20, name: Spawn, ziel: spawn, item: compass }
+  - { use: warp, x: 8, y: 48, name: Farm, ziel: farm, item: wheat, farbe: green }
+
+  # Bedingung: ausgegraut, solange man schon im Nether ist
+  - use: warp
+    x: 8
+    y: 76
+    name: Nether
+    ziel: nether
+    item: netherrack
+    farbe: red
+    enabled-if: "%world% != world_nether"
+    disabled-tooltip: "<red>Du bist schon im Nether"
+
+  # Bedingung: nur sichtbar, wenn mindestens 2 Spieler online sind.
+  # Mit PlaceholderAPI z. B. auch: show-if: "%vault_eco_balance% >= 100"
+  - type: button
+    x: 8
+    y: 108
+    width: 76
+    text: "Gruppe"
+    show-if: "%online% >= 2"
+    actions: ["message: <green>Ihr seid %online%!"]
+
+  # require: prüft beim Klick; trifft es nicht zu, kommt die Meldung und der Rest entfällt
+  - type: button
+    x: 92
+    y: 108
+    width: 76
+    text: "Belohnung"
+    tint: gold
+    actions:
+      - "require: %online% >= 2 | message: <red>Erst ab 2 Spielern online"
+      - "message: <gold>Hier ist deine Belohnung!"
+      - "sound: entity.player.levelup"

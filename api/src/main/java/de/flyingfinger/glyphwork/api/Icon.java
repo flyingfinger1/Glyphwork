@@ -16,6 +16,8 @@ import java.util.function.Function;
  */
 public final class Icon implements Element {
 
+    private Function<View, Boolean> visible = v -> true;
+
     private final int x;
     private final int y;
     private final Function<View, @Nullable String> item;
@@ -86,5 +88,16 @@ public final class Icon implements Element {
 
     public @Nullable Consumer<Click> onClick() {
         return onClick;
+    }
+
+    /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
+    public Icon visible(Function<View, Boolean> visible) {
+        this.visible = visible;
+        return this;
+    }
+
+    @Override
+    public Function<View, Boolean> visible() {
+        return visible;
     }
 }

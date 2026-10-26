@@ -21,16 +21,33 @@ import java.util.function.Function;
  * open: shop                    open menu "shop" ("back" returns)
  * back | close | refresh
  * input: Name? | player: msg %input% hi   ask for text, then run the action with %input%
+ * require: %vault_eco_balance% >= 100 | message: Too poor   stop here unless the condition holds
  * </pre>
  */
 final class Actions {
 
     private static final MiniMessage MM = MiniMessage.miniMessage();
 
-    /** One action; {@code input} is the text of an enclosing "input" action, or null. */
+    /**
+     * One action; {@code input} is the text of an enclosing "input" action, or null.
+     * Returns false to stop the remaining actions (a failed "require").
+     */
     @FunctionalInterface
     private interface Step {
+        boolean run(Click c, @Nullable String input);
+    }
+
+    /** An action that never stops the chain. */
+    @FunctionalInterface
+    private interface Simple {
         void run(Click c, @Nullable String input);
+    }
+
+    private static Step go(Simple s) {
+        return (c, in) -> {
+            s.run(c, in);
+            return true;
+        };
     }
 
     private Actions() {
@@ -45,7 +62,9 @@ final class Actions {
         }
         return click -> {
             for (Step step : steps) {
-                step.run(click, null);
+                if (!step.run(click, null)) {
+                    return;
+                }
             }
         };
     }
@@ -63,25 +82,25 @@ final class Actions {
         return switch (type) {
             case "player" -> {
                 String cmd = stripSlash(require(arg, at, key, "a command"));
-                yield (c, in) -> c.player().performCommand(text(c, cmd, in));
+                yield go((c, in) -> c.player().performCommand(text(c, cmd, in)));
             }
             case "console" -> {
                 String cmd = stripSlash(require(arg, at, key, "a command"));
-                yield (c, in) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), text(c, cmd, in));
+                yield go((c, in) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), text(c, cmd, in)));
             }
             case "message" -> {
                 String msg = require(arg, at, key, "a text");
-                yield (c, in) -> c.player().sendMessage(MM.deserialize(text(c, msg, in)));
+                yield go((c, in) -> c.player().sendMessage(MM.deserialize(text(c, msg, in))));
             }
             case "sound" -> {
                 String[] p = require(arg, at, key, "a sound name").split("\\s+");
                 float volume = p.length > 1 ? number(p[1], at, key) : 1f;
                 float pitch = p.length > 2 ? number(p[2], at, key) : 1f;
-                yield (c, in) -> c.player().playSound(c.player(), p[0], volume, pitch);
+                yield go((c, in) -> c.player().playSound(c.player(), p[0], volume, pitch));
             }
             case "open" -> {
                 String id = require(arg, at, key, "a menu id");
-                yield (c, in) -> {
+                yield go((c, in) -> {
                     Menus.Menu next = menus.apply(id);
                     if (next == null) {
                         c.player().sendMessage(Component.text("Menü '" + id + "' gibt es nicht."));
@@ -90,11 +109,11 @@ final class Actions {
                     } else {
                         c.open(next.scene());
                     }
-                };
+                });
             }
-            case "back" -> (c, in) -> c.back();
-            case "close" -> (c, in) -> c.close();
-            case "refresh" -> (c, in) -> c.reopen();
+            case "back" -> go((c, in) -> c.back());
+            case "close" -> go((c, in) -> c.close());
+            case "refresh" -> go((c, in) -> c.reopen());
             case "input" -> {
                 int bar = arg.indexOf('|');
                 if (bar < 0) {
@@ -102,10 +121,24 @@ final class Actions {
                 }
                 String title = arg.substring(0, bar).trim();
                 Step then = one(arg.substring(bar + 1).trim(), at, key, menus);
-                yield (c, in) -> c.prompt(MM.deserialize(text(c, title, in)), "", typed -> then.run(c, clean(typed)));
+                yield go((c, in) -> c.prompt(MM.deserialize(text(c, title, in)), "", typed -> then.run(c, clean(typed))));
+            }
+            case "require" -> {
+                int bar = arg.indexOf(" | ");
+                Condition cond = Condition.parse(bar < 0 ? require(arg, at, key, "a condition") : arg.substring(0, bar), at, key);
+                Step otherwise = bar < 0 ? null : one(arg.substring(bar + 3).trim(), at, key, menus);
+                yield (c, in) -> {
+                    if (cond.test(c.player(), in)) {
+                        return true;
+                    }
+                    if (otherwise != null) {
+                        otherwise.run(c, in);
+                    }
+                    return false;
+                };
             }
             default -> throw at.error(key, "unknown action '" + type
-                + "' (player, console, message, sound, open, back, close, refresh, input)");
+                + "' (player, console, message, sound, open, back, close, refresh, input, require)");
         };
     }
 

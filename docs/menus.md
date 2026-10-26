@@ -1,7 +1,9 @@
 # Menus without code
 
-Every `*.yml` file in `plugins/Glyphwork/menus/` is a menu; the file name is its id. On first start
-Glyphwork puts two examples there (`beispiel.yml`, `beispiel-regeln.yml`). After editing,
+Every `*.yml` file in `plugins/Glyphwork/menus/` is a menu; the file name is its id. Files whose
+name starts with `_` hold [templates](#templates) instead. On first start Glyphwork puts examples
+there (`beispiel.yml`, `beispiel-regeln.yml`, and `beispiel-warps.yml` with `_beispiel-vorlagen.yml`
+for templates and conditions). After editing,
 `/glyphwork reload` applies the changes; problems are shown in chat and the console with the exact
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
 
@@ -23,6 +25,7 @@ aliases: [w]                  # optional
 permission: myserver.warps    # optional: who may open it (command and "open:" actions)
 description: "Warp menu"      # optional: shown in /help
 exit-label: "Close"           # optional: label of the dialog's exit button
+templates: {...}              # optional: templates only for this menu, see below
 elements: [...]
 ```
 
@@ -47,7 +50,9 @@ Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `ic
 `config.yml`.
 
 `y` of a text is the top of the letters; in a 16 px button the text starts 4 px below the top.
-Items with a `permission` are only shown to players who have it.
+Items with a `permission` are only shown to players who have it. Every element and every list or
+grid item can have `show-if`; buttons also `enabled-if` and `disabled-tooltip`, see
+[Conditions](#conditions).
 
 ## Actions
 
@@ -62,6 +67,7 @@ A list of strings, run in order:
 | `open: shop` | opens menu `shop`; `back` returns |
 | `back` / `close` / `refresh` | previous menu / close / redraw |
 | `input: Name? \| player: msg %input% hi` | asks for a text, then runs the action after `\|` with `%input%` |
+| `require: %vault_eco_balance% >= 100 \| message: <red>Too poor` | checks a [condition](#conditions); if it does not hold, runs the action after `\|` (optional) and **skips the remaining actions** |
 
 `%input%` is cleaned (one line, no leading `/`, no `%`, at most 100 characters), but it is still
 text typed by the player: do not put it into `console:` commands that could do harm.
@@ -72,6 +78,76 @@ In texts, tooltips, titles and actions: `%player%`, `%world%`, `%online%`, and e
 [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) placeholder if that plugin is
 installed. Values are filled in each time the menu is drawn; use `refresh` to update after an
 action.
+
+## Conditions
+
+A condition compares two values: `<left> <operator> <right>`, with spaces around the operator.
+
+```yaml
+- type: button
+  text: "VIP-Lounge"
+  show-if: "%world% == lobby"                 # hidden otherwise
+  enabled-if: "%vault_eco_balance% >= 100"    # grayed out otherwise
+  disabled-tooltip: "<red>Costs 100 coins"    # tooltip while grayed out
+  actions:
+    - "require: %vault_eco_balance% >= 100 | message: <red>Too poor"
+    - "console: eco take %player% 100"
+    - "player: warp vip"
+```
+
+| operator | holds when |
+|---|---|
+| `==`, `!=` | equal / not equal (numbers as numbers, text ignoring case) |
+| `>`, `>=`, `<`, `<=` | both sides are numbers and compare so (`1,234.5` counts as a number) |
+| `contains`, `!contains` | the left text contains / does not contain the right one (ignoring case) |
+
+- Both sides may contain placeholders; they are filled in for the viewer each time the menu is drawn
+  (`show-if`, `enabled-if`) or clicked (`require`). Quotes around a side are removed
+  (`"%player%" != ""`).
+- A **list** of conditions holds when all of them hold: `show-if: ["%world% == lobby", "%online% >= 2"]`.
+- `show-if` works on every element and on list rows and grid cells (hidden rows close up).
+  `enabled-if` and `disabled-tooltip` are for buttons, together with `permission`.
+- `show-if`/`enabled-if` only change what the player sees. When an action costs something, check
+  again with `require`: values can change while the menu is open.
+
+## Templates
+
+A template is a reusable element, or a group of elements, with `{values}` filled in where it is
+used. Put templates into a file whose name starts with `_` (for all menus) or under `templates:` in
+a menu (only there; it replaces a shared template of the same name).
+
+```yaml
+# menus/_vorlagen.yml
+warp:
+  type: button
+  width: 160
+  height: 24
+  icon: "{item}"
+  text: "{name}"
+  tint: "{farbe|gray}"          # {key|default}
+  actions: ["player: warp {ziel}", "close"]
+
+eintrag:                        # a group: positions relative to the use entry
+  - { type: icon, x: 0, y: 4, item: "{item}" }
+  - { type: label, x: 20, y: 8, text: "{name}" }
+```
+
+```yaml
+# menus/warps.yml
+elements:
+  - { use: warp, x: 8, y: 20, name: Spawn, ziel: spawn, item: compass }
+  - { use: warp, x: 8, y: 48, name: Nether, ziel: nether, item: netherrack, farbe: red,
+      enabled-if: "%world% != world_nether" }
+  - { use: eintrag, x: 8, y: 80, item: wheat, name: Farm }
+```
+
+- `x`/`y` of the `use` entry move the template; its own positions are relative (default 0).
+- Every other key is a value for `{key}`. A key the template does not use as a value replaces that
+  setting of a one-element template (above: `enabled-if` on the Nether button); groups only take
+  values.
+- `show-if` on the `use` entry applies to every element of the template.
+- Templates may use other templates. A `{key}` without a value and without a default is an error
+  that names the menu, the element and the template.
 
 ## Without the pack
 

@@ -14,6 +14,8 @@ import java.util.function.Function;
  */
 public final class Button implements Element {
 
+    private Function<View, Boolean> visible = v -> true;
+
     /** Default tint: vanilla-like gray. */
     public static final TextColor GRAY = TextColor.color(0x9C9C9C);
     public static final TextColor DISABLED = TextColor.color(0x5A5A5A);
@@ -160,5 +162,16 @@ public final class Button implements Element {
 
     public @Nullable Consumer<Click> onClick() {
         return onClick;
+    }
+
+    /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
+    public Button visible(Function<View, Boolean> visible) {
+        this.visible = visible;
+        return this;
+    }
+
+    @Override
+    public Function<View, Boolean> visible() {
+        return visible;
     }
 }

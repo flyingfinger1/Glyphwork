@@ -16,6 +16,8 @@ import java.util.function.Function;
  */
 public final class Grid<T> implements Element {
 
+    private Function<View, Boolean> visible = v -> true;
+
     private final String id;
     private final int x;
     private final int y;
@@ -174,5 +176,16 @@ public final class Grid<T> implements Element {
 
     public String frame() {
         return frame;
+    }
+
+    /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
+    public Grid<T> visible(Function<View, Boolean> visible) {
+        this.visible = visible;
+        return this;
+    }
+
+    @Override
+    public Function<View, Boolean> visible() {
+        return visible;
     }
 }

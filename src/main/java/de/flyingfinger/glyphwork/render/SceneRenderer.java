@@ -61,14 +61,19 @@ public final class SceneRenderer {
         int i = 0;
         for (Element e : scene.elements()) {
             String name = scene.id() + "#" + i++;
-            switch (e) {
-                case Panel p -> panel(line, p, view, binder, name);
-                case Label l -> label(line, l, view);
-                case Button b -> button(line, b, view, binder, name);
-                case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
-                    h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
-                case ListView<?> l -> list(line, l, view, binder, name);
-                case Grid<?> g -> grid(line, g, view, binder, name);
+            try {
+                switch (e) {
+                    case Panel p -> panel(line, p, view, binder, name);
+                    case Label l -> label(line, l, view);
+                    case Button b -> button(line, b, view, binder, name);
+                    case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
+                        h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
+                    case ListView<?> l -> list(line, l, view, binder, name);
+                    case Grid<?> g -> grid(line, g, view, binder, name);
+                }
+            } catch (RuntimeException ex) {
+                // a failing binding hides this element instead of breaking the whole screen
+                warnOnce("render:" + name + ":" + ex, "Element " + name + " failed to render: " + ex);
             }
         }
         return line;

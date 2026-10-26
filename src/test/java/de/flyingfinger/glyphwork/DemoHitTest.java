@@ -160,6 +160,15 @@ class DemoHitTest {
     }
 
     @Test
+    void stateValuesOfAnyTypeRender() {
+        TestView view = new TestView(demo.lists);
+        view.set("number", 7);          // Integer, as the grid click stores it
+        view.set("fruit", "Kiwi");
+        Layout l = layout(demo.lists, view);
+        assertTrue(l.textRuns.stream().anyMatch(t -> t[1] == 132 && t[0] >= 96), "Nummer label drawn");
+    }
+
+    @Test
     void messagesStaySmall() {
         String json = GsonComponentSerializer.gson().serialize(message(demo.lists, new TestView(demo.lists)));
         assertTrue(json.length() < 60_000, "json bytes: " + json.length());

@@ -102,7 +102,7 @@ public final class Demo {
                 .tooltip(n -> Component.text("Nummer " + n))
                 .onClick((c, n) -> { c.set("number", n); c.reopen(); }))
             .add(Label.of(8, 132, v -> "Obst: " + v.get("fruit", "-")).width(80))
-            .add(Label.of(96, 132, v -> "Nummer: " + v.get("number", "-")).width(72))
+            .add(Label.of(96, 132, v -> "Nummer: " + v.get("number", (Object) "-")).width(72))
             .add(Button.of(8, 146, 56, 16).text("< Zurück").onClick(c -> c.back()))
             .build();
     }

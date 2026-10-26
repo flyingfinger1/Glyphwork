@@ -1,0 +1,14 @@
+name: PaperDialogUI
+version: '${version}'
+main: de.flyingfinger.dialogui.DialogUIPlugin
+api-version: '26.3'
+description: Clickable font-based GUIs inside vanilla dialogs
+author: flyingfinger1
+commands:
+  dialogui:
+    description: PaperDialogUI commands
+    usage: /dialogui <test|pack>
+    permission: dialogui.admin
+permissions:
+  dialogui.admin:
+    default: op

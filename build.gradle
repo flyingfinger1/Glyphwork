@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+}
+
+group = 'de.flyingfinger'
+version = '0.0.1'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileJava.options.compilerArgs += ['-Xlint:deprecation']
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'papermc'
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
+
+    testImplementation 'io.papermc.paper:paper-api:26.3.build.222-stable'
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('plugin.yml') { expand version: project.version }
+}

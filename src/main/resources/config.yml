@@ -1,0 +1,12 @@
+# Embedded HTTP server that hands out the generated resource pack.
+pack-server:
+  bind: 0.0.0.0
+  port: 8765
+  # URL the client downloads from. Must reach this server from the player's machine.
+  public-url: http://127.0.0.1:8765/
+
+pack:
+  send-on-join: true
+  # true = players who decline are kicked by the client
+  required: false
+  prompt: "PaperDialogUI braucht dieses Resource-Pack für die Menüs."

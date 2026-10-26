@@ -193,7 +193,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 } else if (!sender.hasPermission(ADMIN)) {
                     noPermission(sender);
                 } else {
-                    service.open(player, demo.main);
+                    service.openAs(player, demo.main, args.length > 1 && args[1].equalsIgnoreCase("fallback"));
                 }
             }
             case "reload" -> {
@@ -217,7 +217,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 }
             }
             default -> sender.sendMessage(Component.text(sender.hasPermission(ADMIN)
-                ? "/glyphwork <pack|test|status|reload>" : "/glyphwork pack", NamedTextColor.GRAY));
+                ? "/glyphwork <pack|test [fallback]|status|reload>" : "/glyphwork pack", NamedTextColor.GRAY));
         }
         return true;
     }
@@ -228,6 +228,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     @Override
     public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
+        if (args.length == 2 && args[0].equalsIgnoreCase("test") && sender.hasPermission(ADMIN)) {
+            return "fallback".startsWith(args[1].toLowerCase()) ? List.of("fallback") : List.of();
+        }
         if (args.length != 1) {
             return List.of();
         }

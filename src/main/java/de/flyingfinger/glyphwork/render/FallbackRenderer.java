@@ -50,11 +50,7 @@ public final class FallbackRenderer {
                     case Label l -> labels.add(l);
                     case Button b -> button(b, view, actions);
                     case Panel p -> {
-                        // backgrounds are often clickable; only offer panels that say what they do
-                        Component tip = p.tooltip() == null ? null : p.tooltip().apply(view);
-                        if (p.onClick() != null && tip != null) {
-                            actions.add(new Action(tip, null, p.onClick()));
-                        }
+                        // panels are decoration (often a clickable background); not offered without the pack
                     }
                     case Hitbox h -> {
                         Component tip = h.tooltip() == null ? null : h.tooltip().apply(view);

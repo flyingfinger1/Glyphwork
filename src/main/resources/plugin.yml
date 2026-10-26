@@ -8,7 +8,7 @@ website: https://github.com/flyingfinger1/Glyphwork
 commands:
   glyphwork:
     description: Glyphwork resource pack and admin commands
-    usage: /glyphwork <pack|test|status|reload>
+    usage: /glyphwork <pack|test [fallback]|status|reload>
 permissions:
   glyphwork.admin:
     description: /glyphwork test, status and reload

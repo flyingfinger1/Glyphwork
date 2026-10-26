@@ -8,6 +8,11 @@ serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.
 plugins build screens with panels, labels, buttons, lists, grids, navigation and text input:
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
+Players without the pack get a plain native dialog built from the same scene. The pack is served by
+a built-in HTTP server or written to `plugins/Glyphwork/pack/<sha1>.zip` for your own web server
+(`pack.hosting: external`, `pack.url` with `{sha1}`). `/glyphwork reload` rebuilds theme and pack and
+sends it to everyone online; `/glyphwork status` shows who has it. See `config.yml`.
+
 **Skin editor:** https://flyingfinger1.github.io/Glyphwork/ ([guide](docs/skin-editor.md))
 
 ## How it works (as verified against the 26.3 client)
@@ -77,7 +82,6 @@ The tests replay the client's layout and hit test and write a preview of the dem
 `tools/extract_vanilla_text.py <client.jar> src/main/resources/vanilla_text.json` regenerates the
 vanilla char grids and advances when Minecraft changes its fonts.
 
-Config (`config.yml`): pack server bind/port/public URL, send on join, required, prompt.
 
 ## Credits & licensing
 

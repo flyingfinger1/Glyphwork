@@ -103,7 +103,8 @@ class M2Test {
         Demo demo = new Demo();
         FallbackRenderer.Model m = new FallbackRenderer(Logger.getLogger("test")).render(demo.main, new TestClick(demo.main));
         List<String> labels = m.actions().stream().map(a -> plain(a.label())).toList();
-        assertTrue(labels.containsAll(List.of("Sound: AUS", "+1", "x", "Listen >", "Panel-Hintergrund", "L-Form (Innenecken)")), labels.toString());
+        assertEquals(List.of("x", "Sound: AUS", "+1", "Zelle 1", "Zelle 2", "Zelle 3", "Zelle 4", "Zelle 5", "Zelle 6",
+            "Zelle 7", "Zelle 8", "Listen >"), labels);   // panels (background, L shape) are left out
         // dark label colors are lightened for the dark dialog background
         assertTrue(m.lines().stream().allMatch(l -> {
             TextColor c = l.color();

@@ -73,8 +73,12 @@ a warning is logged.
 - Scenes may be up to `max-height` pixels high (`config.yml`, default 256).
 - Text uses the Minecraft font without shadow, one style per label (color only).
 - Item icons are not supported yet (planned: M4).
-- Players without the pack see placeholder characters; `Glyphwork.get().hasPack(player)` tells you
-  whether it loaded.
+- Players without the pack (declined, failed, still loading, or a client that ignores server packs)
+  get a plain native dialog built from the same scene, if `fallback: true` (default): labels become
+  text lines, buttons, hitboxes, list rows, grid cells and page buttons become dialog buttons.
+  **Panels are left out** (they are decoration), so put actions that must work without the pack on
+  a `Button`, `Hitbox`, `ListView` or `Grid`. Admins can preview it with `/glyphwork test fallback`;
+  `Glyphwork.get().hasPack(player)` tells you whether the pack loaded.
 
 The demo (`/glyphwork test`) is built with this API only:
 [Demo.java](../src/main/java/de/flyingfinger/glyphwork/demo/Demo.java).

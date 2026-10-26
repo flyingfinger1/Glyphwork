@@ -60,6 +60,8 @@ public final class GlyphworkService implements Glyphwork {
         final Map<String, Map<String, Object>> state = new HashMap<>();
         /** Increases with every shown screen; clicks from older screens are ignored. */
         int generation;
+        /** Show the plain fallback even with the pack (admin preview). */
+        boolean forceFallback;
 
         Session(UUID id) {
             this.id = id;
@@ -76,7 +78,13 @@ public final class GlyphworkService implements Glyphwork {
 
     @Override
     public void open(Player player, Scene scene) {
+        openAs(player, scene, false);
+    }
+
+    /** Opens a scene; with {@code forceFallback} it shows the plain version (preview for admins). */
+    public void openAs(Player player, Scene scene, boolean forceFallback) {
         Session s = session(player);
+        s.forceFallback = forceFallback;
         s.stack.clear();
         s.stack.push(scene);
         show(player, s);
@@ -110,7 +118,7 @@ public final class GlyphworkService implements Glyphwork {
         }
         int generation = ++s.generation;
         ViewImpl view = new ViewImpl(player, s, scene);
-        if (fallback && !hasPack.test(player)) {
+        if (s.forceFallback || (fallback && !hasPack.test(player))) {
             showFallback(player, s, generation, scene, view);
             return;
         }

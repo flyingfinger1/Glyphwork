@@ -173,3 +173,6 @@ button.small { padding: 2px 8px; }
 .seam canvas { margin: 0 auto 4px; }
 [hidden] { display: none !important; }
 #demo, #preview { max-width: 100%; height: auto; }
+
+footer { padding: 4px 16px 20px; color: var(--muted); font-size: 12px; }
+footer a { color: var(--accent); }

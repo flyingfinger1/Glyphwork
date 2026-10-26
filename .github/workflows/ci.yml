@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # plugin tests; also write the reference images to build/preview/
+      - name: Build and test plugin
+        run: ./gradlew build
+
+      # the editor's JavaScript must produce exactly the plugin's tiles
+      - name: Editor parity (Java vs JavaScript)
+        run: node tools/editor-parity.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-jar
+          path: build/libs/*.jar

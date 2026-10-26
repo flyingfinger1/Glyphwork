@@ -101,6 +101,8 @@ const STR = {
     palOwn: 'Eigene',
     palAddTitle: 'Aktuelle Farbe zur eigenen Palette hinzufügen (Rechtsklick auf eine Farbe entfernt sie)',
     transparent: 'transparent',
+    guide: 'Anleitung',
+    format: 'Skin-Format',
     language: 'English',
   },
   en: {
@@ -203,6 +205,8 @@ const STR = {
     palOwn: 'Own',
     palAddTitle: 'Add the current color to your own palette (right-click a color to remove it)',
     transparent: 'transparent',
+    guide: 'Guide',
+    format: 'Skin format',
     language: 'Deutsch',
   },
 };

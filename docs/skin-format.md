@@ -1,5 +1,8 @@
 # Glyphwork skin format
 
+The easiest way to make one is the [skin editor](https://flyingfinger1.github.io/Glyphwork/)
+([guide](skin-editor.md)); this page describes the format itself.
+
 A **theme** (skin) is a folder in `plugins/Glyphwork/themes/<id>/`. Select it with `theme: <id>` in
 `config.yml`. On first start the built-in skin is exported to `themes/vanilla/`; copy that folder
 as a starting point.

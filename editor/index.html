@@ -35,6 +35,21 @@
       <button id="deleteFrame" data-i18n="deleteFrame">Löschen</button>
       <button id="resetFrame" data-i18n="resetFrame">Auf Vanilla zurücksetzen</button>
     </div>
+
+    <h2 data-i18n="generator">Generator</h2>
+    <p class="hint" data-i18n="genHint"></p>
+    <div class="row wrap" id="genPresets">
+      <button data-gen="panel" data-i18n="genPanel">Fenster</button>
+      <button data-gen="button" data-i18n="genButton">Button</button>
+      <button data-gen="slot" data-i18n="genSlot">Slot</button>
+    </div>
+    <div class="gen">
+      <label class="inline"><span data-i18n="genFill">Füllung</span> <input id="genFill" type="color"></label>
+      <label class="inline"><input id="genOutlineOn" type="checkbox"> <span data-i18n="genOutline">Umriss</span> <input id="genOutline" type="color"></label>
+      <label class="inline"><input id="genRound" type="checkbox"> <span data-i18n="genRound">Ecken abrunden</span></label>
+      <label class="inline"><span data-i18n="genLight">Licht</span> <input id="genLightW" type="number" min="0" max="6"> <input id="genLight" type="color"></label>
+      <label class="inline"><span data-i18n="genShade">Schatten</span> <input id="genShadeW" type="number" min="0" max="6"> <input id="genShade" type="color"></label>
+    </div>
   </aside>
 
   <section class="panel editor">
@@ -54,6 +69,9 @@
       <label class="inline"><span data-i18n="alpha">Deckkraft</span> <input id="alpha" type="range" min="0" max="255" value="255"></label>
       <span id="swatch" class="swatch big"></span>
       <label class="inline"><input id="grid" type="checkbox" checked> <span data-i18n="grid">Raster</span></label>
+      <span class="sep"></span>
+      <label class="inline" data-i18n-title="mirrorHTitle"><input id="mirrorH" type="checkbox"> ↔ <span data-i18n="mirror">Spiegeln</span></label>
+      <label class="inline" data-i18n-title="mirrorVTitle"><input id="mirrorV" type="checkbox"> ↕ <span data-i18n="mirror">Spiegeln</span></label>
     </div>
     <div class="sheetWrap" id="sheetWrap"><canvas id="sheet"></canvas></div>
     <div class="status" id="status"></div>
@@ -62,6 +80,10 @@
 
   <section class="panel previewPanel">
     <h2 data-i18n="preview">Vorschau</h2>
+    <div class="toolbar">
+      <button id="modeShape" class="active" data-i18n="modeShape">Form bauen</button>
+      <button id="modePaint" data-i18n="modePaint">Im Fenster malen</button>
+    </div>
     <div class="toolbar">
       <label class="inline"><span data-i18n="zoom">Zoom</span>
         <select id="zoom"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label>
@@ -76,7 +98,7 @@
     </div>
     <div class="toolbar" id="presets"><span data-i18n="presets">Formen:</span></div>
     <div class="previewWrap"><canvas id="preview"></canvas></div>
-    <p class="hint" data-i18n="shapeHint"></p>
+    <p class="hint" id="previewStatus"></p>
     <h3 data-i18n="allTiles">Alle 47 Kacheln</h3>
     <canvas id="tiles"></canvas>
   </section>

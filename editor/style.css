@@ -154,3 +154,10 @@ canvas { image-rendering: pixelated; display: block; }
 }
 #toast.show { opacity: 1; }
 #toast.error { border-color: var(--danger); }
+
+.gen { display: grid; gap: 8px; }
+.gen label.inline { justify-content: flex-start; color: var(--text); font-size: 13px; }
+.gen input[type=color] { margin-left: auto; }
+.gen input[type=number] { width: 52px; }
+#preview.painting { cursor: crosshair; }
+#genPresets button.active { background: var(--panel-2); }

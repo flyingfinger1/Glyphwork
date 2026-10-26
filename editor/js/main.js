@@ -5,6 +5,7 @@ import { Theme, History, REQUIRED, slug, validateTileSize, checkSize } from './m
 import { SheetEditor } from './sheet-editor.js';
 import { Preview, PRESET_KEYS } from './preview.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
+import { mirrored } from './tools.js';
 
 const $ = (id) => document.getElementById(id);
 const TILE_SIZES = [8, 10, 12, 14, 16, 20, 24, 32];
@@ -13,6 +14,8 @@ let theme = Theme.restore() || Theme.fresh();
 let current = theme.frames.keys().next().value;
 let tool = 'pencil';
 let color = 0xffc6c6c6;
+let mirrorH = false, mirrorV = false;
+let genSession = false; // consecutive generator edits share one undo step
 const history = new History();
 
 const app = {
@@ -22,12 +25,16 @@ const app = {
   history,
   color: () => color,
   tool: () => tool,
-  changed: () => refresh(false),
+  changed: () => { genSession = false; refresh(false); },
+  plot: (x, y, c) => {
+    const f = theme.frames.get(current);
+    for (const [px, py] of mirrored(x, y, theme.tileSize, mirrorH, mirrorV)) f.set(px, py, c);
+  },
   picked: (argb) => { setColor(argb); setTool('pencil'); },
 };
 
 const editor = new SheetEditor($('sheet'), $('status'), app);
-const preview = new Preview($('preview'), $('tiles'), app);
+const preview = new Preview($('preview'), $('tiles'), $('previewStatus'), app);
 
 // ---------- helpers ----------
 
@@ -87,7 +94,7 @@ function renderFrames() {
       b.textContent = t('required');
       li.append(b);
     }
-    li.addEventListener('click', () => { current = name; refresh(true); });
+    li.addEventListener('click', () => { current = name; genSession = false; loadGen(); refresh(true); });
     ul.append(li);
   }
 }
@@ -140,6 +147,9 @@ function replaceTheme(next) {
   theme = next;
   current = theme.frames.keys().next().value;
   history.clear();
+  genParams.clear();
+  genSession = false;
+  loadGen();
   refresh(true);
 }
 
@@ -246,8 +256,8 @@ $('exportBtn').addEventListener('click', async () => {
 // ---------- tools ----------
 
 document.querySelectorAll('[data-tool]').forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
-$('undo').addEventListener('click', () => { const n = history.undo(theme); if (n) { current = n; refresh(true); } });
-$('redo').addEventListener('click', () => { const n = history.redo(theme); if (n) { current = n; refresh(true); } });
+$('undo').addEventListener('click', () => { genSession = false; const n = history.undo(theme); if (n) { current = n; refresh(true); } });
+$('redo').addEventListener('click', () => { genSession = false; const n = history.redo(theme); if (n) { current = n; refresh(true); } });
 $('color').addEventListener('input', (e) => {
   const rgb = parseInt(e.target.value.slice(1), 16);
   setColor((((color >>> 24) << 24) | rgb) >>> 0);
@@ -277,6 +287,68 @@ for (const key of PRESET_KEYS) {
   $('presets').append(b);
 }
 
+// ---------- mirror, preview mode ----------
+
+$('mirrorH').addEventListener('change', (e) => { mirrorH = e.target.checked; });
+$('mirrorV').addEventListener('change', (e) => { mirrorV = e.target.checked; });
+function setMode(mode) {
+  preview.setMode(mode);
+  $('modeShape').classList.toggle('active', mode === 'shape');
+  $('modePaint').classList.toggle('active', mode === 'paint');
+}
+$('modeShape').addEventListener('click', () => setMode('shape'));
+$('modePaint').addEventListener('click', () => setMode('paint'));
+
+// ---------- generator ----------
+
+const genParams = new Map(); // frame -> style params (kept per frame for this session)
+const toHex = (argbValue) => hex(argbValue);
+const fromHex = (h) => (0xff000000 | parseInt(h.slice(1), 16)) >>> 0;
+
+function gen() {
+  if (!genParams.has(current)) genParams.set(current, { ...styleFor(current), outline: styleFor(current).outline ?? 0xff000000, outlineOn: styleFor(current).outline != null });
+  return genParams.get(current);
+}
+
+function loadGen() {
+  const g = gen();
+  $('genFill').value = toHex(g.fill);
+  $('genOutlineOn').checked = g.outlineOn;
+  $('genOutline').value = toHex(g.outline);
+  $('genRound').checked = g.round;
+  $('genLightW').value = g.lightWidth;
+  $('genLight').value = toHex(g.light);
+  $('genShadeW').value = g.shadeWidth;
+  $('genShade').value = toHex(g.shade);
+}
+
+function applyGen() {
+  const g = gen();
+  g.fill = fromHex($('genFill').value);
+  g.outlineOn = $('genOutlineOn').checked;
+  g.outline = fromHex($('genOutline').value);
+  g.round = $('genRound').checked;
+  g.lightWidth = Math.max(0, Math.min(6, Number($('genLightW').value) || 0));
+  g.light = fromHex($('genLight').value);
+  g.shadeWidth = Math.max(0, Math.min(6, Number($('genShadeW').value) || 0));
+  g.shade = fromHex($('genShade').value);
+  if (!genSession) history.record(current, app.frame());
+  genSession = true;
+  app.frame().px.set(a2FromStyle({ ...g, outline: g.outlineOn ? g.outline : null }, theme.tileSize).px);
+  refresh(false);
+}
+
+for (const id of ['genFill', 'genOutlineOn', 'genOutline', 'genRound', 'genLightW', 'genLight', 'genShadeW', 'genShade']) {
+  $(id).addEventListener('input', applyGen);
+}
+document.querySelectorAll('[data-gen]').forEach((b) => b.addEventListener('click', () => {
+  const st = STYLES[b.dataset.gen];
+  genParams.set(current, { ...st, outline: st.outline ?? 0xff000000, outlineOn: st.outline != null });
+  loadGen();
+  genSession = false;
+  applyGen();
+}));
+
 // ---------- language & start ----------
 
 function renderLangButton() {
@@ -287,6 +359,7 @@ $('lang').addEventListener('click', () => {
   setLang(getLang() === 'de' ? 'en' : 'de');
   renderLangButton();
   $('status').textContent = t('hoverNone');
+  preview.setMode(preview.mode);
   refresh(true);
 });
 
@@ -297,6 +370,8 @@ renderLangButton();
 $('status').textContent = t('hoverNone');
 setTool('pencil');
 setColor(color);
+loadGen();
+preview.setMode('shape');
 refresh(true);
 
 // for debugging in the console

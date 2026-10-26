@@ -3,6 +3,7 @@
 import { toImageData } from './pix.js';
 import { quarterRole } from './autotile.js';
 import { t } from './i18n.js';
+import { line, rect, floodArea, blockOf } from './tools.js';
 
 export class SheetEditor {
   /**
@@ -47,16 +48,17 @@ export class SheetEditor {
       this.app.picked(p.get(x, y));
       return;
     }
-    this.canvas.setPointerCapture(e.pointerId);
+    try { this.canvas.setPointerCapture(e.pointerId); } catch { /* synthetic or lost pointer */ }
     this.app.history.record(this.app.frameName(), p);
     const erase = tool === 'eraser' || e.button === 2;
     this.drag = { start: [x, y], last: [x, y], erase, tool, base: p.clone() };
+    const c = erase ? 0 : this.app.color();
     if (tool === 'fill') {
-      this.#flood(p, x, y, erase ? 0 : this.app.color());
+      for (const [fx, fy] of floodArea(p, x, y, blockOf(x, y, this.app.tileSize()))) this.app.plot(fx, fy, c);
       this.drag = null;
       this.app.changed();
     } else if (tool === 'pencil' || tool === 'eraser') {
-      p.set(x, y, erase ? 0 : this.app.color());
+      this.app.plot(x, y, c);
       this.app.changed();
     }
   }
@@ -69,13 +71,13 @@ export class SheetEditor {
     const d = this.drag;
     if (d) {
       const c = d.erase ? 0 : this.app.color();
+      const plot = (px, py) => this.app.plot(px, py, c);
       if (d.tool === 'pencil' || d.tool === 'eraser') {
-        this.#line(p, d.last[0], d.last[1], x, y, c);
+        line(d.last[0], d.last[1], x, y, plot);
         d.last = [x, y];
       } else if (d.tool === 'line' || d.tool === 'rect') {
         p.px.set(d.base.px);
-        if (d.tool === 'line') this.#line(p, d.start[0], d.start[1], x, y, c);
-        else this.#rect(p, d.start[0], d.start[1], x, y, c);
+        (d.tool === 'line' ? line : rect)(d.start[0], d.start[1], x, y, plot);
       }
       this.app.changed();
       return;
@@ -85,38 +87,6 @@ export class SheetEditor {
 
   #up() {
     this.drag = null;
-  }
-
-  #line(p, x0, y0, x1, y1, c) {
-    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
-    const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
-    let err = dx + dy;
-    for (;;) {
-      p.set(x0, y0, c);
-      if (x0 === x1 && y0 === y1) break;
-      const e2 = 2 * err;
-      if (e2 >= dy) { err += dy; x0 += sx; }
-      if (e2 <= dx) { err += dx; y0 += sy; }
-    }
-  }
-
-  #rect(p, x0, y0, x1, y1, c) {
-    const [ax, bx] = [Math.min(x0, x1), Math.max(x0, x1)];
-    const [ay, by] = [Math.min(y0, y1), Math.max(y0, y1)];
-    for (let x = ax; x <= bx; x++) { p.set(x, ay, c); p.set(x, by, c); }
-    for (let y = ay; y <= by; y++) { p.set(ax, y, c); p.set(bx, y, c); }
-  }
-
-  #flood(p, x, y, c) {
-    const target = p.get(x, y);
-    if (target === (c >>> 0)) return;
-    const stack = [[x, y]];
-    while (stack.length) {
-      const [cx, cy] = stack.pop();
-      if (!p.inside(cx, cy) || p.get(cx, cy) !== target) continue;
-      p.set(cx, cy, c);
-      stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
-    }
   }
 
   #status() {

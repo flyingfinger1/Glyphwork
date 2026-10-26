@@ -63,6 +63,11 @@ Handlers get a `Click` (runs on the main thread):
 
 Clicks from a screen that has been replaced in the meantime are ignored.
 
+`get` returns the stored value unchecked, typed after the fallback: `v.get("count", 0)` is an
+`Integer`. Read a value with the type you stored (`v.get("number", (Object) "-")` when it may be
+missing and you only print it). If a binding throws while rendering, only that element is hidden and
+a warning is logged.
+
 ## Limits
 
 - Scenes may be up to `max-height` pixels high (`config.yml`, default 256).

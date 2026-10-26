@@ -32,6 +32,10 @@ fallback: true
 # Item icons (Icon element, icon: in menus). The pack references the textures every client already
 # has; false makes the pack smaller if you do not use icons.
 icons: true
+# Match icons to the resource pack your server sends: textures it replaces are measured (so icons
+# line up) and its own items work as icons ("myserver:ruby"). auto = the pack from server.properties
+# (resource-pack=), or a zip path (relative to plugins/Glyphwork/), an http(s) URL, or none.
+icon-source-pack: auto
 
 players:
   # /glyphwork pack and /glyphwork darstellung for everyone. false hides /glyphwork from players

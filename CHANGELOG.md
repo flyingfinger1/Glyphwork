@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Icons match the server's resource pack:** `icon-source-pack: auto` (default) reads the pack
+  from server.properties on start (download cached by hash; also a zip path or URL). Textures it
+  replaces are measured, so icons line up; items it defines become icons (`"myserver:ruby"`), and
+  vanilla items it re-models show the new texture.
+
 ## 0.3.0 – item icons and display modes
 
 - **Item icons:** `Icon` element, `Grid.icon`, `Button.icon`, `ListView.icon`, and `icon:` in YAML

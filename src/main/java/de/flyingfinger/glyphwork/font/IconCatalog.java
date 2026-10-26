@@ -50,10 +50,8 @@ public final class IconCatalog {
             for (JsonElement e : root.getAsJsonArray("textures")) {
                 JsonArray t = e.getAsJsonArray();
                 int frame = t.get(2).getAsInt();
-                int actualWidth = t.get(4).getAsInt() - 1;
-                // the client scales the cell to the font height and rounds the visible width
-                int advance = (int) (0.5 + actualWidth * (double) SIZE / frame) + 1;
-                c.textures.add(new Texture(t.get(0).getAsString(), frame, t.get(3).getAsInt(), advance, alloc.next()));
+                c.textures.add(new Texture(t.get(0).getAsString(), frame, t.get(3).getAsInt(),
+                    advance(t.get(4).getAsInt() - 1, frame), alloc.next()));
             }
             for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("items").entrySet()) {
                 List<Layer> layers = new ArrayList<>();
@@ -70,7 +68,66 @@ public final class IconCatalog {
         }
     }
 
-    /** Icon layers of an item ("diamond" or "minecraft:diamond"), or null if it has none. */
+    /** The client scales the cell to the font height and rounds the visible width, then adds 1. */
+    static int advance(int visibleWidth, int frame) {
+        return (int) (0.5 + visibleWidth * (double) SIZE / frame) + 1;
+    }
+
+    /** What {@link #applyPack} changed. */
+    public record PackResult(int remeasured, int packItems, int newTextures) {
+    }
+
+    /**
+     * Adapts the icons to a resource pack (the server's): textures it replaces are measured again,
+     * and its item definitions add or replace icons ("myserver:ruby", or vanilla ids it changes).
+     */
+    public PackResult applyPack(PackIcons pack, GlyphAllocator alloc) {
+        Map<Character, Texture> replaced = new HashMap<>();
+        int remeasured = 0;
+        for (int i = 0; i < textures.size(); i++) {
+            Texture t = textures.get(i);
+            PackIcons.Measure m = pack.measure(t.file());
+            if (m != null) {
+                Texture n = new Texture(t.file(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), t.codepoint());
+                textures.set(i, n);
+                replaced.put(t.codepoint(), n);
+                remeasured++;
+            }
+        }
+        if (!replaced.isEmpty()) {
+            items.replaceAll((id, layers) -> layers.stream()
+                .map(l -> new Layer(replaced.getOrDefault(l.texture().codepoint(), l.texture()), l.tint()))
+                .toList());
+        }
+        Map<String, Texture> byFile = new HashMap<>();
+        textures.forEach(t -> byFile.put(t.file(), t));
+        int packItems = 0;
+        int newTextures = 0;
+        for (Map.Entry<String, List<PackIcons.RawLayer>> e : pack.items().entrySet()) {
+            List<Layer> layers = new ArrayList<>();
+            for (PackIcons.RawLayer r : e.getValue()) {
+                Texture t = byFile.get(r.texture());
+                if (t == null) {
+                    PackIcons.Measure m = pack.measure(r.texture());
+                    if (m == null) {
+                        continue; // texture neither in the pack nor a known vanilla texture
+                    }
+                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next());
+                    textures.add(t);
+                    byFile.put(t.file(), t);
+                    newTextures++;
+                }
+                layers.add(new Layer(t, r.tint() == null ? null : TextColor.color(r.tint())));
+            }
+            if (!layers.isEmpty()) {
+                items.put(e.getKey().toLowerCase(), List.copyOf(layers));
+                packItems++;
+            }
+        }
+        return new PackResult(remeasured, packItems, newTextures);
+    }
+
+    /** Icon layers of an item ("diamond", "minecraft:diamond" or "myserver:ruby"), or null if it has none. */
     public @Nullable List<Layer> icon(String item) {
         String id = item.toLowerCase();
         if (id.startsWith("minecraft:")) {

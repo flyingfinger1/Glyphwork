@@ -15,6 +15,7 @@ public record Settings(
     int port,
     boolean fallback,
     boolean icons,
+    String iconSourcePack,
     boolean playerCommands) {
 
     public static Settings read(FileConfiguration c) {
@@ -36,6 +37,7 @@ public record Settings(
             c.getInt("pack-server.port", 8765),
             c.getBoolean("fallback", true),
             c.getBoolean("icons", true),
+            c.getString("icon-source-pack", "auto"),
             c.getBoolean("players.commands", true));
     }
 

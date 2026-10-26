@@ -43,6 +43,8 @@ Drawn in order (later ones on top). Text is always drawn above frames.
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
 beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `cell: 26`, `size: 24`.
+Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icon-source-pack` in
+`config.yml`.
 
 `y` of a text is the top of the letters; in a 16 px button the text starts 4 px below the top.
 Items with a `permission` are only shown to players who have it.

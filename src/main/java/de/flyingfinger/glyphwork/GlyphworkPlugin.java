@@ -132,10 +132,28 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
         IconCatalog icons = s.icons() ? IconCatalog.load(alloc) : null;
+        if (icons != null) {
+            applySourcePack(icons, s, alloc);
+        }
         ShiftFonts.write(pack, sheets, s.maxHeight(), text, icons);
         byte[] zip = pack.toZip();
         SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons);
         return new Build(s, theme.name(), renderer, zip, PackFiles.sha1(zip));
+    }
+
+    /** Adapts icons to the server's resource pack (icon-source-pack). */
+    private void applySourcePack(IconCatalog icons, Settings s, GlyphAllocator alloc) {
+        Path zip = de.flyingfinger.glyphwork.pack.SourcePack.resolve(s.iconSourcePack(), getDataFolder().toPath(), getLogger());
+        if (zip == null) {
+            return;
+        }
+        try (java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip.toFile())) {
+            IconCatalog.PackResult r = icons.applyPack(new de.flyingfinger.glyphwork.font.PackIcons(z), alloc);
+            getLogger().info("Icons matched to " + zip.getFileName() + ": " + r.remeasured() + " textures measured, "
+                + r.packItems() + " item(s) from the pack (" + r.newTextures() + " new textures)");
+        } catch (IOException | RuntimeException e) {
+            getLogger().warning("icon-source-pack " + zip + " could not be read: " + e.getMessage());
+        }
     }
 
     private void apply(Build b) {

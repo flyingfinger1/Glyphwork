@@ -1,0 +1,45 @@
+# Unterseite des Beispielmenüs (wird von beispiel.yml mit "open: beispiel-regeln" geöffnet)
+
+title: "<gold>Regeln"
+width: 176
+height: 144
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "Serverregeln - Klick zeigt Details"
+
+  - type: list
+    x: 8
+    y: 20
+    width: 160
+    rows: 5
+    items:
+      - text: "1. Sei freundlich"
+        tooltip: "Kein Beleidigen, kein Spam."
+        actions: ["message: <green>Regel 1:</green> Sei freundlich zu allen."]
+      - text: "2. Kein Griefing"
+        tooltip: "Fremde Bauten bleiben unberührt."
+        actions: ["message: <green>Regel 2:</green> Nichts zerstören, was dir nicht gehört."]
+      - text: "3. Keine Hacks"
+        tooltip: "Keine unfairen Mods."
+        actions: ["message: <green>Regel 3:</green> Keine Cheats oder X-Ray."]
+      - text: "4. Hilf Neulingen"
+        actions: ["message: <green>Regel 4:</green> Erkläre gern, wie alles funktioniert."]
+      - text: "5. Viel Spaß!"
+        actions: ["message: <green>Regel 5:</green> Hab Spaß!", "sound: entity.player.levelup"]
+      - text: "6. Admin-Regel"
+        permission: glyphwork.admin
+        actions: ["message: <red>Nur für Admins sichtbar."]
+      - text: "7. Noch eine Regel"
+        actions: ["message: Regel 7"]
+
+  - type: button
+    x: 8
+    y: 124
+    width: 64
+    height: 16
+    text: "< Zurück"
+    actions:
+      - "back"

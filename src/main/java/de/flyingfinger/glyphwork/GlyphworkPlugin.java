@@ -8,6 +8,8 @@ import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.Sheet;
 import de.flyingfinger.glyphwork.font.VanillaText;
+import de.flyingfinger.glyphwork.menu.MenuCommands;
+import de.flyingfinger.glyphwork.menu.Menus;
 import de.flyingfinger.glyphwork.pack.PackFiles;
 import de.flyingfinger.glyphwork.pack.PackService;
 import de.flyingfinger.glyphwork.render.SceneRenderer;
@@ -43,6 +45,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private Settings settings;
     private String themeName = "";
     private final Demo demo = new Demo();
+    private Menus menus = new Menus();
+    private MenuCommands menuCommands;
 
     /** Everything that depends on config + theme. */
     private record Build(Settings settings, String themeName, SceneRenderer renderer, byte[] zip, String sha1) {
@@ -64,10 +68,48 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
         getServer().getServicesManager().register(Glyphwork.class, service, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(this, this);
+        menuCommands = new MenuCommands(this);
+        exportExampleMenus();
+        loadMenus();
+    }
+
+    /** First start: copies the example menus to plugins/Glyphwork/menus/. */
+    private void exportExampleMenus() {
+        if (Files.isDirectory(getDataFolder().toPath().resolve("menus"))) {
+            return;
+        }
+        saveResource("menus/beispiel.yml", false);
+        saveResource("menus/beispiel-regeln.yml", false);
+    }
+
+    /** (Re)loads menus/*.yml and their commands; returns the problems found. */
+    private List<String> loadMenus() {
+        menus = Menus.load(getDataFolder().toPath().resolve("menus"));
+        for (String e : menus.errors()) {
+            getLogger().warning("Menu not loaded: " + e);
+        }
+        menuCommands.register(menus, this::openMenu);
+        getLogger().info(menus.all().size() + " menu(s) loaded" + (menus.errors().isEmpty() ? "" : ", "
+            + menus.errors().size() + " with errors"));
+        return menus.errors();
+    }
+
+    private void openMenu(Player player, String id) {
+        Menus.Menu m = menus.get(id);
+        if (m == null) {
+            player.sendMessage(Component.text("Menü '" + id + "' gibt es nicht.", NamedTextColor.RED));
+        } else if (!m.allowed(player)) {
+            player.sendMessage(Component.text("Dafür hast du keine Berechtigung.", NamedTextColor.RED));
+        } else {
+            service.open(player, m.scene());
+        }
     }
 
     @Override
     public void onDisable() {
+        if (menuCommands != null) {
+            menuCommands.unregister();
+        }
         getServer().getServicesManager().unregisterAll(this);
         if (packs != null) {
             packs.stop();
@@ -131,6 +173,11 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
             service.reconfigure(b.renderer(), b.settings().maxHeight(), b.settings().fallback());
+            List<String> menuErrors = loadMenus();
+            sender.sendMessage(Component.text(menus.all().size() + " Menü(s) geladen.", NamedTextColor.GREEN));
+            for (String e : menuErrors) {
+                sender.sendMessage(Component.text("  " + e, NamedTextColor.RED));
+            }
             if (changed) {
                 int n = packs.sendToAll();
                 sender.sendMessage(Component.text("Glyphwork neu geladen: Theme '" + themeName + "', neues Pack an "
@@ -196,6 +243,24 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                     service.openAs(player, demo.main, args.length > 1 && args[1].equalsIgnoreCase("fallback"));
                 }
             }
+            case "menu" -> {
+                if (!sender.hasPermission(ADMIN)) {
+                    noPermission(sender);
+                } else if (args.length < 2) {
+                    sender.sendMessage(Component.text("/glyphwork menu <id> [spieler] – Menüs: "
+                        + String.join(", ", menus.all().stream().map(Menus.Menu::id).toList()), NamedTextColor.GRAY));
+                } else {
+                    Player target = args.length > 2 ? getServer().getPlayerExact(args[2])
+                        : sender instanceof Player p ? p : null;
+                    if (target == null) {
+                        sender.sendMessage(Component.text("Spieler nicht gefunden.", NamedTextColor.RED));
+                    } else if (menus.get(args[1]) == null) {
+                        sender.sendMessage(Component.text("Menü '" + args[1] + "' gibt es nicht.", NamedTextColor.RED));
+                    } else {
+                        service.open(target, menus.get(args[1]).scene());
+                    }
+                }
+            }
             case "reload" -> {
                 if (sender.hasPermission(ADMIN)) {
                     reload(sender);
@@ -217,7 +282,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 }
             }
             default -> sender.sendMessage(Component.text(sender.hasPermission(ADMIN)
-                ? "/glyphwork <pack|test [fallback]|status|reload>" : "/glyphwork pack", NamedTextColor.GRAY));
+                ? "/glyphwork <pack|menu <id> [spieler]|test [fallback]|status|reload>" : "/glyphwork pack", NamedTextColor.GRAY));
         }
         return true;
     }
@@ -228,13 +293,20 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     @Override
     public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
+        if (args.length == 2 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(ADMIN)) {
+            return menus.all().stream().map(Menus.Menu::id).filter(id -> id.startsWith(args[1].toLowerCase())).toList();
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(ADMIN)) {
+            return getServer().getOnlinePlayers().stream().map(Player::getName)
+                .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase())).toList();
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("test") && sender.hasPermission(ADMIN)) {
             return "fallback".startsWith(args[1].toLowerCase()) ? List.of("fallback") : List.of();
         }
         if (args.length != 1) {
             return List.of();
         }
-        List<String> subs = sender.hasPermission(ADMIN) ? List.of("pack", "reload", "status", "test") : List.of("pack");
+        List<String> subs = sender.hasPermission(ADMIN) ? List.of("menu", "pack", "reload", "status", "test") : List.of("pack");
         return subs.stream().filter(s -> s.startsWith(args[0].toLowerCase())).toList();
     }
 }

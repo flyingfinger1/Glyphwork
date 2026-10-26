@@ -8,6 +8,10 @@ serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.
 plugins build screens with panels, labels, buttons, lists, grids, navigation and text input:
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
+**Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
+with buttons that run commands, open other menus or ask for input, PlaceholderAPI support and a
+command per menu: [docs/menus.md](docs/menus.md).
+
 Players without the pack get a plain native dialog built from the same scene. The pack is served by
 a built-in HTTP server or written to `plugins/Glyphwork/pack/<sha1>.zip` for your own web server
 (`pack.hosting: external`, `pack.url` with `{sha1}`). `/glyphwork reload` rebuilds theme and pack and

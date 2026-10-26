@@ -1,0 +1,87 @@
+# Beispielmenü – öffnen mit /glyphwork menu beispiel
+# Jede *.yml in diesem Ordner ist ein Menü (Dateiname = Menü-ID). /glyphwork reload lädt Änderungen.
+# Anleitung: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md
+
+title: "<gold>Server-Menü"
+width: 176
+height: 128
+# command: servermenu        # eigener Befehl /servermenu (Kommentarzeichen entfernen)
+# permission: myserver.menu  # wer das Menü öffnen darf (ohne Angabe: alle)
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "Hallo %player%!"
+
+  - type: label
+    x: 8
+    y: 7
+    width: 160
+    align: right
+    text: "%online% online"
+    color: "#606060"
+
+  - type: button
+    x: 8
+    y: 22
+    width: 76
+    height: 16
+    text: "Regeln"
+    tint: "#6090FF"
+    tooltip: "Öffnet die Serverregeln"
+    actions:
+      - "open: beispiel-regeln"
+
+  - type: button
+    x: 92
+    y: 22
+    width: 76
+    height: 16
+    text: "Hallo sagen"
+    tint: "#50E050"
+    tooltip: "Schickt dir eine Nachricht"
+    actions:
+      - "message: <green>Hallo <yellow>%player%</yellow>, schön dass du da bist!"
+      - "sound: entity.experience_orb.pickup"
+
+  - type: button
+    x: 8
+    y: 42
+    width: 160
+    height: 16
+    text: "Etwas eingeben..."
+    tooltip: "Öffnet ein Eingabefeld"
+    actions:
+      - "input: Was möchtest du sagen? | message: Du hast <aqua>%input%</aqua> eingegeben."
+
+  - type: label
+    x: 8
+    y: 64
+    text: "Farben:"
+
+  - type: grid
+    x: 8
+    y: 76
+    cols: 8
+    rows: 1
+    cell: 20
+    items:
+      - { tint: "#FF5050", tooltip: "<red>Rot", actions: ["message: <red>Rot gewählt"] }
+      - { tint: "#FFAA40", tooltip: "<gold>Orange", actions: ["message: <gold>Orange gewählt"] }
+      - { tint: "#FFE070", tooltip: "<yellow>Gelb", actions: ["message: <yellow>Gelb gewählt"] }
+      - { tint: "#50E050", tooltip: "<green>Grün", actions: ["message: <green>Grün gewählt"] }
+      - { tint: "#50D0D0", tooltip: "<aqua>Türkis", actions: ["message: <aqua>Türkis gewählt"] }
+      - { tint: "#6090FF", tooltip: "<blue>Blau", actions: ["message: <blue>Blau gewählt"] }
+      - { tint: "#B070FF", tooltip: "<light_purple>Lila", actions: ["message: <light_purple>Lila gewählt"] }
+      - { tint: "#FFFFFF", tooltip: "Weiß", actions: ["message: Weiß gewählt"] }
+
+  - type: button
+    x: 112
+    y: 104
+    width: 56
+    height: 16
+    text: "Schließen"
+    tint: "#FF5050"
+    actions:
+      - "close"

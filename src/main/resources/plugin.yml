@@ -4,12 +4,13 @@ main: de.flyingfinger.glyphwork.GlyphworkPlugin
 api-version: '26.3'
 description: Clickable font-based GUIs inside vanilla dialogs
 author: flyingfinger1
+softdepend: [PlaceholderAPI]
 website: https://github.com/flyingfinger1/Glyphwork
 commands:
   glyphwork:
     description: Glyphwork resource pack and admin commands
-    usage: /glyphwork <pack|test [fallback]|status|reload>
+    usage: /glyphwork <pack|menu <id> [player]|test [fallback]|status|reload>
 permissions:
   glyphwork.admin:
-    description: /glyphwork test, status and reload
+    description: /glyphwork menu, test, status and reload
     default: op

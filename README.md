@@ -15,6 +15,28 @@ sends it to everyone online; `/glyphwork status` shows who has it. See `config.y
 
 **Skin editor:** https://flyingfinger1.github.io/Glyphwork/ ([guide](docs/skin-editor.md))
 
+## Install
+
+1. Download `Glyphwork-<version>.jar` from the [releases](https://github.com/flyingfinger1/Glyphwork/releases)
+   into `plugins/` of a Paper 26.3 server (Java 25) and start it.
+2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
+   built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
+   web server with `pack.hosting: external`. Then `/glyphwork reload`.
+3. `/glyphwork test` opens the demo.
+
+## Use it from your plugin
+
+`plugin.yml`: `depend: [Glyphwork]`. Compile against `glyphwork-api-<version>.jar` from the same
+release (do not shade it; the classes come with the Glyphwork plugin), e.g. with Gradle:
+
+```groovy
+dependencies {
+    compileOnly files('libs/glyphwork-api-0.1.0.jar')
+}
+```
+
+Then build scenes as shown in [docs/api.md](docs/api.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+
 ## How it works (as verified against the 26.3 client)
 
 - **x (P1):** font `glyphwork:space` maps private-use chars to advances of +-2^k px; any offset is a

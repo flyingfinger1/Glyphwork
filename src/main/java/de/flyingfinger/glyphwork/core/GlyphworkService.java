@@ -5,15 +5,19 @@ import de.flyingfinger.glyphwork.api.Glyphwork;
 import de.flyingfinger.glyphwork.api.Scene;
 import de.flyingfinger.glyphwork.api.View;
 import de.flyingfinger.glyphwork.dialog.DialogFactory;
+import de.flyingfinger.glyphwork.render.FallbackRenderer;
 import de.flyingfinger.glyphwork.render.LineBuilder;
 import de.flyingfinger.glyphwork.render.SceneRenderer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,16 +30,27 @@ import java.util.logging.Level;
 public final class GlyphworkService implements Glyphwork {
 
     private final Plugin plugin;
-    private final SceneRenderer renderer;
-    private final int maxHeight;
     private final Predicate<Player> hasPack;
+    private final FallbackRenderer fallbackRenderer;
     private final Map<UUID, Session> sessions = new HashMap<>();
+    private volatile SceneRenderer renderer;
+    private volatile int maxHeight;
+    private volatile boolean fallback;
 
-    public GlyphworkService(Plugin plugin, SceneRenderer renderer, int maxHeight, Predicate<Player> hasPack) {
+    public GlyphworkService(Plugin plugin, SceneRenderer renderer, int maxHeight, boolean fallback, Predicate<Player> hasPack) {
         this.plugin = plugin;
         this.renderer = renderer;
         this.maxHeight = maxHeight;
+        this.fallback = fallback;
         this.hasPack = hasPack;
+        this.fallbackRenderer = new FallbackRenderer(plugin.getLogger());
+    }
+
+    /** After /glyphwork reload: new theme/pack. Open screens keep their state. */
+    public void reconfigure(SceneRenderer renderer, int maxHeight, boolean fallback) {
+        this.renderer = renderer;
+        this.maxHeight = maxHeight;
+        this.fallback = fallback;
     }
 
     /** Per player: the screen history and per-scene state. */
@@ -95,22 +110,44 @@ public final class GlyphworkService implements Glyphwork {
         }
         int generation = ++s.generation;
         ViewImpl view = new ViewImpl(player, s, scene);
+        if (fallback && !hasPack.test(player)) {
+            showFallback(player, s, generation, scene, view);
+            return;
+        }
         LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, name, action));
         DialogFactory.show(player, DialogFactory.gui(scene.title().apply(view), line.build(scene.height()),
             Math.max(scene.width(), line.width()), scene.exitLabel()));
     }
 
+    private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view) {
+        FallbackRenderer.Model model = fallbackRenderer.render(scene, view);
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.text("Vereinfachte Ansicht – Resource-Pack nicht geladen (/glyphwork pack)",
+            NamedTextColor.GRAY));
+        lines.addAll(model.lines());
+        List<DialogFactory.FallbackButton> buttons = model.actions().stream()
+            .map(a -> new DialogFactory.FallbackButton(a.label(), a.tooltip(),
+                () -> run(player, s, generation, "fallback " + scene.id(), a.onClick())))
+            .toList();
+        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, scene.exitLabel()));
+    }
+
     private ClickEvent<?> callback(Player player, Session s, int generation, String name, Consumer<Click> action) {
-        return ClickEvent.callback(audience -> Bukkit.getScheduler().runTask(plugin, () -> {
+        return ClickEvent.callback(audience -> run(player, s, generation, name, action), DialogFactory.callbackOptions());
+    }
+
+    /** Runs a click action on the main thread, unless the screen has been replaced meanwhile. */
+    private void run(Player player, Session s, int generation, String name, Consumer<Click> action) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
             if (!player.isOnline() || s.generation != generation || s.stack.isEmpty()) {
-                return; // a click on a screen that has been replaced
+                return;
             }
             try {
                 action.accept(new ClickImpl(player, s, s.stack.peek()));
             } catch (RuntimeException e) {
                 plugin.getLogger().log(Level.WARNING, "Click handler " + name + " failed", e);
             }
-        }), DialogFactory.callbackOptions());
+        });
     }
 
     private class ViewImpl implements View {

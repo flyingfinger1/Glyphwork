@@ -2,17 +2,16 @@ package de.flyingfinger.glyphwork;
 
 import de.flyingfinger.glyphwork.api.Glyphwork;
 import de.flyingfinger.glyphwork.core.GlyphworkService;
+import de.flyingfinger.glyphwork.core.Settings;
 import de.flyingfinger.glyphwork.demo.Demo;
 import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.Sheet;
 import de.flyingfinger.glyphwork.font.VanillaText;
 import de.flyingfinger.glyphwork.pack.PackFiles;
+import de.flyingfinger.glyphwork.pack.PackService;
 import de.flyingfinger.glyphwork.render.SceneRenderer;
-import de.flyingfinger.glyphwork.serve.PackServer;
 import de.flyingfinger.glyphwork.theme.Theme;
-import net.kyori.adventure.resource.ResourcePackInfo;
-import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
@@ -23,76 +22,91 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
-    private static final UUID PACK_ID = UUID.nameUUIDFromBytes("Glyphwork".getBytes());
+    private static final String ADMIN = "glyphwork.admin";
 
-    private PackServer server;
+    private final VanillaText text = VanillaText.load();
+    private PackService packs;
     private GlyphworkService service;
-    private Demo demo;
-    private String sha1;
-    private final Map<UUID, PlayerResourcePackStatusEvent.Status> packStatus = new ConcurrentHashMap<>();
+    private Settings settings;
+    private String themeName = "";
+    private final Demo demo = new Demo();
+
+    /** Everything that depends on config + theme. */
+    private record Build(Settings settings, String themeName, SceneRenderer renderer, byte[] zip, String sha1) {
+    }
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        int maxHeight = Math.max(16, Math.min(1024, getConfig().getInt("max-height", 256)));
-        VanillaText text = VanillaText.load();
-        GlyphAllocator alloc = new GlyphAllocator();
-        Theme theme = loadTheme(alloc);
-        Sheet hit = Sheet.invisible(alloc);
+        packs = new PackService(this);
+        try {
+            Build b = build();
+            packs.publish(b.settings(), b.zip(), b.sha1());
+            apply(b);
+            service = new GlyphworkService(this, b.renderer(), b.settings().maxHeight(), b.settings().fallback(), packs::hasPack);
+        } catch (IOException e) {
+            getLogger().severe("Pack could not be published: " + e);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        getServer().getServicesManager().register(Glyphwork.class, service, this, ServicePriority.Normal);
+        getServer().getPluginManager().registerEvents(this, this);
+    }
 
+    @Override
+    public void onDisable() {
+        getServer().getServicesManager().unregisterAll(this);
+        if (packs != null) {
+            packs.stop();
+        }
+    }
+
+    private Build build() {
+        Settings s = Settings.read(getConfig());
+        GlyphAllocator alloc = new GlyphAllocator();
+        Theme theme = loadTheme(s.theme(), alloc);
+        Sheet hit = Sheet.invisible(alloc);
         List<Sheet> sheets = new ArrayList<>(theme.sheets());
         sheets.add(hit);
         PackFiles pack = new PackFiles();
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
-        ShiftFonts.write(pack, sheets, maxHeight, text);
+        ShiftFonts.write(pack, sheets, s.maxHeight(), text);
         byte[] zip = pack.toZip();
-        sha1 = PackFiles.sha1(zip);
-        try {
-            Path dir = getDataFolder().toPath().resolve("pack");
-            Files.createDirectories(dir);
-            Files.write(dir.resolve("latest.zip"), zip);
-            server = new PackServer(getConfig().getString("pack-server.bind", "0.0.0.0"),
-                getConfig().getInt("pack-server.port", 8765), getLogger());
-        } catch (IOException e) {
-            getLogger().severe("Pack server failed to start: " + e);
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        server.publish(zip, sha1);
-        getLogger().info("Theme '" + theme.name() + "', pack " + sha1 + " (" + zip.length / 1024 + " KB, height "
-            + maxHeight + " px) at " + packUrl());
+        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger());
+        return new Build(s, theme.name(), renderer, zip, PackFiles.sha1(zip));
+    }
 
-        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), maxHeight, getLogger());
-        service = new GlyphworkService(this, renderer, maxHeight,
-            p -> packStatus.get(p.getUniqueId()) == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED);
-        getServer().getServicesManager().register(Glyphwork.class, service, this, ServicePriority.Normal);
-        demo = new Demo();
-        getServer().getPluginManager().registerEvents(this, this);
+    private void apply(Build b) {
+        settings = b.settings();
+        themeName = b.themeName();
+        getLogger().info("Theme '" + themeName + "', pack " + b.sha1() + " (" + b.zip().length / 1024 + " KB, height "
+            + settings.maxHeight() + " px, " + (settings.external() ? "external" : "embedded") + ") at " + packs.url());
+        if (settings.external()) {
+            getLogger().info("External hosting: serve " + getDataFolder().toPath().resolve("pack").toAbsolutePath()
+                + " so that the URL above resolves");
+        }
     }
 
     /**
      * Exports the built-in skin to themes/vanilla on first start (as a template for own skins),
      * then loads the configured theme; falls back to the built-in one if that fails.
      */
-    private Theme loadTheme(GlyphAllocator alloc) {
+    private Theme loadTheme(String id, GlyphAllocator alloc) {
         Path themes = getDataFolder().toPath().resolve("themes");
         try {
             if (!Files.exists(themes.resolve("vanilla"))) {
@@ -101,7 +115,6 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         } catch (IOException e) {
             getLogger().warning("Could not export the built-in theme: " + e);
         }
-        String id = getConfig().getString("theme", "vanilla");
         try {
             return Theme.load(themes.resolve(id), alloc);
         } catch (IOException | RuntimeException e) {
@@ -110,71 +123,115 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    @Override
-    public void onDisable() {
-        getServer().getServicesManager().unregisterAll(this);
-        if (server != null) {
-            server.stop();
+    /** /glyphwork reload: config, theme and pack; players get the new pack if it changed. */
+    private void reload(CommandSender sender) {
+        reloadConfig();
+        try {
+            Build b = build();
+            boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
+            apply(b);
+            service.reconfigure(b.renderer(), b.settings().maxHeight(), b.settings().fallback());
+            if (changed) {
+                int n = packs.sendToAll();
+                sender.sendMessage(Component.text("Glyphwork neu geladen: Theme '" + themeName + "', neues Pack an "
+                    + n + " Spieler gesendet.", NamedTextColor.GREEN));
+            } else {
+                sender.sendMessage(Component.text("Glyphwork neu geladen: Theme '" + themeName
+                    + "', Pack unverändert.", NamedTextColor.GREEN));
+            }
+        } catch (IOException | RuntimeException e) {
+            getLogger().warning("Reload failed: " + e);
+            sender.sendMessage(Component.text("Reload fehlgeschlagen: " + e.getMessage(), NamedTextColor.RED));
         }
-    }
-
-    private String packUrl() {
-        String base = getConfig().getString("pack-server.public-url", "http://127.0.0.1:8765/");
-        return (base.endsWith("/") ? base : base + "/") + sha1 + ".zip";
-    }
-
-    private void sendPack(Player player) {
-        player.sendResourcePacks(ResourcePackRequest.resourcePackRequest()
-            .packs(ResourcePackInfo.resourcePackInfo(PACK_ID, URI.create(packUrl()), sha1))
-            .required(getConfig().getBoolean("pack.required", false))
-            .prompt(Component.text(getConfig().getString("pack.prompt", "")))
-            .replace(false)
-            .build());
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        if (getConfig().getBoolean("pack.send-on-join", true)) {
-            sendPack(event.getPlayer());
+        if (settings.sendOnJoin()) {
+            packs.send(event.getPlayer());
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        packStatus.remove(event.getPlayer().getUniqueId());
+        packs.forget(event.getPlayer());
         service.forget(event.getPlayer());
     }
 
     @EventHandler
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
-        if (!PACK_ID.equals(event.getID())) {
+        if (!PackService.PACK_ID.equals(event.getID())) {
             return;
         }
-        packStatus.put(event.getPlayer().getUniqueId(), event.getStatus());
-        getLogger().info(event.getPlayer().getName() + " pack status: " + event.getStatus());
+        Player p = event.getPlayer();
+        packs.status(p, event.getStatus());
+        getLogger().info(p.getName() + " pack status: " + event.getStatus());
+        switch (event.getStatus()) {
+            case DECLINED -> p.sendMessage(Component.text("Ohne das Glyphwork-Pack werden Menüs vereinfacht angezeigt. "
+                + "/glyphwork pack lädt es nachträglich.", NamedTextColor.GRAY));
+            case FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED -> p.sendMessage(Component.text(
+                "Das Glyphwork-Pack konnte nicht geladen werden (" + event.getStatus() + "). Menüs werden vereinfacht angezeigt.",
+                NamedTextColor.GRAY));
+            default -> {
+            }
+        }
     }
 
     @Override
     public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String @NonNull [] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("Nur für Spieler.");
-            return true;
-        }
-        String sub = args.length > 0 ? args[0] : "test";
+        String sub = args.length > 0 ? args[0].toLowerCase() : "help";
         switch (sub) {
             case "pack" -> {
-                sendPack(player);
-                player.sendMessage(Component.text("Pack gesendet.", NamedTextColor.GRAY));
+                if (sender instanceof Player player) {
+                    packs.send(player);
+                    player.sendMessage(Component.text("Pack gesendet.", NamedTextColor.GRAY));
+                }
             }
             case "test" -> {
-                if (!service.hasPack(player)) {
-                    player.sendMessage(Component.text("Pack noch nicht geladen (Status: "
-                        + packStatus.get(player.getUniqueId()) + ") – /glyphwork pack", NamedTextColor.YELLOW));
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Nur für Spieler.");
+                } else if (!sender.hasPermission(ADMIN)) {
+                    noPermission(sender);
+                } else {
+                    service.open(player, demo.main);
                 }
-                service.open(player, demo.main);
             }
-            default -> player.sendMessage(Component.text("/glyphwork <test|pack>", NamedTextColor.GRAY));
+            case "reload" -> {
+                if (sender.hasPermission(ADMIN)) {
+                    reload(sender);
+                } else {
+                    noPermission(sender);
+                }
+            }
+            case "status" -> {
+                if (!sender.hasPermission(ADMIN)) {
+                    noPermission(sender);
+                    return true;
+                }
+                sender.sendMessage(Component.text("Theme '" + themeName + "', pack " + packs.sha1() + " ("
+                    + (settings.external() ? "external" : "embedded") + ")\n" + packs.url(), NamedTextColor.GRAY));
+                for (Player p : getServer().getOnlinePlayers()) {
+                    Status st = packs.status(p);
+                    sender.sendMessage(Component.text("  " + p.getName() + ": " + (st == null ? "-" : st),
+                        st == Status.SUCCESSFULLY_LOADED ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+                }
+            }
+            default -> sender.sendMessage(Component.text(sender.hasPermission(ADMIN)
+                ? "/glyphwork <pack|test|status|reload>" : "/glyphwork pack", NamedTextColor.GRAY));
         }
         return true;
+    }
+
+    private static void noPermission(CommandSender sender) {
+        sender.sendMessage(Component.text("Keine Berechtigung.", NamedTextColor.RED));
+    }
+
+    @Override
+    public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
+        if (args.length != 1) {
+            return List.of();
+        }
+        List<String> subs = sender.hasPermission(ADMIN) ? List.of("pack", "reload", "status", "test") : List.of("pack");
+        return subs.stream().filter(s -> s.startsWith(args[0].toLowerCase())).toList();
     }
 }

@@ -45,6 +45,41 @@ public final class DialogFactory {
             .type(DialogType.notice(exit)));
     }
 
+    /** One native button of a fallback dialog. */
+    public record FallbackButton(Component label, @Nullable Component tooltip, Runnable onClick) {
+    }
+
+    /**
+     * Plain dialog for players without the pack: text lines as body, actions as native buttons
+     * (two columns), plus the exit button.
+     */
+    public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
+                                  @Nullable Component exitLabel) {
+        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Schließen"))
+            .action(DialogAction.customClick((view, audience) -> audience.closeDialog(), callbackOptions()))
+            .build();
+        Component body = Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), lines);
+        List<ActionButton> actions = buttons.stream()
+            .map(b -> {
+                ActionButton.Builder ab = ActionButton.builder(b.label()).width(150)
+                    .action(DialogAction.customClick((view, audience) -> b.onClick().run(), callbackOptions()));
+                if (b.tooltip() != null) {
+                    ab.tooltip(b.tooltip());
+                }
+                return ab.build();
+            })
+            .toList();
+        return Dialog.create(factory -> factory.empty()
+            .base(DialogBase.builder(title)
+                .canCloseWithEscape(true)
+                .pause(false)
+                .afterAction(DialogBase.DialogAfterAction.NONE)
+                .body(lines.isEmpty() ? List.of() : List.of(DialogBody.plainMessage(body, 300)))
+                .build())
+            .type(actions.isEmpty() ? DialogType.notice(exit)
+                : DialogType.multiAction(actions).columns(2).exitAction(exit).build()));
+    }
+
     /** A small native dialog with one text field, OK and Cancel. */
     public static Dialog prompt(Component title, String initial, Component ok, Component cancel,
                                 Consumer<String> onSubmit, Runnable onCancel) {

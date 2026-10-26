@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.0 – menus without code
+
+### Plugin
+
+- **YAML menus** for server admins: every `*.yml` in `plugins/Glyphwork/menus/` is a menu with
+  labels, buttons, panels (any tile shape), hitboxes, lists and grids. See
+  [docs/menus.md](docs/menus.md).
+- **Actions:** run a command as the player or the console, chat message (MiniMessage), sound, open
+  another menu, back, close, refresh, and `input:` to ask for a text that the next action uses as
+  `%input%`.
+- **Placeholders:** `%player%`, `%world%`, `%online%` and every PlaceholderAPI placeholder when it
+  is installed (optional, no hard dependency).
+- **A command per menu** (`command:`, `aliases:`, `permission:`), registered at runtime and on
+  `/glyphwork reload`; admins open any menu with `/glyphwork menu <id> [player]`.
+- **Permissions** per menu, per button (otherwise grayed out) and per list/grid entry (otherwise
+  hidden).
+- **Clear errors:** problems name the file and the setting, e.g.
+  `warps.yml.elements[2].widht: unknown setting (allowed: ..., width, ...)`; broken files are
+  skipped, the others still load. `/glyphwork reload` shows them in chat.
+- Two German example menus are put into `menus/` on first start.
+
+### Releases
+
+- Releases are also published to Modrinth (as beta while the version is 0.x).
+
 ## 0.1.0 – first release
 
 Clickable, pixel-positioned GUIs inside the vanilla dialog screen for Paper 26.3. No client mod;

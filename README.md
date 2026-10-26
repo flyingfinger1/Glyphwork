@@ -26,7 +26,8 @@ sends it to everyone online; `/glyphwork status` shows who has it. See `config.y
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
    built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
    web server with `pack.hosting: external`. Then `/glyphwork reload`.
-3. `/glyphwork test` opens the demo.
+3. `/glyphwork test` opens the demo, `/glyphwork menu beispiel` the example YAML menu
+   ([docs/menus.md](docs/menus.md)).
 
 ## Use it from your plugin
 
@@ -35,7 +36,7 @@ release (do not shade it; the classes come with the Glyphwork plugin), e.g. with
 
 ```groovy
 dependencies {
-    compileOnly files('libs/glyphwork-api-0.1.0.jar')
+    compileOnly files('libs/glyphwork-api-0.2.0.jar')
 }
 ```
 

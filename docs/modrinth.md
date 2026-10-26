@@ -8,9 +8,25 @@ sends by itself. Everything is clickable exactly where it is drawn.
 
 ## For whom
 
-Glyphwork is a **library plugin**: on its own it only brings a demo (`/glyphwork test`). Other
-plugins use its API to build their menus. If you run a server, install it when a plugin you use
-needs it.
+- **Server admins:** describe menus in YAML files (buttons that run commands, open other menus or
+  ask for input, PlaceholderAPI, a command per menu) - no coding. See the
+  [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md).
+- **Plugin developers:** build screens with the Java API.
+
+```yaml
+# plugins/Glyphwork/menus/warps.yml  ->  /warps
+title: "<gold>Warps"
+command: warps
+elements:
+  - type: button
+    x: 8
+    y: 24
+    width: 72
+    height: 16
+    text: "Spawn"
+    tint: "#50E050"
+    actions: ["player: spawn", "close"]
+```
 
 ## Features
 
@@ -31,7 +47,7 @@ needs it.
 1. Put the jar into `plugins/` of a **Paper 26.3** server (Java 25) and start it.
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address your players can reach
    (built-in server: open `pack-server.port`; or `pack.hosting: external` with your own web server).
-3. `/glyphwork reload`, then `/glyphwork test`.
+3. `/glyphwork reload`, then `/glyphwork test` (demo) or `/glyphwork menu beispiel` (example menu).
 
 ## For developers
 

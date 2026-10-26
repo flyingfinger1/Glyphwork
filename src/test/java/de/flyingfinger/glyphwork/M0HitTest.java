@@ -1,14 +1,14 @@
-package de.flyingfinger.dialogui;
+package de.flyingfinger.glyphwork;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import de.flyingfinger.dialogui.font.ShiftFonts;
-import de.flyingfinger.dialogui.font.SpaceFont;
-import de.flyingfinger.dialogui.font.Sprite;
-import de.flyingfinger.dialogui.font.VanillaText;
-import de.flyingfinger.dialogui.m0.M0Screen;
-import de.flyingfinger.dialogui.pack.PackFiles;
-import de.flyingfinger.dialogui.render.LineBuilder;
+import de.flyingfinger.glyphwork.font.ShiftFonts;
+import de.flyingfinger.glyphwork.font.SpaceFont;
+import de.flyingfinger.glyphwork.font.Sprite;
+import de.flyingfinger.glyphwork.font.VanillaText;
+import de.flyingfinger.glyphwork.m0.M0Screen;
+import de.flyingfinger.glyphwork.pack.PackFiles;
+import de.flyingfinger.glyphwork.render.LineBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -55,7 +55,7 @@ class M0HitTest {
                     boxes.add(new Box(x, 0, x + adv, 9, child.clickEvent()));
                 } else if (sprites.containsKey(c)) {
                     Sprite sp = sprites.get(c);
-                    int y = Integer.parseInt(font.substring("dialogui:y".length()));
+                    int y = Integer.parseInt(font.substring("glyphwork:y".length()));
                     adv = sp.advance();
                     boxes.add(new Box(x, y, x + adv, y + sp.height(), child.clickEvent()));
                 } else {

@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.pack;
+package de.flyingfinger.glyphwork.pack;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

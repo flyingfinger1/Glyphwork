@@ -1,9 +1,9 @@
-package de.flyingfinger.dialogui.render;
+package de.flyingfinger.glyphwork.render;
 
-import de.flyingfinger.dialogui.font.ShiftFonts;
-import de.flyingfinger.dialogui.font.SpaceFont;
-import de.flyingfinger.dialogui.font.Sprite;
-import de.flyingfinger.dialogui.font.VanillaText;
+import de.flyingfinger.glyphwork.font.ShiftFonts;
+import de.flyingfinger.glyphwork.font.SpaceFont;
+import de.flyingfinger.glyphwork.font.Sprite;
+import de.flyingfinger.glyphwork.font.VanillaText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;

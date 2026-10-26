@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.dialog;
+package de.flyingfinger.glyphwork.dialog;
 
 import io.papermc.paper.dialog.Dialog;
 import io.papermc.paper.registry.data.dialog.ActionButton;

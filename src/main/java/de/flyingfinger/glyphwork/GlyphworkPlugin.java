@@ -1,12 +1,12 @@
-package de.flyingfinger.dialogui;
+package de.flyingfinger.glyphwork;
 
-import de.flyingfinger.dialogui.dialog.DialogFactory;
-import de.flyingfinger.dialogui.font.ShiftFonts;
-import de.flyingfinger.dialogui.font.VanillaText;
-import de.flyingfinger.dialogui.m0.M0Screen;
-import de.flyingfinger.dialogui.pack.PackFiles;
-import de.flyingfinger.dialogui.render.LineBuilder;
-import de.flyingfinger.dialogui.serve.PackServer;
+import de.flyingfinger.glyphwork.dialog.DialogFactory;
+import de.flyingfinger.glyphwork.font.ShiftFonts;
+import de.flyingfinger.glyphwork.font.VanillaText;
+import de.flyingfinger.glyphwork.m0.M0Screen;
+import de.flyingfinger.glyphwork.pack.PackFiles;
+import de.flyingfinger.glyphwork.render.LineBuilder;
+import de.flyingfinger.glyphwork.serve.PackServer;
 import net.kyori.adventure.resource.ResourcePackInfo;
 import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.text.Component;
@@ -32,9 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public final class DialogUIPlugin extends JavaPlugin implements Listener {
+public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
-    private static final UUID PACK_ID = UUID.nameUUIDFromBytes("PaperDialogUI".getBytes());
+    private static final UUID PACK_ID = UUID.nameUUIDFromBytes("Glyphwork".getBytes());
 
     private PackServer server;
     private M0Screen m0;
@@ -50,7 +50,7 @@ public final class DialogUIPlugin extends JavaPlugin implements Listener {
 
         PackFiles pack = new PackFiles();
         pack.put("pack.mcmeta", """
-            {"pack":{"description":"PaperDialogUI","min_format":97,"max_format":97}}
+            {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
         ShiftFonts.write(pack, m0.sprites(), m0.offsets(), text);
         byte[] zip = pack.toZip();
@@ -130,11 +130,11 @@ public final class DialogUIPlugin extends JavaPlugin implements Listener {
             case "test" -> {
                 if (packStatus.get(player.getUniqueId()) != PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
                     player.sendMessage(Component.text("Pack noch nicht geladen (Status: "
-                        + packStatus.get(player.getUniqueId()) + ") – /dialogui pack", NamedTextColor.YELLOW));
+                        + packStatus.get(player.getUniqueId()) + ") – /glyphwork pack", NamedTextColor.YELLOW));
                 }
                 openM0(player);
             }
-            default -> player.sendMessage(Component.text("/dialogui <test|pack>", NamedTextColor.GRAY));
+            default -> player.sendMessage(Component.text("/glyphwork <test|pack>", NamedTextColor.GRAY));
         }
         return true;
     }
@@ -145,7 +145,7 @@ public final class DialogUIPlugin extends JavaPlugin implements Listener {
             // callbacks may arrive off the main thread
             Bukkit.getScheduler().runTask(this, () -> onM0Click(player, state, target));
         }, DialogFactory.callbackOptions()));
-        DialogFactory.show(player, DialogFactory.gui(Component.text("PaperDialogUI M0"),
+        DialogFactory.show(player, DialogFactory.gui(Component.text("Glyphwork M0"),
             line.build(M0Screen.H), line.width()));
     }
 

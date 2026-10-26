@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.font;
+package de.flyingfinger.glyphwork.font;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

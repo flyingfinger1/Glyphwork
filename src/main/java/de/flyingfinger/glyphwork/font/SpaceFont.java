@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.font;
+package de.flyingfinger.glyphwork.font;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -10,7 +10,7 @@ import net.kyori.adventure.key.Key;
  */
 public final class SpaceFont {
 
-    public static final Key KEY = Key.key("dialogui", "space");
+    public static final Key KEY = Key.key("glyphwork", "space");
     private static final int BITS = 11; // up to +-2047 px
     private static final int POS_BASE = 0xE000;
     private static final int NEG_BASE = 0xE020;

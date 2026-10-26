@@ -9,4 +9,4 @@ pack:
   send-on-join: true
   # true = players who decline are kicked by the client
   required: false
-  prompt: "PaperDialogUI braucht dieses Resource-Pack für die Menüs."
+  prompt: "Glyphwork braucht dieses Resource-Pack für die Menüs."

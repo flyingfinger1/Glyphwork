@@ -1,4 +1,4 @@
-# PaperDialogUI — Font-basierte Klick-GUIs über das Dialog-System (Kickoff-Spec)
+# Glyphwork (Arbeitsname PaperDialogUI) — Font-basierte Klick-GUIs über das Dialog-System (Kickoff-Spec)
 
 > **Arbeitsname:** `PaperDialogUI` (frei umbenennbar). Generisches, standalone Paper-Plugin —
 > **keine** Abhängigkeit zu MixelPixel/Core. Soll als wiederverwendbare Bibliothek + Plugin
@@ -250,7 +250,7 @@ Leitplanken:
 
 ## 11. Offene Entscheidungen (in der neuen Session klären)
 
-- [ ] **Projektname** final (PaperDialogUI / DialogForge / PanelKit / …).
+- [x] **Projektname**: **Glyphwork** (2026-10-26; frei auf Modrinth, Hangar, SpigotMC).
 - [ ] **Public/MIT Repo** unter `flyingfinger1` + GHCR nicht nötig (ist ein Plugin-Jar, kein
       Container) — aber CI-Release (GitHub-Release → Jar-Asset, evtl. Modrinth/Hangar)?
 - [ ] **Autotile-Format**: eigenes 48-Blob-Sheet zeichnen vs. Platzhalter-Skin zum Start.

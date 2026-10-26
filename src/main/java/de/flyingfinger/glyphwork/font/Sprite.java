@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.font;
+package de.flyingfinger.glyphwork.font;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -64,11 +64,11 @@ public final class Sprite {
     }
 
     public String textureId() {
-        return "dialogui:sprite/" + name + ".png";
+        return "glyphwork:sprite/" + name + ".png";
     }
 
     public String texturePath() {
-        return "assets/dialogui/textures/sprite/" + name + ".png";
+        return "assets/glyphwork/textures/sprite/" + name + ".png";
     }
 
     public byte[] png() {

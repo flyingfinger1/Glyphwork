@@ -1,9 +1,9 @@
-package de.flyingfinger.dialogui.m0;
+package de.flyingfinger.glyphwork.m0;
 
-import de.flyingfinger.dialogui.font.Art;
-import de.flyingfinger.dialogui.font.Sprite;
-import de.flyingfinger.dialogui.font.VanillaText;
-import de.flyingfinger.dialogui.render.LineBuilder;
+import de.flyingfinger.glyphwork.font.Art;
+import de.flyingfinger.glyphwork.font.Sprite;
+import de.flyingfinger.glyphwork.font.VanillaText;
+import de.flyingfinger.glyphwork.render.LineBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -67,7 +67,7 @@ public final class M0Screen {
     public LineBuilder render(State s, Function<Target, @Nullable ClickEvent<?>> clicks) {
         LineBuilder line = new LineBuilder(text);
         line.sprite(panel, 0, 0, clicks.apply(Target.PANEL), Component.text("Panel-Hintergrund"));
-        line.text("PaperDialogUI - M0", 8, 7, DARK);
+        line.text("Glyphwork - M0", 8, 7, DARK);
 
         line.sprite(s.soundOn ? toggleOn : toggleOff, 8, 22, clicks.apply(Target.TOGGLE),
             Component.text("Klick zum Umschalten (y=22)"));

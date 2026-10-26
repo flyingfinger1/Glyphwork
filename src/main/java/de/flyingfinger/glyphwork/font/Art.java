@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.font;
+package de.flyingfinger.glyphwork.font;
 
 import java.awt.image.BufferedImage;
 

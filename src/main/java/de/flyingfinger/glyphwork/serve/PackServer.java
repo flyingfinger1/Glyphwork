@@ -1,4 +1,4 @@
-package de.flyingfinger.dialogui.serve;
+package de.flyingfinger.glyphwork.serve;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -18,7 +18,7 @@ public final class PackServer {
     public PackServer(String bind, int port, Logger log) throws IOException {
         server = HttpServer.create(new InetSocketAddress(bind, port), 0);
         server.setExecutor(Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "PaperDialogUI-PackServer");
+            Thread t = new Thread(r, "Glyphwork-PackServer");
             t.setDaemon(true);
             return t;
         }));

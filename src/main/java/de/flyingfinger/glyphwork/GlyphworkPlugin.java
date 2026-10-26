@@ -1,9 +1,11 @@
 package de.flyingfinger.glyphwork;
 
+import de.flyingfinger.glyphwork.api.DisplayMode;
 import de.flyingfinger.glyphwork.api.Glyphwork;
 import de.flyingfinger.glyphwork.core.GlyphworkService;
 import de.flyingfinger.glyphwork.core.Settings;
 import de.flyingfinger.glyphwork.demo.Demo;
+import de.flyingfinger.glyphwork.dialog.DialogFactory;
 import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.IconCatalog;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
@@ -61,7 +63,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             Build b = build();
             packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
-            service = new GlyphworkService(this, b.renderer(), b.settings().maxHeight(), b.settings().fallback(), packs::hasPack);
+            service = new GlyphworkService(this, b.renderer(), b.settings().maxHeight(), b.settings().fallback(),
+                packs::hasPack, packs::send);
         } catch (IOException e) {
             getLogger().severe("Pack could not be published: " + e);
             getServer().getPluginManager().disablePlugin(this);
@@ -138,6 +141,12 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private void apply(Build b) {
         settings = b.settings();
         themeName = b.themeName();
+        // players.commands: false -> only admins see /glyphwork (also in tab completion and /help)
+        org.bukkit.command.PluginCommand cmd = getCommand("glyphwork");
+        if (cmd != null) {
+            cmd.setPermission(settings.playerCommands() ? null : ADMIN);
+            getServer().getOnlinePlayers().forEach(Player::updateCommands);
+        }
         getLogger().info("Theme '" + themeName + "', pack " + b.sha1() + " (" + b.zip().length / 1024 + " KB, height "
             + settings.maxHeight() + " px, " + (settings.external() ? "external" : "embedded") + ") at " + packs.url());
         if (settings.external()) {
@@ -236,6 +245,25 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                     player.sendMessage(Component.text("Pack gesendet.", NamedTextColor.GRAY));
                 }
             }
+            case "darstellung", "display" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Nur für Spieler.");
+                } else if (args.length < 2) {
+                    chooseDisplay(player);
+                } else {
+                    DisplayMode mode = switch (args[1].toLowerCase()) {
+                        case "voll", "full" -> DisplayMode.FULL;
+                        case "ohne-icons", "no-icons" -> DisplayMode.NO_ICONS;
+                        case "einfach", "simple" -> DisplayMode.SIMPLE;
+                        default -> null;
+                    };
+                    if (mode == null) {
+                        player.sendMessage(Component.text("/glyphwork darstellung <voll|ohne-icons|einfach>", NamedTextColor.GRAY));
+                    } else {
+                        setDisplay(player, mode);
+                    }
+                }
+            }
             case "test" -> {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Nur für Spieler.");
@@ -284,9 +312,43 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 }
             }
             default -> sender.sendMessage(Component.text(sender.hasPermission(ADMIN)
-                ? "/glyphwork <pack|menu <id> [spieler]|test [fallback]|status|reload>" : "/glyphwork pack", NamedTextColor.GRAY));
+                ? "/glyphwork <pack|darstellung|menu <id> [spieler]|test [fallback]|status|reload>"
+                : "/glyphwork <pack|darstellung>", NamedTextColor.GRAY));
         }
         return true;
+    }
+
+    private static String displayName(DisplayMode m) {
+        return switch (m) {
+            case FULL -> "Voll (mit Icons)";
+            case NO_ICONS -> "Ohne Icons";
+            case SIMPLE -> "Einfach";
+        };
+    }
+
+    private void setDisplay(Player player, DisplayMode mode) {
+        service.displayMode(player, mode);
+        player.sendMessage(Component.text("Menü-Darstellung: " + displayName(mode), NamedTextColor.GREEN));
+    }
+
+    /** Native dialog (works even if a resource pack breaks the pixel GUI). */
+    private void chooseDisplay(Player player) {
+        DisplayMode current = service.displayMode(player);
+        List<Component> lines = List.of(
+            Component.text("Wie sollen Menüs angezeigt werden?"),
+            Component.text("Voll: Pixel-Menüs mit Item-Icons.", NamedTextColor.GRAY),
+            Component.text("Ohne Icons: falls dein Resource-Pack Item-Icons verschiebt.", NamedTextColor.GRAY),
+            Component.text("Einfach: normale Dialoge, falls dein Pack die Menüs zerreißt.", NamedTextColor.GRAY));
+        List<DialogFactory.FallbackButton> buttons = new ArrayList<>();
+        for (DisplayMode m : DisplayMode.values()) {
+            String label = (m == current ? "\u25b6 " : "") + displayName(m);
+            buttons.add(new DialogFactory.FallbackButton(Component.text(label), null,
+                () -> getServer().getScheduler().runTask(this, () -> {
+                    setDisplay(player, m);
+                    player.closeDialog();
+                })));
+        }
+        DialogFactory.show(player, DialogFactory.fallback(Component.text("Menü-Darstellung"), lines, buttons, null));
     }
 
     private static void noPermission(CommandSender sender) {
@@ -302,13 +364,17 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             return getServer().getOnlinePlayers().stream().map(Player::getName)
                 .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase())).toList();
         }
+        if (args.length == 2 && args[0].equalsIgnoreCase("darstellung")) {
+            return List.of("voll", "ohne-icons", "einfach").stream().filter(s -> s.startsWith(args[1].toLowerCase())).toList();
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("test") && sender.hasPermission(ADMIN)) {
             return "fallback".startsWith(args[1].toLowerCase()) ? List.of("fallback") : List.of();
         }
         if (args.length != 1) {
             return List.of();
         }
-        List<String> subs = sender.hasPermission(ADMIN) ? List.of("menu", "pack", "reload", "status", "test") : List.of("pack");
+        List<String> subs = sender.hasPermission(ADMIN) ? List.of("darstellung", "menu", "pack", "reload", "status", "test")
+            : List.of("darstellung", "pack");
         return subs.stream().filter(s -> s.startsWith(args[0].toLowerCase())).toList();
     }
 }

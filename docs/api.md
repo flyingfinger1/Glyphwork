@@ -76,6 +76,21 @@ Clicks from a screen that has been replaced in the meantime are ignored.
 missing and you only print it). If a binding throws while rendering, only that element is hidden and
 a warning is logged.
 
+## Display mode per player
+
+Some players use resource packs that move item icons or replace the Minecraft font, which can tear
+the pixel GUI. Each player has a display mode, stored with the player:
+
+| `DisplayMode` | |
+|---|---|
+| `FULL` | pixel GUI with item icons (default) |
+| `NO_ICONS` | pixel GUI, grid cells show a short name instead of the icon |
+| `SIMPLE` | the plain native dialog (the same as without the pack) |
+
+Players choose it with `/glyphwork darstellung`. To offer it in your own settings instead, use
+`Glyphwork.get().displayMode(player)` / `displayMode(player, mode)` and `sendPack(player)`, and set
+`players.commands: false` in `config.yml`: then `/glyphwork` is hidden from players (admins keep it).
+
 ## Limits
 
 - Scenes may be up to `max-height` pixels high (`config.yml`, default 256).

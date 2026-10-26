@@ -41,4 +41,16 @@ public interface Glyphwork {
 
     /** Tallest scene the generated pack can show, in pixels; frames below are not drawn. */
     int maxHeight();
+
+    /** The player's display mode (default {@link DisplayMode#FULL}). */
+    DisplayMode displayMode(Player player);
+
+    /**
+     * Sets the player's display mode; stored with the player. Use this to offer the choice in your
+     * own settings (and set {@code players.commands: false} to hide {@code /glyphwork}).
+     */
+    void displayMode(Player player, DisplayMode mode);
+
+    /** Sends the Glyphwork resource pack to the player (again), e.g. from your own command. */
+    void sendPack(Player player);
 }

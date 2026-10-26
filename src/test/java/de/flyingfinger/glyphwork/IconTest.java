@@ -112,6 +112,21 @@ class IconTest {
     }
 
     @Test
+    void noIconsModeShowsShortNamesInstead() {
+        Demo demo = new Demo();
+        TestClick view = new TestClick(demo.items);
+        LineBuilder line = renderer.render(demo.items, view, (name, action) -> ClickEvent.runCommand(name), false);
+        List<Sheet> sheets = new ArrayList<>(theme.sheets());
+        sheets.add(hit);
+        Layout l = new Layout(line.build(demo.items.height()), sheets, text, icons);
+        assertTrue(l.icons.isEmpty(), "icons drawn: " + l.icons.size());
+        // a short name inside the first cell (10..34 x 20..44) instead of the diamond
+        assertTrue(l.textRuns.stream().anyMatch(t -> t[0] >= 10 && t[0] < 34 && t[1] >= 20 && t[1] < 44), "text in cell 0");
+        // cells stay clickable
+        assertEquals("glyphwork:demo-items#2:cell0", l.hit(20, 30));
+    }
+
+    @Test
     void tintsApplyToTintedLayersOnly() {
         Demo demo = new Demo();
         Layout l = layout(demo.items, new TestClick(demo.items));

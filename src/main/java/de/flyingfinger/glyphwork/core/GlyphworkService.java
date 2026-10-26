@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.core;
 
 import de.flyingfinger.glyphwork.api.Click;
+import de.flyingfinger.glyphwork.api.DisplayMode;
 import de.flyingfinger.glyphwork.api.Glyphwork;
 import de.flyingfinger.glyphwork.api.Scene;
 import de.flyingfinger.glyphwork.api.View;
@@ -12,6 +13,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -31,14 +34,19 @@ public final class GlyphworkService implements Glyphwork {
 
     private final Plugin plugin;
     private final Predicate<Player> hasPack;
+    private final Consumer<Player> sendPack;
+    private final NamespacedKey displayKey;
     private final FallbackRenderer fallbackRenderer;
     private final Map<UUID, Session> sessions = new HashMap<>();
     private volatile SceneRenderer renderer;
     private volatile int maxHeight;
     private volatile boolean fallback;
 
-    public GlyphworkService(Plugin plugin, SceneRenderer renderer, int maxHeight, boolean fallback, Predicate<Player> hasPack) {
+    public GlyphworkService(Plugin plugin, SceneRenderer renderer, int maxHeight, boolean fallback,
+                            Predicate<Player> hasPack, Consumer<Player> sendPack) {
         this.plugin = plugin;
+        this.sendPack = sendPack;
+        this.displayKey = new NamespacedKey(plugin, "display");
         this.renderer = renderer;
         this.maxHeight = maxHeight;
         this.fallback = fallback;
@@ -110,6 +118,33 @@ public final class GlyphworkService implements Glyphwork {
         return maxHeight;
     }
 
+    @Override
+    public DisplayMode displayMode(Player player) {
+        String s = player.getPersistentDataContainer().get(displayKey, PersistentDataType.STRING);
+        if (s != null) {
+            try {
+                return DisplayMode.valueOf(s);
+            } catch (IllegalArgumentException ignored) {
+                // value from a newer version; use the default
+            }
+        }
+        return DisplayMode.FULL;
+    }
+
+    @Override
+    public void displayMode(Player player, DisplayMode mode) {
+        if (mode == DisplayMode.FULL) {
+            player.getPersistentDataContainer().remove(displayKey);
+        } else {
+            player.getPersistentDataContainer().set(displayKey, PersistentDataType.STRING, mode.name());
+        }
+    }
+
+    @Override
+    public void sendPack(Player player) {
+        sendPack.accept(player);
+    }
+
     private void show(Player player, Session s) {
         Scene scene = s.stack.peek();
         if (scene == null) {
@@ -118,11 +153,13 @@ public final class GlyphworkService implements Glyphwork {
         }
         int generation = ++s.generation;
         ViewImpl view = new ViewImpl(player, s, scene);
-        if (s.forceFallback || (fallback && !hasPack.test(player))) {
+        DisplayMode mode = displayMode(player);
+        if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player))) {
             showFallback(player, s, generation, scene, view);
             return;
         }
-        LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, name, action));
+        LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, name, action),
+            mode != DisplayMode.NO_ICONS);
         DialogFactory.show(player, DialogFactory.gui(scene.title().apply(view), line.build(scene.height()),
             Math.max(scene.width(), line.width()), scene.exitLabel()));
     }
@@ -130,8 +167,9 @@ public final class GlyphworkService implements Glyphwork {
     private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view) {
         FallbackRenderer.Model model = fallbackRenderer.render(scene, view);
         List<Component> lines = new ArrayList<>();
-        lines.add(Component.text("Vereinfachte Ansicht – Resource-Pack nicht geladen (/glyphwork pack)",
-            NamedTextColor.GRAY));
+        if (displayMode(player) != DisplayMode.SIMPLE && !s.forceFallback) {
+            lines.add(Component.text("Vereinfachte Ansicht – Resource-Pack nicht geladen", NamedTextColor.GRAY));
+        }
         lines.addAll(model.lines());
         List<DialogFactory.FallbackButton> buttons = model.actions().stream()
             .map(a -> new DialogFactory.FallbackButton(a.label(), a.tooltip(),

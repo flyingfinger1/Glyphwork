@@ -32,3 +32,8 @@ fallback: true
 # Item icons (Icon element, icon: in menus). The pack references the textures every client already
 # has; false makes the pack smaller if you do not use icons.
 icons: true
+
+players:
+  # /glyphwork pack and /glyphwork darstellung for everyone. false hides /glyphwork from players
+  # (admins keep it); use the API (Glyphwork#displayMode, #sendPack) to offer these in your own system.
+  commands: true

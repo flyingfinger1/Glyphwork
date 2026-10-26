@@ -14,7 +14,8 @@ public record Settings(
     String bind,
     int port,
     boolean fallback,
-    boolean icons) {
+    boolean icons,
+    boolean playerCommands) {
 
     public static Settings read(FileConfiguration c) {
         String url = c.getString("pack.url");
@@ -34,7 +35,8 @@ public record Settings(
             c.getString("pack-server.bind", "0.0.0.0"),
             c.getInt("pack-server.port", 8765),
             c.getBoolean("fallback", true),
-            c.getBoolean("icons", true));
+            c.getBoolean("icons", true),
+            c.getBoolean("players.commands", true));
     }
 
     /** Download URL for a pack hash; without a {sha1} placeholder the hash is appended. */

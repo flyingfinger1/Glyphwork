@@ -62,6 +62,15 @@ public final class SceneRenderer {
     }
 
     public LineBuilder render(Scene scene, View view, Binder binder) {
+        return render(scene, view, binder, true);
+    }
+
+    /** Whether icons are drawn in the current pass (renders run on the main thread, one at a time). */
+    private boolean iconsThisPass = true;
+
+    /** @param showIcons false: no item icons; grid cells without a label show a short item name */
+    public LineBuilder render(Scene scene, View view, Binder binder, boolean showIcons) {
+        iconsThisPass = showIcons;
         if (scene.height() > maxHeight) {
             warnOnce(scene.id() + ":height", "Scene " + scene.id() + " is " + scene.height()
                 + " px high, the pack covers " + maxHeight + " px (raise max-height in config.yml)");
@@ -95,7 +104,7 @@ public final class SceneRenderer {
 
     /** Draws an item icon; unknown items (or icons disabled) draw nothing. Returns whether it drew. */
     private boolean icon(LineBuilder line, @Nullable String item, int x, int y, @Nullable TextColor tint) {
-        if (item == null || item.isBlank()) {
+        if (item == null || item.isBlank() || !iconsThisPass) {
             return false;
         }
         if (icons == null) {
@@ -254,18 +263,43 @@ public final class SceneRenderer {
                 } else if (noFrame && item != null) {
                     hitbox(line, cx, cy, g.cellSize(), g.cellSize(), click, tip);
                 }
+                boolean drewIcon = false;
                 if (item != null && g.icon() != null) {
                     int off = (g.cellSize() - IconCatalog.SIZE) / 2;
-                    icon(line, g.icon().apply(item), cx + off, cy + off, null);
+                    drewIcon = icon(line, g.icon().apply(item), cx + off, cy + off, null);
                 }
                 if (item != null) {
-                    String s = line.fit(g.label().apply(item), g.cellSize() - 2);
+                    String label = g.label().apply(item);
+                    if ((label == null || label.isBlank()) && !drewIcon && g.icon() != null) {
+                        label = shortName(g.icon().apply(item));
+                    }
+                    String s = line.fit(label == null ? "" : label, g.cellSize() - 2);
                     line.centered(s, cx, g.cellSize(), cy + (g.cellSize() - 7) / 2, g.labelColor().apply(item));
                 }
             }
         }
         pager(line, g.id(), page, pages(items.size(), perPage), g.x(), g.y() + g.rows() * g.cellPitch() + 2,
             g.cols() * g.cellPitch() - (g.cellPitch() - g.cellSize()), binder, name);
+    }
+
+    /** "diamond" -> "Dia", "gold_ingot" -> "GI": stands in for an icon that is not drawn. */
+    static String shortName(@Nullable String item) {
+        if (item == null || item.isBlank()) {
+            return "";
+        }
+        String id = item.contains(":") ? item.substring(item.indexOf(':') + 1) : item;
+        String[] parts = id.split("_");
+        if (parts.length == 1) {
+            String w = parts[0];
+            return Character.toUpperCase(w.charAt(0)) + w.substring(1, Math.min(3, w.length()));
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty() && sb.length() < 3) {
+                sb.append(Character.toUpperCase(part.charAt(0)));
+            }
+        }
+        return sb.toString();
     }
 
     private static int pages(int count, int perPage) {

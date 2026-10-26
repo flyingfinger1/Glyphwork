@@ -8,6 +8,10 @@
   drawn by special renderers (heads, chests, beds, banners, shields, shulker boxes) do not.
   `icons: false` in `config.yml` leaves them out of the pack. Third demo page "Items".
 - Grids accept `frame("none")`.
+- **Display mode per player** (`FULL`, `NO_ICONS`, `SIMPLE`) for players whose own resource pack
+  tears the menus: `/glyphwork darstellung` (native dialog, works even when the pixel GUI breaks),
+  API `Glyphwork#displayMode` and `#sendPack`, and `players.commands: false` to hide `/glyphwork`
+  from players so servers can offer it in their own system.
 
 ## 0.2.0 – menus without code
 

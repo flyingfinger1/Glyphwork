@@ -25,9 +25,17 @@ public final class VanillaText {
     private final JsonObject spaces;
     private final Map<Integer, Integer> advances = new HashMap<>();
 
+    /**
+     * Space with the width of ' ' that the client does not treat as a line-break opportunity.
+     * Labels use it instead of ' ', so a GUI line can never wrap at a word boundary.
+     */
+    public static final char NB_SPACE = '';
+
     private VanillaText(JsonObject root) {
         this.providers = root.getAsJsonArray("providers");
-        this.spaces = root.getAsJsonObject("spaces");
+        this.spaces = root.getAsJsonObject("spaces").deepCopy();
+        this.spaces.addProperty(String.valueOf(NB_SPACE), this.spaces.get(" ").getAsInt());
+        advances.put((int) NB_SPACE, this.spaces.get(" ").getAsInt());
         for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("advances").entrySet()) {
             advances.put(e.getKey().codePointAt(0), e.getValue().getAsInt());
         }

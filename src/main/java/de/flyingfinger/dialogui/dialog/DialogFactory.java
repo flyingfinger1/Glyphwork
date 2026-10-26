@@ -16,6 +16,9 @@ import java.util.List;
 /** The only place that touches the Paper dialog API (it is young and changes between versions). */
 public final class DialogFactory {
 
+    /** FocusableTextWidget.DEFAULT_PADDING in the 26.3 client. */
+    private static final int TEXT_PADDING = 4;
+
     private DialogFactory() {
     }
 
@@ -32,7 +35,8 @@ public final class DialogFactory {
                 .canCloseWithEscape(true)
                 .pause(false)
                 .afterAction(DialogBase.DialogAfterAction.NONE)
-                .body(List.of(DialogBody.plainMessage(body, width)))
+                // the client's FocusableTextWidget wraps at width - 2 * 4 px padding
+                .body(List.of(DialogBody.plainMessage(body, width + 2 * TEXT_PADDING)))
                 .build())
             .type(DialogType.notice(close)));
     }

@@ -70,7 +70,7 @@ public final class LineBuilder {
     public LineBuilder text(String s, int x, int y, TextColor color) {
         moveTo(x);
         offsets.add(y);
-        out.append(Component.text(s).font(ShiftFonts.key(y)).color(color));
+        out.append(Component.text(s.replace(' ', VanillaText.NB_SPACE)).font(ShiftFonts.key(y)).color(color));
         advance(text.width(s));
         return this;
     }

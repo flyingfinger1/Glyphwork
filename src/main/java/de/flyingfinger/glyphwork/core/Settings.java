@@ -13,7 +13,8 @@ public record Settings(
     String prompt,
     String bind,
     int port,
-    boolean fallback) {
+    boolean fallback,
+    boolean icons) {
 
     public static Settings read(FileConfiguration c) {
         String url = c.getString("pack.url");
@@ -32,7 +33,8 @@ public record Settings(
             c.getString("pack.prompt", ""),
             c.getString("pack-server.bind", "0.0.0.0"),
             c.getInt("pack-server.port", 8765),
-            c.getBoolean("fallback", true));
+            c.getBoolean("fallback", true),
+            c.getBoolean("icons", true));
     }
 
     /** Download URL for a pack hash; without a {sha1} placeholder the hash is appended. */

@@ -28,3 +28,7 @@ pack-server:
 # Players without the pack (declined, failed or still loading) get a plain native dialog built from
 # the same scene: labels as text, buttons/list rows/grid cells as dialog buttons.
 fallback: true
+
+# Item icons (Icon element, icon: in menus). The pack references the textures every client already
+# has; false makes the pack smaller if you do not use icons.
+icons: true

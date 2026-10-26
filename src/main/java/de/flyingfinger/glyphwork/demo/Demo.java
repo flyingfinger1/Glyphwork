@@ -2,6 +2,7 @@ package de.flyingfinger.glyphwork.demo;
 
 import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Grid;
+import de.flyingfinger.glyphwork.api.Icon;
 import de.flyingfinger.glyphwork.api.Label;
 import de.flyingfinger.glyphwork.api.ListView;
 import de.flyingfinger.glyphwork.api.Panel;
@@ -26,12 +27,49 @@ public final class Demo {
         "Stachelbeere", "Sternfrucht", "Traube", "Zitrone", "Zwetschge");
     private static final List<Integer> NUMBERS = IntStream.rangeClosed(1, 30).boxed().toList();
 
+    private static final List<String> ITEMS = List.of("diamond", "emerald", "gold_ingot", "iron_ingot",
+        "redstone", "lapis_lazuli", "apple", "bread", "cake", "diamond_sword", "bow", "crossbow", "trident",
+        "fishing_rod", "potion", "splash_potion", "leather_helmet", "leather_chestplate", "diamond_chestplate",
+        "elytra", "totem_of_undying", "ender_pearl", "compass", "clock", "spyglass", "torch", "lantern",
+        "oak_sapling", "dandelion", "oak_leaves", "grass_block", "stone", "oak_log", "crafting_table", "furnace",
+        "tnt", "glass", "sea_lantern", "water_bucket", "lava_bucket", "experience_bottle", "name_tag");
+
     public final Scene main;
     public final Scene lists;
+    public final Scene items;
 
     public Demo() {
-        lists = buildLists();
+        items = buildItems();
+        lists = buildLists(items);
         main = buildMain(lists);
+    }
+
+    private static String pretty(String id) {
+        StringBuilder sb = new StringBuilder();
+        for (String part : id.split("_")) {
+            sb.append(sb.isEmpty() ? "" : " ").append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return sb.toString();
+    }
+
+    private static Scene buildItems() {
+        return Scene.builder("glyphwork:demo-items", 176, 172)
+            .title(Component.text("Glyphwork - Items"))
+            .add(Panel.of(0, 0, 176, 172))
+            .add(Label.of(8, 7, "Item-Icons"))
+            .add(Grid.of("items", 10, 20, 6, 4, v -> ITEMS)
+                .cell(26, 24)
+                .icon(id -> id)
+                .tooltip(id -> Component.text(pretty(id)))
+                .selected(v -> v.get("item", (String) null))
+                .onClick((c, id) -> { c.set("item", id); c.reopen(); }))
+            .add(Label.of(8, 130, v -> "Auswahl: " + pretty(v.get("item", "-"))).width(100))
+            .add(Icon.of(152, 125, v -> v.get("item", (String) null)))
+            .add(Button.of(8, 148, 56, 16).text("< Zurück").onClick(c -> c.back()))
+            .add(Button.of(96, 144, 72, 24).icon("emerald").text("Kaufen").tint(TextColor.color(0x50E050))
+                .tooltip("Button mit Icon")
+                .onClick(c -> c.player().sendMessage(Component.text("Gekauft: " + pretty(c.get("item", "nichts"))))))
+            .build();
     }
 
     private static Scene buildMain(Scene lists) {
@@ -77,7 +115,7 @@ public final class Demo {
             .build();
     }
 
-    private static Scene buildLists() {
+    private static Scene buildLists(Scene items) {
         return Scene.builder("glyphwork:demo-lists", 176, 168)
             .title(Component.text("Glyphwork - Listen"))
             .add(Panel.of(0, 0, 176, 168))
@@ -104,6 +142,7 @@ public final class Demo {
             .add(Label.of(8, 132, v -> "Obst: " + v.get("fruit", "-")).width(80))
             .add(Label.of(96, 132, v -> "Nummer: " + v.get("number", (Object) "-")).width(72))
             .add(Button.of(8, 146, 56, 16).text("< Zurück").onClick(c -> c.back()))
+            .add(Button.of(112, 146, 56, 16).text("Items >").tooltip("Item-Icons").onClick(c -> c.open(items)))
             .build();
     }
 }

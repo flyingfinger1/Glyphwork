@@ -4,6 +4,7 @@ import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Grid;
 import de.flyingfinger.glyphwork.api.Hitbox;
+import de.flyingfinger.glyphwork.api.Icon;
 import de.flyingfinger.glyphwork.api.Label;
 import de.flyingfinger.glyphwork.api.ListView;
 import de.flyingfinger.glyphwork.api.Panel;
@@ -169,7 +170,7 @@ public final class Menus {
             }
             case "button" -> {
                 n.only(Set.of("type", "x", "y", "width", "height", "text", "tint", "text-color", "tooltip",
-                    "actions", "permission", "frame"));
+                    "actions", "permission", "frame", "icon"));
                 Button bt = Button.of(n.integer("x"), n.integer("y"), n.optInt("width", 64), n.optInt("height", 16))
                     .text(text(n.optString("text", "")))
                     .tint(n.optColor("tint", Button.GRAY))
@@ -182,6 +183,9 @@ public final class Menus {
                 String perm = n.optString("permission", null);
                 if (perm != null) {
                     bt.enabled(v -> v.player().hasPermission(perm));
+                }
+                if (n.has("icon")) {
+                    bt.icon(n.string("icon"));
                 }
                 b.add(bt);
             }
@@ -208,6 +212,19 @@ public final class Menus {
                 }
                 b.add(h);
             }
+            case "icon" -> {
+                n.only(Set.of("type", "x", "y", "item", "tint", "tooltip", "actions"));
+                String item = n.string("item");
+                TextColor tint = n.optColor("tint", null);
+                Icon ic = Icon.of(n.integer("x"), n.integer("y"), item).tint(v -> tint);
+                if (tooltip(n) != null) {
+                    ic.tooltip(tooltip(n));
+                }
+                if (n.has("actions")) {
+                    ic.onClick(actions(n));
+                }
+                b.add(ic);
+            }
             case "list" -> {
                 n.only(Set.of("type", "id", "x", "y", "width", "rows", "row-height", "items"));
                 List<Entry> items = entries(n);
@@ -217,11 +234,12 @@ public final class Menus {
                     .text(e -> e.text)
                     .color(e -> e.color)
                     .tooltip(e -> e.tooltip)
+                    .icon(e -> e.icon)
                     .onSelect((c, e) -> e.actions.accept(c));
                 b.add(l);
             }
             case "grid" -> {
-                n.only(Set.of("type", "id", "x", "y", "cols", "rows", "cell", "size", "items"));
+                n.only(Set.of("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items"));
                 List<Entry> items = entries(n);
                 Grid<Entry> g = Grid.of(n.optString("id", "grid" + index), n.integer("x"), n.integer("y"),
                         n.optInt("cols", 4), n.optInt("rows", 2), v -> visible(items, v))
@@ -230,26 +248,29 @@ public final class Menus {
                     .labelColor(e -> e.color)
                     .tint(e -> e.tint)
                     .tooltip(e -> e.tooltip)
+                    .icon(e -> e.icon)
+                    .frame(n.optString("frame", "slot"))
                     .onClick((c, e) -> e.actions.accept(c));
                 b.add(g);
             }
-            default -> throw n.error("type", "unknown type '" + type + "' (label, button, panel, hitbox, list, grid)");
+            default -> throw n.error("type", "unknown type '" + type + "' (label, button, panel, hitbox, icon, list, grid)");
         }
     }
 
     /** One list row or grid cell. Texts are fixed (placeholders are resolved per viewer in {@link #visible}). */
     private record Entry(String text, TextColor color, @Nullable TextColor tint, @Nullable Component tooltip,
-                         Consumer<Click> actions, @Nullable String permission, String rawText, @Nullable String rawTooltip) {
+                         Consumer<Click> actions, @Nullable String permission, String rawText, @Nullable String rawTooltip,
+                         @Nullable String icon) {
     }
 
     private List<Entry> entries(Node n) throws MenuException {
         List<Entry> out = new ArrayList<>();
         for (Node e : n.nodes("items")) {
-            e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission"));
+            e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon"));
             String t = e.optString("text", "");
             String tip = e.optString("tooltip", null);
             out.add(new Entry(t, e.optColor("color", TextColor.color(0xFFFFFF)), e.optColor("tint", null),
-                null, actions(e), e.optString("permission", null), t, tip));
+                null, actions(e), e.optString("permission", null), t, tip, e.optString("icon", null)));
         }
         return out;
     }
@@ -263,7 +284,7 @@ public final class Menus {
             }
             Component tip = e.rawTooltip == null ? null : MM.deserialize(Placeholders.apply(v.player(), e.rawTooltip));
             out.add(new Entry(Placeholders.apply(v.player(), e.rawText), e.color, e.tint, tip, e.actions,
-                e.permission, e.rawText, e.rawTooltip));
+                e.permission, e.rawText, e.rawTooltip, e.icon));
         }
         return out;
     }

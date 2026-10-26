@@ -30,6 +30,7 @@ public final class ListView<T> implements Element {
     private @Nullable Function<View, @Nullable T> selected;
     private TextColor selectedTint = TextColor.color(0xFFD25A);
     private String frame = "slot";
+    private @Nullable Function<T, @Nullable String> icon;
 
     private ListView(String id, int x, int y, int w, int rows, Function<View, List<T>> items) {
         this.id = id;
@@ -80,6 +81,16 @@ public final class ListView<T> implements Element {
     public ListView<T> selectedTint(TextColor tint) {
         this.selectedTint = tint;
         return this;
+    }
+
+    /** A 16 x 16 item icon at the start of each row (the text moves right). */
+    public ListView<T> icon(Function<T, @Nullable String> icon) {
+        this.icon = icon;
+        return this;
+    }
+
+    public @Nullable Function<T, @Nullable String> icon() {
+        return icon;
     }
 
     /** Frame of the list background (default "slot"). */

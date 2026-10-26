@@ -5,7 +5,7 @@ package de.flyingfinger.glyphwork.api;
  * text is always drawn above frames. Coordinates are GUI pixels from the scene's top-left corner.
  * Elements are configured with fluent setters and must not be changed after the scene is built.
  */
-public sealed interface Element permits Panel, Label, Button, Hitbox, ListView, Grid {
+public sealed interface Element permits Panel, Label, Button, Hitbox, Icon, ListView, Grid {
 
     int x();
 

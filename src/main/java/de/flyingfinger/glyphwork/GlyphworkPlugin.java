@@ -5,6 +5,7 @@ import de.flyingfinger.glyphwork.core.GlyphworkService;
 import de.flyingfinger.glyphwork.core.Settings;
 import de.flyingfinger.glyphwork.demo.Demo;
 import de.flyingfinger.glyphwork.font.GlyphAllocator;
+import de.flyingfinger.glyphwork.font.IconCatalog;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.Sheet;
 import de.flyingfinger.glyphwork.font.VanillaText;
@@ -127,9 +128,10 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
-        ShiftFonts.write(pack, sheets, s.maxHeight(), text);
+        IconCatalog icons = s.icons() ? IconCatalog.load(alloc) : null;
+        ShiftFonts.write(pack, sheets, s.maxHeight(), text, icons);
         byte[] zip = pack.toZip();
-        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger());
+        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons);
         return new Build(s, theme.name(), renderer, zip, PackFiles.sha1(zip));
     }
 

@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.render;
 
 import de.flyingfinger.glyphwork.font.Glyph;
+import de.flyingfinger.glyphwork.font.IconCatalog;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.SpaceFont;
 import de.flyingfinger.glyphwork.font.VanillaText;
@@ -17,6 +18,7 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
 
@@ -111,6 +113,25 @@ public final class LineBuilder {
         int index = y / ShiftFonts.LINE;
         line(index).draw(s.replace(' ', VanillaText.NB_SPACE), text.width(s), x,
             ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null);
+        return this;
+    }
+
+    /**
+     * A 16 x 16 item icon with its top-left pixel at (x, y), drawn on the text line it falls into
+     * (above all frames). Layers are drawn on top of each other; {@code tint} replaces the tint of
+     * tinted layers (e.g. a dyed leather color).
+     */
+    public LineBuilder icon(List<IconCatalog.Layer> layers, int x, int y, @Nullable TextColor tint) {
+        if (y < 0) {
+            return this;
+        }
+        int index = y / ShiftFonts.LINE;
+        Line line = line(index);
+        for (IconCatalog.Layer l : layers) {
+            TextColor c = l.tint() == null ? NamedTextColor.WHITE : tint != null ? tint : l.tint();
+            line.draw(String.valueOf(l.texture().codepoint()), l.texture().advance(), x,
+                ShiftFonts.text(y - index * ShiftFonts.LINE), c, null, null);
+        }
         return this;
     }
 

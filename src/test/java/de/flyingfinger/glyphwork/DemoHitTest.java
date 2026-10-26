@@ -189,13 +189,13 @@ class DemoHitTest {
     @Test
     void packIsReproducibleAndFontsAreValid() throws Exception {
         PackFiles a = new PackFiles();
-        ShiftFonts.write(a, sheets(), MAX_HEIGHT, text);
+        ShiftFonts.write(a, sheets(), MAX_HEIGHT, text, null);
         GlyphAllocator alloc2 = new GlyphAllocator();
         Theme other = Theme.builtin(alloc2);
         List<Sheet> otherSheets = new ArrayList<>(other.sheets());
         otherSheets.add(Sheet.invisible(alloc2));
         PackFiles b = new PackFiles();
-        ShiftFonts.write(b, otherSheets, MAX_HEIGHT, text);
+        ShiftFonts.write(b, otherSheets, MAX_HEIGHT, text, null);
         byte[] zip = a.toZip();
         assertEquals(PackFiles.sha1(zip), PackFiles.sha1(b.toZip()));
         assertTrue(zip.length < 2_000_000, "pack bytes: " + zip.length);

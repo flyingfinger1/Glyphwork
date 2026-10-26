@@ -44,7 +44,8 @@ public final class ShiftFonts {
             && (key.value().startsWith("y") || key.value().startsWith("t"));
     }
 
-    public static void write(PackFiles pack, Collection<Sheet> sheets, int maxHeight, VanillaText text) {
+    public static void write(PackFiles pack, Collection<Sheet> sheets, int maxHeight, VanillaText text,
+                             @org.jspecify.annotations.Nullable IconCatalog icons) {
         for (Sheet s : sheets) {
             pack.put(s.texturePath(), s.png());
         }
@@ -60,6 +61,9 @@ public final class ShiftFonts {
             JsonArray providers = new JsonArray();
             providers.add(SpaceFont.provider());
             text.addShiftedProviders(providers, s);
+            if (icons != null) {
+                icons.addProviders(providers, s);
+            }
             put(pack, "t" + s, providers);
         }
         pack.put("assets/glyphwork/font/space.json", GSON.toJson(SpaceFont.fontJson()));

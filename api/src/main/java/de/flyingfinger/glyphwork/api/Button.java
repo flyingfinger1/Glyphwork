@@ -29,6 +29,7 @@ public final class Button implements Element {
     private @Nullable Function<View, @Nullable Component> tooltip;
     private Function<View, Boolean> enabled = v -> true;
     private @Nullable Consumer<Click> onClick;
+    private @Nullable Function<View, @Nullable String> icon;
 
     private Button(int x, int y, int w, int h) {
         this.x = x;
@@ -93,6 +94,21 @@ public final class Button implements Element {
     public Button enabled(Function<View, Boolean> enabled) {
         this.enabled = enabled;
         return this;
+    }
+
+    /** A 16 x 16 item icon at the left of the button (the text moves right). Best with height 20+. */
+    public Button icon(String item) {
+        this.icon = v -> item;
+        return this;
+    }
+
+    public Button icon(Function<View, @Nullable String> item) {
+        this.icon = item;
+        return this;
+    }
+
+    public @Nullable Function<View, @Nullable String> icon() {
+        return icon;
     }
 
     public Button onClick(Consumer<Click> onClick) {

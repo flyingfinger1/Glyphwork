@@ -5,6 +5,7 @@ import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
 import de.flyingfinger.glyphwork.api.Hitbox;
+import de.flyingfinger.glyphwork.api.Icon;
 import de.flyingfinger.glyphwork.api.Label;
 import de.flyingfinger.glyphwork.api.ListView;
 import de.flyingfinger.glyphwork.api.Panel;
@@ -56,6 +57,12 @@ public final class FallbackRenderer {
                         Component tip = h.tooltip() == null ? null : h.tooltip().apply(view);
                         if (h.onClick() != null) {
                             actions.add(new Action(tip != null ? tip : Component.text("•"), null, h.onClick()));
+                        }
+                    }
+                    case Icon ic -> {
+                        if (ic.onClick() != null) {
+                            Component tip = ic.tooltip() == null ? null : ic.tooltip().apply(view);
+                            actions.add(new Action(tip != null ? tip : Component.text(humanize(ic.item().apply(view))), null, ic.onClick()));
                         }
                     }
                     case ListView<?> l -> list(l, view, actions);
@@ -125,12 +132,28 @@ public final class FallbackRenderer {
             Component tip = g.tooltip() == null ? null : g.tooltip().apply(item);
             String label = g.label().apply(item);
             // grid labels are short (a symbol, a number); the tooltip usually says more
+            String iconName = g.icon() == null ? null : humanize(g.icon().apply(item));
             String text = tip != null ? PlainTextComponentSerializer.plainText().serialize(tip)
-                : label == null || label.isBlank() ? "•" : label;
+                : label != null && !label.isBlank() ? label : iconName != null ? iconName : "•";
             actions.add(new Action(Component.text(item.equals(selected) ? "▶ " + text : text), tip,
                 c -> g.onClick().accept(c, item)));
         }
         pager(g.id(), page, pages, actions);
+    }
+
+    /** "minecraft:diamond_sword" -> "Diamond Sword" (for icons without text). */
+    static String humanize(@Nullable String item) {
+        if (item == null || item.isBlank()) {
+            return "•";
+        }
+        String id = item.contains(":") ? item.substring(item.indexOf(':') + 1) : item;
+        StringBuilder sb = new StringBuilder();
+        for (String part : id.split("_")) {
+            if (!part.isEmpty()) {
+                sb.append(sb.isEmpty() ? "" : " ").append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            }
+        }
+        return sb.toString();
     }
 
     private static void pager(String id, int page, int pages, List<Action> actions) {

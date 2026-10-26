@@ -38,7 +38,18 @@ final class Layout {
     final List<int[]> textRuns = new ArrayList<>(); // x, y, width, rgb
     final List<Integer> lineWidths = new ArrayList<>();
 
+    /** Icons drawn: x, y, codepoint, tint rgb. */
+    final List<int[]> icons = new ArrayList<>();
+
     Layout(Component message, List<Sheet> sheets, VanillaText text) {
+        this(message, sheets, text, null);
+    }
+
+    Layout(Component message, List<Sheet> sheets, VanillaText text, de.flyingfinger.glyphwork.font.IconCatalog catalog) {
+        Map<Character, Integer> iconAdvance = new HashMap<>();
+        if (catalog != null) {
+            catalog.textures().forEach(t -> iconAdvance.put(t.codepoint(), t.advance()));
+        }
         Map<Character, BufferedImage> cells = new HashMap<>();
         for (Sheet s : sheets) {
             for (int i = 0; i < s.size(); i++) {
@@ -70,6 +81,9 @@ final class Layout {
                         int top = 9 * line + shift;
                         boxes.add(new Box(x, top, x + adv, top + img.getHeight(), child.clickEvent()));
                         drawn.add(new Drawn(img, (int) x, top, child.color()));
+                    } else if (iconAdvance.containsKey(c)) {
+                        adv = iconAdvance.get(c);
+                        icons.add(new int[]{(int) x, 9 * line + shift, c, child.color() == null ? 0xFFFFFF : child.color().value()});
                     } else {
                         adv = text.width(String.valueOf(c));
                         if (c != VanillaText.NB_SPACE && c != ' ') {

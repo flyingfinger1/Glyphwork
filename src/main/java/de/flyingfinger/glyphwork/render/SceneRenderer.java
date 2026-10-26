@@ -5,12 +5,14 @@ import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
 import de.flyingfinger.glyphwork.api.Hitbox;
+import de.flyingfinger.glyphwork.api.Icon;
 import de.flyingfinger.glyphwork.api.Label;
 import de.flyingfinger.glyphwork.api.ListView;
 import de.flyingfinger.glyphwork.api.Panel;
 import de.flyingfinger.glyphwork.api.Scene;
 import de.flyingfinger.glyphwork.api.View;
 import de.flyingfinger.glyphwork.font.Glyph;
+import de.flyingfinger.glyphwork.font.IconCatalog;
 import de.flyingfinger.glyphwork.font.VanillaText;
 import de.flyingfinger.glyphwork.theme.Frame;
 import de.flyingfinger.glyphwork.theme.Theme;
@@ -42,9 +44,16 @@ public final class SceneRenderer {
     private final Glyph hit;
     private final int maxHeight;
     private final Logger log;
+    private final @Nullable IconCatalog icons;
     private final Set<String> warned = ConcurrentHashMap.newKeySet();
 
     public SceneRenderer(VanillaText text, Theme theme, Glyph hit, int maxHeight, Logger log) {
+        this(text, theme, hit, maxHeight, log, null);
+    }
+
+    /** @param icons item icons in the pack, or null if disabled */
+    public SceneRenderer(VanillaText text, Theme theme, Glyph hit, int maxHeight, Logger log, @Nullable IconCatalog icons) {
+        this.icons = icons;
         this.text = text;
         this.theme = theme;
         this.hit = hit;
@@ -68,6 +77,11 @@ public final class SceneRenderer {
                     case Button b -> button(line, b, view, binder, name);
                     case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
                         h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
+                    case Icon ic -> {
+                        icon(line, ic.item().apply(view), ic.x(), ic.y(), ic.tint() == null ? null : ic.tint().apply(view));
+                        hitbox(line, ic.x(), ic.y(), IconCatalog.SIZE, IconCatalog.SIZE,
+                            ic.onClick() == null ? null : binder.bind(name, ic.onClick()), tooltip(ic.tooltip(), view));
+                    }
                     case ListView<?> l -> list(line, l, view, binder, name);
                     case Grid<?> g -> grid(line, g, view, binder, name);
                 }
@@ -77,6 +91,25 @@ public final class SceneRenderer {
             }
         }
         return line;
+    }
+
+    /** Draws an item icon; unknown items (or icons disabled) draw nothing. Returns whether it drew. */
+    private boolean icon(LineBuilder line, @Nullable String item, int x, int y, @Nullable TextColor tint) {
+        if (item == null || item.isBlank()) {
+            return false;
+        }
+        if (icons == null) {
+            warnOnce("icons-off", "Item icons are disabled (icons: false in config.yml); icons are not drawn");
+            return false;
+        }
+        List<IconCatalog.Layer> layers = icons.icon(item);
+        if (layers == null) {
+            warnOnce("icon:" + item, "No icon for item '" + item + "' (unknown, or drawn by a special renderer"
+                + " like heads, chests, beds, banners)");
+            return false;
+        }
+        line.icon(layers, x, y, tint);
+        return true;
     }
 
     private @Nullable Frame frame(String name) {
@@ -137,10 +170,16 @@ public final class SceneRenderer {
             line.frame(f, b.x(), b.y(), b.width(), b.height(), enabled ? b.tint().apply(view) : Button.DISABLED,
                 click, tooltip(b.tooltip(), view));
         }
+        int textX = b.x();
+        int textW = b.width();
+        if (b.icon() != null && icon(line, b.icon().apply(view), b.x() + 3, b.y() + (b.height() - IconCatalog.SIZE) / 2, null)) {
+            textX += IconCatalog.SIZE + 4;
+            textW -= IconCatalog.SIZE + 4;
+        }
         String s = b.text().apply(view);
         if (s != null && !s.isEmpty()) {
-            s = line.fit(s, b.width() - 6);
-            line.centered(s, b.x(), b.width(), b.y() + (b.height() - 7) / 2,
+            s = line.fit(s, textW - 6);
+            line.centered(s, textX, textW, b.y() + (b.height() - 7) / 2,
                 enabled ? b.textColor().apply(view) : TextColor.color(0xA0A0A0));
         }
     }
@@ -180,8 +219,12 @@ public final class SceneRenderer {
             if (selected != null && selected.equals(item) && highlight != null) {
                 line.frame(highlight, l.x(), top, l.width(), l.rowHeight(), l.selectedTint(), null, null);
             }
-            String s = line.fit(String.valueOf(l.text().apply(item)), l.width() - 8);
-            line.text(s, l.x() + 4, top + (l.rowHeight() - 7) / 2, l.color().apply(item));
+            int textX = l.x() + 4;
+            if (l.icon() != null && icon(line, l.icon().apply(item), l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2, null)) {
+                textX += IconCatalog.SIZE + 2;
+            }
+            String s = line.fit(String.valueOf(l.text().apply(item)), l.x() + l.width() - 4 - textX);
+            line.text(s, textX, top + (l.rowHeight() - 7) / 2, l.color().apply(item));
             ClickEvent<?> click = l.onSelect() == null ? null
                 : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
             hitbox(line, l.x(), top, l.width(), l.rowHeight(), click, l.tooltip() == null ? null : l.tooltip().apply(item));
@@ -193,7 +236,8 @@ public final class SceneRenderer {
         List<T> items = g.items().apply(view);
         int perPage = Math.max(1, g.cols() * g.rows());
         int page = pageOf(view, g.id(), items.size(), perPage);
-        Frame cell = frame(g.frame());
+        boolean noFrame = "none".equalsIgnoreCase(g.frame());
+        Frame cell = noFrame ? null : frame(g.frame());
         T selected = g.selected() == null ? null : g.selected().apply(view);
         for (int r = 0; r < g.rows(); r++) {
             for (int c = 0; c < g.cols(); c++) {
@@ -207,6 +251,12 @@ public final class SceneRenderer {
                 if (cell != null) {
                     TextColor tint = item == null ? null : item.equals(selected) ? g.selectedTint() : g.tint().apply(item);
                     line.frame(cell, cx, cy, g.cellSize(), g.cellSize(), tint, click, tip);
+                } else if (noFrame && item != null) {
+                    hitbox(line, cx, cy, g.cellSize(), g.cellSize(), click, tip);
+                }
+                if (item != null && g.icon() != null) {
+                    int off = (g.cellSize() - IconCatalog.SIZE) / 2;
+                    icon(line, g.icon().apply(item), cx + off, cy + off, null);
                 }
                 if (item != null) {
                     String s = line.fit(g.label().apply(item), g.cellSize() - 2);

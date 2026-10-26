@@ -32,6 +32,7 @@ public final class Grid<T> implements Element {
     private String frame = "slot";
     private @Nullable Function<View, @Nullable T> selected;
     private TextColor selectedTint = TextColor.color(0xFFE070);
+    private @Nullable Function<T, @Nullable String> icon;
 
     private Grid(String id, int x, int y, int cols, int rows, Function<View, List<T>> items) {
         this.id = id;
@@ -77,6 +78,20 @@ public final class Grid<T> implements Element {
     public Grid<T> onClick(BiConsumer<Click, T> onClick) {
         this.onClick = onClick;
         return this;
+    }
+
+    /**
+     * A 16 x 16 item icon per cell ("diamond"), centered. Use a cell size of at least 16; with
+     * {@code cell(26, 24)} the slot frame stays visible around the icon. {@code frame("none")}
+     * draws no frame (cells stay clickable).
+     */
+    public Grid<T> icon(Function<T, @Nullable String> icon) {
+        this.icon = icon;
+        return this;
+    }
+
+    public @Nullable Function<T, @Nullable String> icon() {
+        return icon;
     }
 
     /** Tints the cell of the returned item with {@link #selectedTint}. */

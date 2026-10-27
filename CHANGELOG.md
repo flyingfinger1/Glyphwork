@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **JSON web sources:** `web:` in `config.yml` (url, `every`, optional headers) and
+  `%web_<name>_<path>%` in any text (`%web_status_players.online%`, indexes and `length` for arrays);
+  `items-from: "web:<name>.<path>"` turns a JSON array into list entries (`%item_<key>%`, nested keys
+  with dots). Loaded in the background with the same limits as feeds.
 - **Feeds:** `items-from: "rss:https://..."` fills lists and grids from an RSS or Atom feed (title,
   text, date, link, author), loaded in the background, cached (`feeds.cache`, `feeds.date-format`
   in `config.yml`), safe against external entities and limited to 1 MB / 50 entries. The menu

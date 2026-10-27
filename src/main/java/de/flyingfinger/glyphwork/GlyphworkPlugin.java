@@ -192,6 +192,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         if (icons != null) {
             applySourcePack(icons, s, alloc);
         }
+        // web sources first: menus that use them are checked against them
+        de.flyingfinger.glyphwork.menu.WebSources.configure(
+            de.flyingfinger.glyphwork.menu.WebSources.read(getConfig().getConfigurationSection("web"), getLogger()));
         // tall menus get the fonts they need: they scroll in the dialog, frames included
         exportExampleMenus();
         List<Integer> heights = Menus.load(getDataFolder().toPath().resolve("menus")).all().stream()

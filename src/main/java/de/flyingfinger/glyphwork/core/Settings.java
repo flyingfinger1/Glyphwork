@@ -57,7 +57,7 @@ public record Settings(
     }
 
     /** "30s", "5m", "1h", "1d" or seconds; the fallback for anything else (at least 10 s). */
-    static java.time.Duration duration(@org.jspecify.annotations.Nullable String s, java.time.Duration fallback) {
+    public static java.time.Duration duration(@org.jspecify.annotations.Nullable String s, java.time.Duration fallback) {
         if (s == null) {
             return fallback;
         }

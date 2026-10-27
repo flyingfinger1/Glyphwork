@@ -46,7 +46,8 @@ placeholders (skins come from Mojang's servers). *Remove* deletes the stored tex
 4. **Set the options** in the *Element* tab: texts, colors, tooltips, actions (one per line, with a
    list of examples), conditions (`show-if`, `enabled-if`), entries of lists and grids, dynamic
    lists (`items-from` with sample players, worlds and feed entries; `rss:` feeds are not loaded,
-   five sample news stand in). *YAML of the element* edits everything else
+   five sample news stand in; `web:` sources and `%web_...%` placeholders are not loaded either and
+   stay empty or as they are). *YAML of the element* edits everything else
    directly.
 5. **Variables, forms, templates.** The *Variables* tab lists the menu variables with their
    defaults; *Preview* sets a value only in the designer, to check `show-if` and `%menu_…%` texts.

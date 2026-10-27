@@ -20,7 +20,7 @@ final class Vars {
 
     static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
     private static final Pattern MENU_VAR = Pattern.compile("%menu_([a-z0-9_-]+)%");
-    private static final Pattern ITEM_VAR = Pattern.compile("%item(?:_([a-z0-9_-]+))?%");
+    private static final Pattern ITEM_VAR = Pattern.compile("%item(?:_([A-Za-z0-9_.-]+))?%");
     private static final String KEY = "menu:var:";
 
     /** No variables (tests, menus without a "variables:" section). */
@@ -116,6 +116,7 @@ final class Vars {
             });
         }
         s = replace(s, MENU_VAR, m -> get(v, m.group(1)));
+        s = WebSources.fill(v, s);
         return Placeholders.apply(v == null ? null : v.player(), s);
     }
 

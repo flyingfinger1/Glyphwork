@@ -10,12 +10,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -27,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -50,13 +43,6 @@ public final class Feeds {
     /** Settings from config.yml ({@code feeds:}). */
     private static volatile Duration ttl = Duration.ofMinutes(10);
     private static volatile DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-    private static volatile Logger log = Logger.getLogger("Glyphwork");
-
-    private static final Map<String, State> CACHE = new ConcurrentHashMap<>();
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(5))
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .build();
 
     private Feeds() {
     }
@@ -65,15 +51,9 @@ public final class Feeds {
     public record Result(List<Map<String, String>> items, boolean loading) {
     }
 
-    private static final class State {
-        volatile @Nullable List<Map<String, String>> items;
-        volatile long fetched;
-        volatile boolean loading;
-    }
-
     public static void configure(Duration cache, String datePattern, Logger logger) {
         ttl = cache;
-        log = logger;
+        Web.logger(logger);
         try {
             dateFormat = DateTimeFormatter.ofPattern(datePattern);
         } catch (IllegalArgumentException e) {
@@ -81,79 +61,22 @@ public final class Feeds {
         }
     }
 
-    /** Forgets every feed (reload). */
+    /** Forgets every feed and web answer (reload). */
     public static void clear() {
-        CACHE.clear();
+        Web.clear();
     }
 
-    /** Checks a feed address when the menu is loaded: http or https with a host. */
     static @Nullable String problem(String url) {
-        try {
-            URI u = URI.create(url);
-            if (!"http".equalsIgnoreCase(u.getScheme()) && !"https".equalsIgnoreCase(u.getScheme())) {
-                return "only http:// and https:// addresses work";
-            }
-            if (u.getHost() == null) {
-                return "the address has no host";
-            }
-            return null;
-        } catch (IllegalArgumentException e) {
-            return "not a valid address (" + e.getMessage() + ")";
-        }
+        return Web.problem(url);
     }
 
     /** The cached entries; starts loading when there are none or they are older than the cache time. */
     public static Result get(String url) {
-        State s = CACHE.computeIfAbsent(url, k -> new State());
-        long now = System.currentTimeMillis();
-        List<Map<String, String>> items = s.items;
-        if (!s.loading && (items == null || now - s.fetched > ttl.toMillis())) {
-            load(url, s);
-        }
-        return new Result(items == null ? List.of() : items, items == null && s.loading);
-    }
-
-    private static synchronized void load(String url, State s) {
-        if (s.loading) {
-            return;
-        }
-        s.loading = true;
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-            .timeout(Duration.ofSeconds(10))
-            .header("User-Agent", "Glyphwork (Minecraft server menu)")
-            .header("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5")
-            .GET().build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofInputStream()).whenComplete((resp, err) -> {
-            List<Map<String, String>> items = List.of();
-            try {
-                if (err != null) {
-                    throw err;
-                }
-                if (resp.statusCode() / 100 != 2) {
-                    throw new IOException("HTTP " + resp.statusCode());
-                }
-                try (InputStream in = resp.body()) {
-                    items = parse(readLimited(in), dateFormat);
-                }
-            } catch (Throwable e) {
-                log.warning("Feed " + url + " could not be loaded: " + e.getMessage());
-                List<Map<String, String>> old = s.items;
-                if (old != null) {
-                    items = old;                         // keep what we had, try again after the cache time
-                }
-            }
-            s.items = items;
-            s.fetched = System.currentTimeMillis();
-            s.loading = false;
-        });
-    }
-
-    private static byte[] readLimited(InputStream in) throws IOException {
-        byte[] data = in.readNBytes(MAX_BYTES + 1);
-        if (data.length > MAX_BYTES) {
-            throw new IOException("larger than " + MAX_BYTES / 1024 + " KB");
-        }
-        return data;
+        DateTimeFormatter dates = dateFormat;
+        Web.Result<List<Map<String, String>>> r = Web.get("rss:" + url, url, ttl, Map.of(),
+            "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5", "Feed",
+            data -> parse(data, dates));
+        return new Result(r.value() == null ? List.of() : r.value(), r.loading());
     }
 
     /** RSS 2.0 (channel/item) or Atom (feed/entry), at most 50 entries. */

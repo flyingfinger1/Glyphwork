@@ -915,12 +915,23 @@ public final class Menus {
         if (from != null) {
             from = from.trim();
             boolean feed = from.regionMatches(true, 0, "rss:", 0, 4);
-            from = feed ? "rss:" + from.substring(4).trim() : from.toLowerCase();
+            // feed addresses and JSON paths keep their case (camelCase keys)
+            from = feed ? "rss:" + from.substring(4).trim()
+                : from.regionMatches(true, 0, "web:", 0, 4) ? "web:" + from.substring(4).trim() : from.toLowerCase();
             if (feed && Feeds.problem(from.substring(4)) != null) {
                 throw n.error("items-from", "feed " + from.substring(4) + ": " + Feeds.problem(from.substring(4)));
             }
-            Set<String> keys = feed ? Feeds.KEYS : Sources.KEYS.get(from);
-            if (keys == null) {
+            boolean web = !feed && from.startsWith("web:");
+            if (web) {
+                String spec = from.substring(4).trim();
+                String name = spec.contains(".") ? spec.substring(0, spec.indexOf('.')) : spec;
+                if (!WebSources.known(name)) {
+                    throw n.error("items-from", "no web source '" + name + "' in config.yml (web: " + name + ": { url: ... })");
+                }
+                from = "web:" + spec;
+            }
+            Set<String> keys = feed ? Feeds.KEYS : web ? null : Sources.KEYS.get(from);
+            if (keys == null && !web) {
                 throw n.error("items-from", "unknown source '" + from + "' (" + String.join(", ",
                     new java.util.TreeSet<>(Sources.KEYS.keySet())) + ", rss:<address>)");
             }
@@ -929,7 +940,9 @@ public final class Menus {
                 throw n.error("item", "settings of each entry expected (text, icon, tooltip, actions, show-if ...)");
             }
             Node item = new Node(raw == null ? Map.of() : (Map<?, ?>) raw, n.path + ".item");
-            checkItemKeys(item, from, keys);
+            if (keys != null) {
+                checkItemKeys(item, from, keys);                  // web sources: the keys come with the JSON
+            }
             dynamic = itemDef(item, "%item%");
         } else if (n.has("item")) {
             throw n.error("item", "only together with items-from");
@@ -946,7 +959,9 @@ public final class Menus {
             }
             if (d != null) {
                 List<Map<String, String>> entries;
-                if (source.startsWith("rss:")) {
+                if (source.startsWith("web:")) {
+                    entries = WebSources.items(v, source.substring(4));
+                } else if (source.startsWith("rss:")) {
                     Feeds.Result r = fd.apply(source.substring(4));
                     if (r.loading()) {
                         v.redrawAfter(java.time.Duration.ofMillis(500));      // first load: draw again when it is there

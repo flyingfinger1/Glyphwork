@@ -291,6 +291,25 @@ HH:MM:SS), and every
 installed. Values are filled in each time the menu is drawn; use `refresh` to update after an
 action.
 
+**Web data:** `%web_<name>_<path>%` shows a value from a JSON web API set up under `web:` in
+`config.yml`:
+
+```yaml
+web:
+  status:                                            # the name: a-z, 0-9, '-' (no '_')
+    url: "https://api.mcsrvstat.us/3/play.example.org"
+    every: 1m                                        # load at most once a minute (default 1m)
+    headers:                                         # optional, e.g. an API token
+      Authorization: "Bearer ..."
+```
+
+`%web_status_players.online%` is the value at `players` → `online`; arrays take an index
+(`%web_status_players.list.0.name%`) and `length` (`%web_status_players.list.length%`). Numbers come
+without a trailing `.0`, objects and arrays as JSON, missing values as nothing. Sources are loaded in
+the background (at most 1 MB, 10 s), the first time while the menu is open it draws itself again
+when the data arrives; on errors the last data stays. A placeholder of a source that does not
+exist stays as it is, so typos are visible. `/glyphwork reload` loads everything again.
+
 ## Conditions
 
 A condition compares two values: `<left> <operator> <right>`, with spaces around the operator.
@@ -372,6 +391,7 @@ every entry, with the entry's values as `%item...%` placeholders. Fixed `items` 
 |---|---|
 | `online-players` | `%item%` / `%item_name%` (name), `%item_world%`, `%item_uuid%`, `%item_head%` / `%item_icon%` (the head, `head:<uuid>`) (sorted by name) |
 | `worlds` | `%item%` / `%item_name%`, `%item_players%` (count), `%item_environment%` (`normal`, `nether`, `the_end`), `%item_icon%` (grass_block, netherrack, end_stone) |
+| `"web:<name>.<path>"` | an array of a [web source](#placeholders) (`web:status.players.list`), or an object of objects (one entry each, `%item_key%` = its key): `%item_<key>%` for every value of an entry, nested ones with dots (`%item_user.name%`); `%item%` for arrays of plain values; at most 100 entries |
 | `"rss:https://..."` | an RSS or Atom feed: `%item%` / `%item_title%`, `%item_summary%` (one line without HTML, at most 300 characters), `%item_text%` (the whole text with its paragraphs, at most 4000 characters, for a detail view), `%item_date%`, `%item_link%`, `%item_author%`, `%item_feed%` (title of the feed); at most 50 entries |
 
 `item` takes the settings of `items` entries (`text`, `color`, `tint`, `tooltip`, `actions`,

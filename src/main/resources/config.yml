@@ -67,3 +67,17 @@ players:
 feeds:
   cache: 10m            # 30s, 5m, 1h ...
   date-format: "dd.MM.yyyy HH:mm"   # %item_date% (Java DateTimeFormatter pattern, server time zone)
+
+# JSON from web APIs, for menus: %web_<name>_<path>% shows one value (%web_status_players.online%),
+# items-from: "web:<name>.<path>" turns an array into list entries. Loaded in the background, at
+# most once per "every". Names use a-z, 0-9 and '-'. headers are sent along (e.g. an API token:
+# keep this file private then).
+web: {}
+#  status:
+#    url: "https://api.mcsrvstat.us/3/play.example.org"
+#    every: 1m
+#  releases:
+#    url: "https://api.github.com/repos/owner/repo/releases"
+#    every: 30m
+#    headers:
+#      Accept: "application/vnd.github+json"

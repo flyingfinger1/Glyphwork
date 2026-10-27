@@ -1361,12 +1361,14 @@ async function loadTextures() {
     icons = null;
     useMinecraftFont(null);
     $('mcStatus').textContent = t('mcNone');
+    $('iconNote').textContent = t('iconNote');
     return;
   }
   const [cat, table] = await Promise.all([catalog(), fontTable()]);
   icons = iconSource(cat, images);
   const font = useMinecraftFont(table, images);
   $('mcStatus').textContent = t('mcLoaded', { sources: sources.join(', '), n: images.size, font: font ? t('mcYes') : t('mcNo') });
+  $('iconNote').textContent = t(font ? 'iconNoteHeads' : 'iconNoteFont');
 }
 
 // ------------------------------------------------------------------ wiring

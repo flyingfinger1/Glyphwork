@@ -39,4 +39,8 @@ for (const [id, skin] of Object.entries(SKINS)) {
 const covered = transitions(TEST_SHAPE);
 check(PAIRS.length === 68 && HIDDEN.length === 40, `seams: ${PAIRS.length} transitions, ${HIDDEN.length} hidden`);
 check(PAIRS.every((p) => covered.has(p.key)), 'seams: test shape contains every transition');
+// the designer reads the plugin's icon and font tables from editor/data/ (copies, must match)
+for (const f of ['item_icons.json', 'vanilla_text.json']) {
+  check(readFileSync(`src/main/resources/${f}`).equals(readFileSync(`editor/data/${f}`)), `designer data: ${f} matches the plugin`);
+}
 process.exit(failures ? 1 : 0);

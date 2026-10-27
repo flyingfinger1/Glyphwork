@@ -291,12 +291,28 @@ function drawHead(c, x, top) {
   c.fillRect(x + 3, top + 6, 2, 1, 0xff7a4a3a);
 }
 
-/** Item icon placeholder (16 x 16): a framed box with the short name. */
-function drawIcon(c, item, x, y) {
+/**
+ * Item icon (16 x 16): the real textures when the user loaded a client jar (c.icons), otherwise a
+ * framed box with the short name. tintRgb replaces the tint of tinted layers (like Icon.tint).
+ */
+function drawIcon(c, item, x, y, tintRgb = null) {
   if (!item) return false;
   if (isHead(item)) {
     const top = (Math.max(1, Math.round((y + ICON / 2 - HEAD / 2 + 1) / LINE))) * LINE - 1;
     drawHead(c, x + (ICON - HEAD) / 2, top);
+    return true;
+  }
+  const layers = c.icons ? c.icons(item) : null;
+  if (layers) {
+    for (const l of layers) {
+      const tnt = l.tint == null ? null : (tintRgb ?? l.tint);
+      for (let yy = 0; yy < ICON; yy++) {
+        for (let xx = 0; xx < ICON; xx++) {
+          const v = l.img.get(Math.floor(xx * l.frame / ICON), Math.floor(yy * l.frame / ICON));
+          if (v >>> 24) blend(c.pix, x + xx, y + yy, tnt == null ? v : tint(v, tnt));
+        }
+      }
+    }
     return true;
   }
   c.fillRect(x + 1, y + 1, 14, 14, 0x55ffffff);
@@ -326,6 +342,7 @@ function drawCount(c, count, x, y, bottom = Infinity) {
 export function renderMenu(menu, skin, ctx = {}) {
   const W = int(menu.width, 176), H = int(menu.height, 96);
   const c = new Canvas(W, H, skin.frames, skin.tileSize, skin.text);
+  c.icons = ctx.icons || null;
   const skinText = (rgb) => (rgb === DARK ? (skin.text & 0xffffff) : rgb);
   ctx = { ...ctx, menu };
   const boxes = [], regions = [], hints = [];
@@ -432,7 +449,7 @@ export function renderMenu(menu, skin, ctx = {}) {
             if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
             iy += dy;
           }
-          if (drawIcon(c, item, x, iy)) drawCount(c, el.count != null ? f(el.count) : null, x, iy);
+          if (drawIcon(c, item, x, iy, color(el.tint) ?? null)) drawCount(c, el.count != null ? f(el.count) : null, x, iy);
           region(x, iy, ICON, ICON, tip, actionsOf(el));
           boxes.push({ top, x, y: iy, w: ICON, h: ICON });
           break;

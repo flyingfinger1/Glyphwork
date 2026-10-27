@@ -8,6 +8,8 @@ import { Theme } from '../model.js';
 import { renderMenu, fill, varValue, allHold, plain, optionsOf, SAMPLES } from './menu-render.js';
 import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField } from './schema.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
+import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource } from './assets.js';
+import { useMinecraftFont, minecraftFont } from '../font.js';
 
 const $ = (id) => document.getElementById(id);
 const STORE = 'glyphwork-designer';
@@ -34,6 +36,7 @@ let shared = {};           // templates from menus/_*.yml, for the preview only
 let skinKey = 'vanilla';
 let mode = 'edit';
 let last = null;           // last render result
+let icons = null;          // item -> texture layers, when Minecraft textures are loaded
 const undoStack = [];
 const redoStack = [];
 let lastMerge = null;
@@ -161,7 +164,7 @@ let drag = null;
 let hoverRegion = null;
 
 function draw() {
-  last = renderMenu(menu, skin(), { vars: preview, pages, shared });
+  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons });
   const { pix } = last;
   off.width = pix.w;
   off.height = pix.h;
@@ -1247,6 +1250,22 @@ function loadMenu(text, id) {
   }
 }
 
+// ------------------------------------------------------------------ Minecraft textures
+
+async function loadTextures() {
+  const { sources, images } = await loadStored();
+  if (!images.size) {
+    icons = null;
+    useMinecraftFont(null);
+    $('mcStatus').textContent = t('mcNone');
+    return;
+  }
+  const [cat, table] = await Promise.all([catalog(), fontTable()]);
+  icons = iconSource(cat, images);
+  const font = useMinecraftFont(table, images);
+  $('mcStatus').textContent = t('mcLoaded', { sources: sources.join(', '), n: images.size, font: font ? t('mcYes') : t('mcNo') });
+}
+
 // ------------------------------------------------------------------ wiring
 
 function init() {
@@ -1372,8 +1391,25 @@ function init() {
   };
   $('resetPreview').onclick = () => { preview = {}; pages = {}; changed(true); };
 
+  $('mcLoad').onclick = () => $('mcFile').click();
+  $('mcFile').onchange = async () => {
+    for (const f of $('mcFile').files) {
+      $('mcStatus').textContent = t('mcLoading', { name: f.name });
+      try {
+        await importArchive(await f.arrayBuffer(), f.name);
+      } catch (e) {
+        toast(`${f.name}: ${e.message}`, true);
+      }
+    }
+    $('mcFile').value = '';
+    await loadTextures();
+    changed(false);
+  };
+  $('mcClear').onclick = async () => { await clearStored(); await loadTextures(); changed(false); };
+
   zoom = Number($('zoom').value);
   refreshAll();
+  loadTextures().then(() => changed(false));
 }
 
 init();

@@ -30,6 +30,15 @@
     <h2 data-i18n="skin">Skin</h2>
     <select id="skin"></select>
 
+    <h2 data-i18n="mcTextures">Minecraft-Texturen</h2>
+    <p class="hint" id="mcStatus"></p>
+    <div class="row wrap">
+      <button id="mcLoad" data-i18n="mcLoad">Jar / Resource-Pack laden</button>
+      <button id="mcClear" class="small" data-i18n="mcClear">Entfernen</button>
+      <input id="mcFile" type="file" accept=".jar,.zip" multiple hidden>
+    </div>
+    <details class="hint"><summary data-i18n="mcWhere">Wo finde ich die Jar?</summary><p data-i18n="mcWhereText"></p></details>
+
     <h2 data-i18n="palette">Element hinzufügen</h2>
     <div id="paletteBtns" class="row wrap palette"></div>
 

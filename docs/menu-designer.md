@@ -8,6 +8,22 @@ The designer edits the YAML menus of [menus.md](menus.md) visually: place elemen
 set their options in a side panel, try the menu out, and download the `.yml` file for
 `plugins/Glyphwork/menus/`.
 
+## Real icons and font
+
+Without help the designer shows item icons as placeholders and uses a stand-in font: Minecraft's
+textures may not be published on a web page. Load your own copy instead: *Load jar / resource pack*
+under *Minecraft textures* reads a client jar in the browser (nothing is uploaded) and keeps only
+what the designer needs, about 1,200 item textures and the font sheets, in the browser's storage.
+After that icons, tints and text look like in game, including the text widths that decide where
+"..." cuts a label.
+
+- Minecraft launcher: `.minecraft/versions/<version>/<version>.jar`
+- Prism Launcher / MultiMC: `libraries/com/mojang/minecraft/<version>/minecraft-<version>-client.jar`
+
+Resource packs (ZIP) loaded afterwards replace textures of the jar, like in game, and items of their
+own (`myserver:ruby` from `assets/myserver/textures/item/ruby.png`) work as icons. Player heads stay
+placeholders (skins come from Mojang's servers). *Remove* deletes the stored textures.
+
 ## Workflow
 
 1. **Start or open.** *New* starts a small menu, *Open* loads a `.yml` file, *Paste YAML* takes a
@@ -36,9 +52,11 @@ set their options in a side panel, try the menu out, and download the `.yml` fil
 
 ## Limits
 
-- Minecraft's textures and font cannot be shipped: item icons and player heads are placeholders,
-  and text uses a stand-in font with the same metrics as Minecraft's for most letters. The skins
-  are the plugin's own (*From the skin editor* uses the skin last edited there).
+- Minecraft's textures and font cannot be shipped: without a loaded jar, item icons are
+  placeholders and text uses a stand-in font. Player heads are always placeholders. Items of
+  resource packs are found by their texture `assets/<ns>/textures/item/<name>.png`; items whose
+  model points elsewhere show a placeholder. The skins are the plugin's own (*From the skin editor*
+  uses the skin last edited there).
 - Comments in a `.yml` file are lost when it is opened in the designer.
 - PlaceholderAPI placeholders are shown as they are; `%player%` is "Steve", `%online%` is 1.
 - Permissions are not checked in the preview (everything is shown as allowed).
@@ -46,5 +64,8 @@ set their options in a side panel, try the menu out, and download the `.yml` fil
 ## For developers
 
 `editor/designer.html` with `editor/js/designer/` (no build step, js-yaml 4.1.0 from jsDelivr).
+`assets.js` reads jars and packs (only the wanted entries) into IndexedDB; the icon and font tables
+are copies of the plugin's `item_icons.json` and `vanilla_text.json` in `editor/data/`, and
+`tools/editor-parity.mjs` checks that they match.
 `menu-render.js` draws a menu like the plugin's `SceneRenderer` (templates, conditions,
 variables, heads on the 9 px grid, rounded frames) and has no DOM, so it also runs in Node.

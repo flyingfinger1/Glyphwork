@@ -68,8 +68,12 @@ export function writeZip(entries) {
   return out;
 }
 
-/** @returns Map(name -> Uint8Array) */
-export async function readZip(buffer) {
+/**
+ * @param want optional filter: only entries whose name it accepts are unpacked (a client jar has
+ *             tens of thousands of files)
+ * @returns Map(name -> Uint8Array)
+ */
+export async function readZip(buffer, want = null) {
   const b = new Uint8Array(buffer);
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
   let eocd = -1;
@@ -88,7 +92,7 @@ export async function readZip(buffer) {
     const lho = dv.getUint32(p + 42, true);
     const name = dec.decode(b.subarray(p + 46, p + 46 + nlen));
     p += 46 + nlen + xlen + clen;
-    if (name.endsWith('/')) continue;
+    if (name.endsWith('/') || (want && !want(name))) continue;
     const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
     const data = b.subarray(start, start + csize);
     if (method === 0) files.set(name, data.slice());

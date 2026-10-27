@@ -5,8 +5,9 @@
 - **Menu designer** in the browser (https://flyingfinger1.github.io/Glyphwork/designer.html, next
   to the skin editor): place and resize elements with the mouse, edit their options, variables,
   forms and templates in side panels, try the menu out (actions, controls, forms work on preview
-  variables) and download the `.yml` file. Icons and heads are placeholders. Guide in
-  docs/menu-designer.md.
+  variables) and download the `.yml` file. Load your own Minecraft client jar (read only in the
+  browser) for real item icons and the real font; resource packs add their textures and items.
+  Guide in docs/menu-designer.md.
 - **Counts on icons:** `count: 64` (YAML, also for list and grid items, placeholders allowed) and
   `Icon.count(...)`, `Grid.count(...)`, `ListView.count(...)` write a stack size at the bottom right
   of the icon, white with a shadow like in the inventory; `1` and empty show nothing. The plain

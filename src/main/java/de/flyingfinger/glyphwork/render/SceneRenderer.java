@@ -168,7 +168,7 @@ public final class SceneRenderer {
         packIconsThisPass = packTextures;
         if (scene.height() > maxHeight) {
             warnOnce(scene.id() + ":height", "Scene " + scene.id() + " is " + scene.height()
-                + " px high, the pack covers " + maxHeight + " px (raise max-height in config.yml)");
+                + " px high, the pack covers " + maxHeight + " px (raise max-height in config.yml for scenes of plugins)");
         }
         LineBuilder line = new LineBuilder(text, maxHeight);
         int i = 0;

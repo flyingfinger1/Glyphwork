@@ -174,7 +174,8 @@ Players choose it with `/glyphwork display` (German: `/glyphwork darstellung`). 
 
 ## Limits
 
-- Scenes may be up to `max-height` pixels high (`config.yml`, default 256).
+- Scenes may be up to `max-height` pixels high (`config.yml`, default 256). YAML menus raise the
+  pack height by themselves (up to 2048 px); plugins with taller scenes set `max-height`.
 - Text uses the Minecraft font without shadow, one style per label (color only).
 - Players without the pack (declined, failed, still loading, or a client that ignores server packs)
   get a plain native dialog built from the same scene, if `fallback: true` (default): labels become

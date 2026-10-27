@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Long menus:** the pack height now follows the tallest YAML menu (rounded up to 32 px, at most
+  2048 px), so frames are drawn in menus of any height and the dialog scrolls them natively, mouse
+  wheel included. `max-height` is only the minimum (for scenes of plugins); small servers keep the
+  small pack.
 - **Tabs:** `type: tabs` / `Tabs.of(...)` puts tabs on top of a panel; the active tab merges with
   the panel into one frame, the others sit slightly lower and darker behind it. Only the active
   tab's elements are drawn and clickable, a click on another tab switches. Elements inside a tab are

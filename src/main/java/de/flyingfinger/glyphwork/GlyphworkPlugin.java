@@ -55,7 +55,26 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private MenuCommands menuCommands;
 
     /** Everything that depends on config + theme. */
-    private record Build(Settings settings, String themeName, SceneRenderer renderer, byte[] zip, String sha1) {
+    private record Build(Settings settings, int height, String themeName, SceneRenderer renderer, byte[] zip, String sha1) {
+    }
+
+    /** Most rows the pack ever gets (each 256 px add about 160 KB). */
+    static final int HEIGHT_LIMIT = 2048;
+
+    /**
+     * Rows of y-fonts the pack needs: max-height, or the tallest menu (rounded up to 32 px) when
+     * that is higher, at most {@link #HEIGHT_LIMIT}.
+     */
+    static int packHeight(int maxHeight, Iterable<Integer> menuHeights, java.util.logging.Logger log) {
+        int h = maxHeight;
+        for (int m : menuHeights) {
+            h = Math.max(h, (m + 31) / 32 * 32);
+        }
+        if (h > HEIGHT_LIMIT) {
+            log.warning("A menu is taller than " + HEIGHT_LIMIT + " px; frames below that are not drawn");
+            h = HEIGHT_LIMIT;
+        }
+        return h;
     }
 
     @Override
@@ -66,7 +85,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             Build b = build();
             packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
-            service = new GlyphworkService(this, b.renderer(), b.settings().maxHeight(), b.settings().fallback(),
+            service = new GlyphworkService(this, b.renderer(), b.height(), b.settings().fallback(),
                 packs::hasPack, packs::send, packs::hasServerPack);
         } catch (IOException e) {
             getLogger().severe("Pack could not be published: " + e);
@@ -79,7 +98,6 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         triggers = new de.flyingfinger.glyphwork.menu.MenuTriggers(this, () -> menus, this::openMenu,
             p -> settings.sendOnJoin());
         getServer().getPluginManager().registerEvents(triggers, this);
-        exportExampleMenus();
         loadMenus();
     }
 
@@ -174,7 +192,12 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         if (icons != null) {
             applySourcePack(icons, s, alloc);
         }
-        ShiftFonts.write(pack, sheets, s.maxHeight(), text, icons);
+        // tall menus get the fonts they need: they scroll in the dialog, frames included
+        exportExampleMenus();
+        List<Integer> heights = Menus.load(getDataFolder().toPath().resolve("menus")).all().stream()
+            .map(m -> m.scene().height()).toList();
+        int height = packHeight(s.maxHeight(), heights, getLogger());
+        ShiftFonts.write(pack, sheets, height, text, icons);
         Path imageDir = getDataFolder().toPath().resolve("images");
         try {
             Files.createDirectories(imageDir);
@@ -195,9 +218,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             getLogger().info(images.size() + " picture(s) from images/: " + String.join(", ", images.ids()));
         }
         byte[] zip = pack.toZip();
-        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons).fills(fills).images(images)
+        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), height, getLogger(), icons).fills(fills).images(images)
             .bigHeads(squares, faces());
-        return new Build(s, theme.name(), renderer, zip, PackFiles.sha1(zip));
+        return new Build(s, height, theme.name(), renderer, zip, PackFiles.sha1(zip));
     }
 
     /** Adapts icons to the server's resource pack (icon-source-pack). */
@@ -232,7 +255,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             getServer().getOnlinePlayers().forEach(Player::updateCommands);
         }
         getLogger().info("Theme '" + themeName + "', pack " + b.sha1() + " (" + b.zip().length / 1024 + " KB, height "
-            + settings.maxHeight() + " px, " + (settings.external() ? "external" : "embedded") + ") at " + packs.url());
+            + b.height() + " px, " + (settings.external() ? "external" : "embedded") + ") at " + packs.url());
         if (settings.external()) {
             getLogger().info("External hosting: serve " + getDataFolder().toPath().resolve("pack").toAbsolutePath()
                 + " so that the URL above resolves");
@@ -269,7 +292,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             Build b = build();
             boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
-            service.reconfigure(b.renderer(), b.settings().maxHeight(), b.settings().fallback());
+            service.reconfigure(b.renderer(), b.height(), b.settings().fallback());
             List<String> menuErrors = loadMenus();
             sender.sendMessage(msg().get(sender, "reload.menus", "count", menus.all().size()));
             for (String e : menuErrors) {

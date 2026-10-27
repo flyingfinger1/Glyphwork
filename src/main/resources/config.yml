@@ -13,7 +13,8 @@ fallback-language: en
 # Make your own with the skin editor: https://flyingfinger1.github.io/Glyphwork/
 theme: vanilla
 
-# Tallest scene in pixels the pack supports (one small font per pixel row).
+# Height in pixels the pack supports at least (one small font per pixel row, about 160 KB per
+# 256 px). Taller YAML menus raise it by themselves; set it only for tall scenes of plugins.
 max-height: 256
 
 pack:

@@ -23,7 +23,7 @@ Positions are GUI pixels from the top-left corner of the menu. Frames snap to th
 ```yaml
 title: "<gold>Warps"          # dialog title, MiniMessage
 width: 176                    # default 176
-height: 96                    # default 96, at most max-height (config.yml)
+height: 96                    # default 96; taller than the screen scrolls (see below)
 background: panel             # frame drawn over the whole menu, or "none"
 command: warps                # optional: /warps opens it (registered at runtime, also on reload)
 aliases: [w]                  # optional
@@ -75,6 +75,13 @@ sounds or commands.
 current (players online, balances, a countdown). Clicks on the previous drawing still work. It stops
 when the player closes the menu (also with ESC), opens another one or an inventory. Every redraw
 sends the whole menu again, so a few seconds are better than one.
+
+**Long menus** (rules, news, a changelog) can be taller than the screen: the dialog then scrolls
+them by itself, with the mouse wheel and a scroll bar, without asking the server. The whole menu
+scrolls, title bar excepted. Frames need one small font per pixel row in the pack, so the pack
+grows with the tallest menu (about 160 KB per 256 px, up to 2048 px); `/glyphwork reload` builds
+the new pack and sends it to everyone online. Plugins that build tall scenes with the API set
+`max-height` in `config.yml` instead.
 
 ## Elements
 

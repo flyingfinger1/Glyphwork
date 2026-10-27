@@ -73,7 +73,7 @@ attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
 - **x (P1):** font `glyphwork:space` maps private-use chars to advances of +-2^k px; any offset is a
   combination of them. All frames are layered on the **first text line** in paint order.
 - **y (P2):** frames are drawn on the first text line; one font per pixel row (`glyphwork:y<N>`,
-  N < `max-height`) registers every glyph sheet with `ascent = 7 - N`, so their paint order is exact.
+  N below the tallest menu, at least `max-height`) registers every glyph sheet with `ascent = 7 - N`, so their paint order is exact.
   Text goes on the text line it falls into, with 9 fonts (`glyphwork:t0..8`) that re-register the
   vanilla text textures (`ascii.png` etc., not shipped) shifted by the remainder. Those textures are
   large and every font loads them again, so text gets only 9 fonts; text lines come after the first

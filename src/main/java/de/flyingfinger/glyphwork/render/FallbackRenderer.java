@@ -51,7 +51,9 @@ public final class FallbackRenderer {
         List<Label> labels = new ArrayList<>();
         List<Bar> bars = new ArrayList<>();
         List<Action> actions = new ArrayList<>();
-        for (Element e : scene.elements()) {
+        java.util.ArrayDeque<Element> todo = new java.util.ArrayDeque<>(scene.elements());
+        while (!todo.isEmpty()) {
+            Element e = todo.poll();
             try {
                 if (!Boolean.TRUE.equals(e.visible().apply(view))) {
                     continue;
@@ -80,6 +82,21 @@ public final class FallbackRenderer {
                     case ListView<?> l -> list(l, view, actions);
                     case Grid<?> g -> grid(g, view, actions);
                     case Slider s -> slider(s, view, actions);
+                    case de.flyingfinger.glyphwork.api.Tabs t -> {
+                        de.flyingfinger.glyphwork.api.Tabs.Tab active = t.active(view);
+                        for (de.flyingfinger.glyphwork.api.Tabs.Tab tab : t.tabs()) {
+                            boolean on = tab == active;
+                            actions.add(new Action(Component.text((on ? "\u25b6 " : "") + tab.title()), null,
+                                Redraw.after(c -> t.select(c, tab.id()))));
+                        }
+                        if (active != null) {
+                            // the active tab's elements, in order, right after the tabs
+                            java.util.List<Element> inner = active.elements();
+                            for (int i = inner.size() - 1; i >= 0; i--) {
+                                todo.push(inner.get(i));
+                            }
+                        }
+                    }
                     case Bar b -> bars.add(b);
                     case de.flyingfinger.glyphwork.api.Head hd -> {
                         // the client's small head in front of the tooltip, as a button when clickable

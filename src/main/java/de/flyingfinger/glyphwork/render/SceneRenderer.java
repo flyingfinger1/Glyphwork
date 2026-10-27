@@ -5,6 +5,7 @@ import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Checkbox;
 import de.flyingfinger.glyphwork.api.Choice;
 import de.flyingfinger.glyphwork.api.Slider;
+import de.flyingfinger.glyphwork.api.Tabs;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
@@ -172,52 +173,57 @@ public final class SceneRenderer {
         LineBuilder line = new LineBuilder(text, maxHeight);
         int i = 0;
         for (Element e : scene.elements()) {
-            String name = scene.id() + "#" + i++;
-            try {
-                if (!Boolean.TRUE.equals(e.visible().apply(view))) {
-                    continue;                      // the name index still counts it, so click names stay stable
-                }
-                switch (e) {
-                    case Panel p -> panel(line, p, view, binder, name, scene);
-                    case Label l -> label(line, l, view);
-                    case Button b -> button(line, b, view, binder, name);
-                    case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
-                        h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
-                    case Icon ic -> {
-                        String item = ic.item().apply(view);
-                        int dy = headOf(item) != null
-                            ? headShift("Icon", name, ic.y(), ic.y() + (IconCatalog.SIZE - LineBuilder.HEAD) / 2) : 0;
-                        if (icon(line, item, ic.x(), ic.y() + dy, ic.tint() == null ? null : ic.tint().apply(view))) {
-                            count(line, ic.count() == null ? null : ic.count().apply(view), ic.x(), ic.y() + dy);
-                        }
-                        HoverEventSource<?> itemTip = ic.hoverItem() != null ? safeItem(ic.hoverItem().apply(view))
-                            : ic.itemTooltip() ? itemHover(item) : null;
-                        hitbox(line, ic.x(), ic.y() + dy, IconCatalog.SIZE, IconCatalog.SIZE,
-                            ic.onClick() == null ? null : binder.bind(name, ic.onClick()),
-                            itemTip != null ? itemTip : tooltip(ic.tooltip(), view));
-                    }
-                    case ListView<?> l -> list(line, l, view, binder, name);
-                    case Grid<?> g -> grid(line, g, view, binder, name);
-                    case Slider s -> slider(line, s, view, binder, name);
-                    case Checkbox cb -> checkbox(line, cb, view, binder, name);
-                    case Choice ch -> choice(line, ch, view, binder, name);
-                    case Bar b -> bar(line, b, view);
-                    case Image im -> image(line, im, view, binder, name);
-                    case Head hd -> {
-                        String who = hd.player().apply(view);
-                        if (who != null && !who.isBlank()) {
-                            bigHead(line, who.trim(), hd.x(), hd.y(), hd.size());
-                            hitbox(line, hd.x(), hd.y(), hd.size(), hd.size(),
-                                hd.onClick() == null ? null : binder.bind(name, hd.onClick()), tooltip(hd.tooltip(), view));
-                        }
-                    }
-                }
-            } catch (RuntimeException ex) {
-                // a failing binding hides this element instead of breaking the whole screen
-                warnOnce("render:" + name + ":" + ex, "Element " + name + " failed to render: " + ex);
-            }
+            element(line, e, view, binder, scene.id() + "#" + i++, scene);
         }
         return line;
+    }
+
+    /** One element; hidden ones are skipped (their number still counts, so click names stay stable). */
+    private void element(LineBuilder line, Element e, View view, Binder binder, String name, Scene scene) {
+        try {
+            if (!Boolean.TRUE.equals(e.visible().apply(view))) {
+                return;
+            }
+            switch (e) {
+                case Panel p -> panel(line, p, view, binder, name, scene);
+                case Label l -> label(line, l, view);
+                case Button b -> button(line, b, view, binder, name);
+                case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
+                    h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
+                case Icon ic -> {
+                    String item = ic.item().apply(view);
+                    int dy = headOf(item) != null
+                        ? headShift("Icon", name, ic.y(), ic.y() + (IconCatalog.SIZE - LineBuilder.HEAD) / 2) : 0;
+                    if (icon(line, item, ic.x(), ic.y() + dy, ic.tint() == null ? null : ic.tint().apply(view))) {
+                        count(line, ic.count() == null ? null : ic.count().apply(view), ic.x(), ic.y() + dy);
+                    }
+                    HoverEventSource<?> itemTip = ic.hoverItem() != null ? safeItem(ic.hoverItem().apply(view))
+                        : ic.itemTooltip() ? itemHover(item) : null;
+                    hitbox(line, ic.x(), ic.y() + dy, IconCatalog.SIZE, IconCatalog.SIZE,
+                        ic.onClick() == null ? null : binder.bind(name, ic.onClick()),
+                        itemTip != null ? itemTip : tooltip(ic.tooltip(), view));
+                }
+                case ListView<?> l -> list(line, l, view, binder, name);
+                case Grid<?> g -> grid(line, g, view, binder, name);
+                case Slider s -> slider(line, s, view, binder, name);
+                case Checkbox cb -> checkbox(line, cb, view, binder, name);
+                case Choice ch -> choice(line, ch, view, binder, name);
+                case Bar b -> bar(line, b, view);
+                case Image im -> image(line, im, view, binder, name);
+                case Tabs t -> tabs(line, t, view, binder, name, scene);
+                case Head hd -> {
+                    String who = hd.player().apply(view);
+                    if (who != null && !who.isBlank()) {
+                        bigHead(line, who.trim(), hd.x(), hd.y(), hd.size());
+                        hitbox(line, hd.x(), hd.y(), hd.size(), hd.size(),
+                            hd.onClick() == null ? null : binder.bind(name, hd.onClick()), tooltip(hd.tooltip(), view));
+                    }
+                }
+            }
+        } catch (RuntimeException ex) {
+            // a failing binding hides this element instead of breaking the whole screen
+            warnOnce("render:" + name + ":" + ex, "Element " + name + " failed to render: " + ex);
+        }
     }
 
     /** Label.DARK stands for "the skin's text color" (dark gray in vanilla, light on dark skins). */
@@ -456,6 +462,67 @@ public final class SceneRenderer {
         line.image(p, im.x(), im.y(), im.tint() == null ? null : im.tint().apply(view));
         hitbox(line, im.x(), im.y(), Math.max(1, p.width()), Math.max(1, p.height()),
             im.onClick() == null ? null : binder.bind(name, im.onClick()), tooltip(im.tooltip(), view));
+    }
+
+    /**
+     * Tab buttons side by side (the active one in its own color), the panel below, then the
+     * elements of the active tab. A click on a tab selects it and draws the scene again.
+     */
+    private void tabs(LineBuilder line, Tabs t, View view, Binder binder, String name, Scene scene) {
+        List<Tabs.Tab> all = t.tabs();
+        if (all.isEmpty()) {
+            return;
+        }
+        Tabs.Tab active = t.active(view);
+        Frame frame = frame(t.frame());
+        int n = all.size();
+        int ts = frame == null ? 8 : frame.tileSize();
+        int cols = Math.max(n, t.width() / ts);
+        int head = Math.max(1, Tabs.HEADER / ts);
+        int body = Math.max(1, (t.height() - Tabs.HEADER) / ts);
+        // tabs cover whole tiles, so the active one joins the panel without a seam
+        int[] col = new int[n + 1];
+        for (int i = 0; i <= n; i++) {
+            col[i] = i * cols / n;
+        }
+        if (frame != null) {
+            // the other tabs first, 2 px lower: the panel drawn after them covers their lower edge
+            for (int i = 0; i < n; i++) {
+                Tabs.Tab tab = all.get(i);
+                if (tab == active) {
+                    continue;
+                }
+                ClickEvent<?> click = binder.bind(name + ":tab:" + tab.id(), Redraw.after(c -> t.select(c, tab.id())));
+                line.frame(frame, t.x() + col[i] * ts, t.y() + 2, LineBuilder.cells(col[i + 1] - col[i], head), t.tint(),
+                    click, null);
+            }
+            boolean[][] cells = new boolean[head + body][cols];
+            for (int r = 0; r < head + body; r++) {
+                for (int c = 0; c < cols; c++) {
+                    cells[r][c] = r >= head || (active != null && c >= col[all.indexOf(active)] && c < col[all.indexOf(active) + 1]);
+                }
+            }
+            line.frame(frame, t.x(), t.y(), cells, null, null, null);
+        }
+        TextColor text = TextColor.color(theme.text());
+        for (int i = 0; i < n; i++) {
+            Tabs.Tab tab = all.get(i);
+            boolean on = tab == active;
+            int x0 = t.x() + col[i] * ts;
+            int tw = (col[i + 1] - col[i]) * ts;
+            int ty = t.y() + (on ? 0 : 2);
+            int textX = x0;
+            if (tab.icon() != null && icon(line, tab.icon(), x0 + 3, ty, null)) {
+                textX += IconCatalog.SIZE + 3;
+                tw -= IconCatalog.SIZE + 3;
+            }
+            line.centered(line.fit(tab.title(), tw - 6), textX, tw, ty + 5, text, null);
+        }
+        if (active != null) {
+            for (int i = 0; i < active.elements().size(); i++) {
+                element(line, active.elements().get(i), view, binder, name + "/" + active.id() + "#" + i, scene);
+            }
+        }
     }
 
     private @Nullable Frame frame(String name) {

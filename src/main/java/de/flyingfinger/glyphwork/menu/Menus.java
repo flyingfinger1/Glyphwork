@@ -82,6 +82,8 @@ public final class Menus {
     private Vars vars = Vars.NONE;
     /** Id of the menu being parsed (keys of saved variables and cooldowns). */
     private String menuId = "";
+    /** Templates of the menu being parsed (also used inside tabs). */
+    private Templates templates = new Templates();
     /** Index of the element being parsed (the default cooldown key). */
     private int elementIndex;
     /** Forms of the menu being parsed. */
@@ -197,7 +199,7 @@ public final class Menus {
         if (!"none".equalsIgnoreCase(background)) {
             b.add(Panel.of(0, 0, width, height).frame(background));
         }
-        Templates templates = new Templates(shared);
+        templates = new Templates(shared);
         if (root.has("templates")) {
             if (!(Templates.plain(c.get("templates")) instanceof Map<?, ?> local)) {
                 throw root.error("templates", "map of templates expected (name: element or list of elements)");
@@ -208,7 +210,7 @@ public final class Menus {
         int index = 0;
         for (Node top : elements) {
             for (Node n : templates.expand(top)) {
-                element(b, n, index++);
+                element(b::add, n, index++);
             }
         }
         String command = root.optString("command", null);
@@ -435,7 +437,7 @@ public final class Menus {
         return s;
     }
 
-    private void element(Scene.Builder b, Node n, int index) throws MenuException {
+    private void element(Consumer<Element> b, Node n, int index) throws MenuException {
         elementIndex = index;
         String type = n.string("type").toLowerCase();
         List<Condition> showIf = Condition.all(n, "show-if");
@@ -446,7 +448,7 @@ public final class Menus {
             if (!showIf.isEmpty()) {
                 show(e, v -> Condition.all(showIf, s -> mv.fill(v, s, null, null)));
             }
-            b.add(e);
+            b.accept(e);
         }
     }
 
@@ -465,6 +467,7 @@ public final class Menus {
             case Bar x -> x.visible(visible);
             case de.flyingfinger.glyphwork.api.Image x -> x.visible(visible);
             case de.flyingfinger.glyphwork.api.Head x -> x.visible(visible);
+            case de.flyingfinger.glyphwork.api.Tabs x -> x.visible(visible);
         }
     }
 
@@ -709,6 +712,46 @@ public final class Menus {
                 }
                 b.accept(im);
             }
+            case "tabs" -> {
+                n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "tint", "tabs"));
+                int x = n.integer("x");
+                int y = n.integer("y");
+                de.flyingfinger.glyphwork.api.Tabs t = de.flyingfinger.glyphwork.api.Tabs.of(n.optString("id", "tabs" + index),
+                        x, y, n.optInt("width", 160), n.optInt("height", 100))
+                    .frame(n.optString("frame", "panel"))
+                    .tint(n.optColor("tint", de.flyingfinger.glyphwork.api.Tabs.INACTIVE));
+                String var = n.has("var") ? varName(n) : null;
+                if (var != null) {
+                    Vars mv = vars;
+                    t.selected(v -> mv.get(v, var).trim()).onSelect((c, id) -> mv.set(c, var, id));
+                }
+                java.util.Set<String> ids = new java.util.HashSet<>();
+                List<Node> tabNodes = n.nodes("tabs");
+                if (tabNodes.isEmpty()) {
+                    throw n.error("tabs", "list of tabs expected ({ id, title, elements })");
+                }
+                int saved = elementIndex;
+                for (int ti = 0; ti < tabNodes.size(); ti++) {
+                    Node tn = tabNodes.get(ti);
+                    tn.only(Set.of("id", "title", "icon", "elements"));
+                    String id = tn.optString("id", "tab" + (ti + 1)).trim().toLowerCase();
+                    if (!ids.add(id)) {
+                        throw tn.error("id", "tab id '" + id + "' is used twice");
+                    }
+                    List<Element> inner = new ArrayList<>();
+                    int ci = 0;
+                    for (Node child : tn.nodes("elements")) {
+                        for (Node c : templates.expand(child)) {
+                            // positions inside a tab are relative to the panel below the tab buttons
+                            element(inner::add, shifted(c, x, y + de.flyingfinger.glyphwork.api.Tabs.HEADER),
+                                index * 1000 + ti * 100 + ci++);
+                        }
+                    }
+                    t.tab(id, tn.optString("title", id), tn.optString("icon", null), inner);
+                }
+                elementIndex = saved;
+                b.accept(t);
+            }
             case "bar" -> {
                 n.only(with("type", "x", "y", "width", "height", "value", "max", "color", "text", "tooltip", "frame"));
                 int h = n.optInt("height", 8);
@@ -731,7 +774,7 @@ public final class Menus {
                 b.accept(bar);
             }
             default -> throw n.error("type", "unknown type '" + type
-                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar, image, head)");
+                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar, image, head, tabs)");
         }
     }
 
@@ -739,6 +782,15 @@ public final class Menus {
     private static double number(@Nullable String s) {
         Double d = s == null ? null : Condition.number(s.trim());
         return d == null ? 0 : d;
+    }
+
+    /** A copy of an element node moved by (dx, dy) (its x and y default to 0). */
+    private static Node shifted(Node n, int dx, int dy) throws MenuException {
+        Map<String, Object> m = new LinkedHashMap<>();
+        n.raw().forEach((k, v) -> m.put(String.valueOf(k), v));
+        m.put("x", n.optInt("x", 0) + dx);
+        m.put("y", n.optInt("y", 0) + dy);
+        return new Node(m, n.path);
     }
 
     /** The menu variable an input element writes ("var: sichtweite"). */

@@ -97,6 +97,7 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
 | `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
 | `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
+| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `tint` (inactive tabs, default a bit darker) |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
@@ -161,6 +162,37 @@ down. Button sizes count as drawn: frames are whole tiles, so a 20 px button is 
 differently from the first (Glyphwork logs a hint). Lists with `items-from: online-players` use 18 px
 rows by default. Heads show in every display mode and in the plain dialog (in front of the button
 text).
+
+**Tabs:** the active tab and the panel are drawn as one frame, without an edge between them; the
+other tabs sit 2 px lower behind it, a bit darker. Only the elements of the active tab are drawn
+and clickable; a click on another tab switches to it and draws the menu again. Tabs cover whole
+tiles (8 px), so their widths are rounded. Positions of elements inside a tab are relative to
+the panel below the 16 px tabs, so `x: 4, y: 4` is the top left corner of the panel. Every
+element type works inside a tab, also templates, `show-if` and cooldowns. Without `var` each menu
+opens on the first tab; with `var: page` the active tab is a menu variable (so `persist`, `show-if:
+"%menu_page% == shop"` and `set: page shop` work with it). Tabs share the panel width evenly; a tab
+`icon` stands left of its title, which is written in the skin's text color. The plain dialog lists the tabs as buttons (▶ marks the active one)
+followed by the elements of the active tab.
+
+```yaml
+- type: tabs
+  x: 8
+  y: 20
+  width: 160
+  height: 96
+  var: page
+  tabs:
+    - id: shop
+      title: Shop
+      icon: emerald
+      elements:
+        - { type: label, x: 6, y: 6, text: "Today's offers" }
+        - { type: button, x: 6, y: 20, width: 80, text: Buy, actions: ["message: Thanks!"] }
+    - id: info
+      title: Info
+      elements:
+        - { type: label, x: 6, y: 6, width: 144, wrap: true, text: "Open daily from 8 to 20." }
+```
 
 **Slider, checkbox, choice** write a [menu variable](#variables) (`var`) and are drawn from the
 skin, so they sit anywhere in the menu like buttons. Native dialog fields cannot be placed inside the

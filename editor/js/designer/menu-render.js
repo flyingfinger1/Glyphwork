@@ -150,19 +150,43 @@ function fillTemplate(v, values, used) {
  * Expands "use:" entries like Templates.java. Returns [{el, top, errors}] where top is the index
  * of the entry in menu.elements it came from.
  */
+export const TAB_HEADER = 16;
+const tabsKey = (el, top) => String(el.id ?? 'tabs' + top);
+const tabId = (tb, i) => String(tb?.id ?? 'tab' + (i + 1)).trim().toLowerCase();
+
+/** The id of the active tab (the first one when nothing or an unknown id is set). */
+export function activeTab(el, key, ctx) {
+  const ids = (el._tabs || []).map((t) => t.id);
+  const want = el.var != null ? varValue(ctx, String(el.var).toLowerCase()).trim() : ctx.pages?.['tab:' + key];
+  return ids.includes(want) ? want : ids[0];
+}
+
 export function expand(menu, shared = {}) {
   const templates = {};
   for (const [k, v] of Object.entries(shared || {})) templates[k.toLowerCase()] = v;
   for (const [k, v] of Object.entries(menu.templates || {})) templates[k.toLowerCase()] = v;
   const out = [];
   const errors = [];
-  const walk = (el, dx, dy, showIf, depth, top) => {
+  const walk = (el, dx, dy, showIf, depth, top, inTab = []) => {
     if (!el || typeof el !== 'object') return;
     if (el.use == null) {
       const m = { ...el };
       if (dx || dy) { m.x = int(el.x, 0) + dx; m.y = int(el.y, 0) + dy; }
       if (showIf.length) m['show-if'] = [...showIf, ...list(el['show-if'])];
-      out.push({ el: m, top });
+      const kids = String(el.type ?? '').toLowerCase() === 'tabs' ? m.tabs : null;
+      if (kids) delete m.tabs;
+      out.push({ el: m, top, inTab });
+      if (Array.isArray(kids)) {
+        // like Menus.java: tab elements are placed relative to the panel below the tab buttons
+        const key = tabsKey(el, top);
+        m._tabs = kids.map((tb, i) => ({ id: tabId(tb, i), title: tb?.title, icon: tb?.icon }));
+        kids.forEach((tb, i) => {
+          const mark = [...inTab, { key, id: tabId(tb, i) }];
+          for (const child of (Array.isArray(tb?.elements) ? tb.elements : [])) {
+            walk(child, int(m.x, 0), int(m.y, 0) + TAB_HEADER, [], depth + 1, top, mark);
+          }
+        });
+      }
       return;
     }
     const name = String(el.use).toLowerCase();
@@ -179,8 +203,8 @@ export function expand(menu, shared = {}) {
     }
     const cond = [...showIf, ...list(el['show-if'])];
     const x = dx + int(el.x, 0), y = dy + int(el.y, 0);
-    if (Array.isArray(filled)) filled.forEach((g) => walk(g, x, y, cond, depth + 1, top));
-    else walk(filled, x, y, cond, depth + 1, top);
+    if (Array.isArray(filled)) filled.forEach((g) => walk(g, x, y, cond, depth + 1, top, inTab));
+    else walk(filled, x, y, cond, depth + 1, top, inTab);
   };
   (menu.elements || []).forEach((el, i) => walk(el, 0, 0, [], 0, i));
   return { items: out, errors };
@@ -379,7 +403,9 @@ export function renderMenu(menu, skin, ctx = {}) {
   const region = (x, y, w, h, tip, act) => { if (tip || act) regions.push({ x, y, w, h, tip, act }); };
   const actionsOf = (el, item) => (el.actions == null ? null : { type: 'actions', list: list(el.actions), item });
 
-  for (const { el, top } of items) {
+  const active = {};
+  for (const { el, top, inTab } of items) {
+    if (inTab && inTab.some((m) => active[m.key] !== m.id)) continue;
     const f = (s, item) => fill(s, ctx, item);
     const type = String(el.type ?? '').toLowerCase();
     if (type === '_missing') {
@@ -557,6 +583,42 @@ export function renderMenu(menu, skin, ctx = {}) {
           const s = f(el.text ?? '');
           if (s) c.centered(fit(s, w - 4), x, w, h <= 8 ? y - 9 : y + Math.floor((h - 7) / 2), WHITE, true);
           region(x, y, w, h, tip, null);
+          boxes.push({ top, x, y, w, h });
+          break;
+        }
+        case 'tabs': {
+          const w = int(el.width, 160), h = int(el.height, 100);
+          const t = c.tileSize();
+          const key = String(el.id ?? 'tabs' + top);
+          const tabs = el._tabs || [];
+          const on = activeTab(el, key, ctx);
+          active[key] = on;
+          // like SceneRenderer.tabs: the active tab and the panel are one shape, the others 2 px lower behind it
+          const frameName = String(el.frame ?? 'panel');
+          const n = tabs.length;
+          const cols = Math.max(n, Math.floor(w / t));
+          const head = Math.max(1, Math.floor(TAB_HEADER / t));
+          const body = Math.max(1, Math.floor((h - TAB_HEADER) / t));
+          const col = Array.from({ length: n + 1 }, (_, i) => Math.floor(i * cols / n));
+          const ai = tabs.findIndex((tb) => tb.id === on);
+          tabs.forEach((tb, i) => {
+            if (i === ai) return;
+            const cw = col[i + 1] - col[i];
+            c.shape(frameName, x + col[i] * t, y + 2, Array.from({ length: head }, () => new Array(cw).fill(true)), color(el.tint) ?? 0xB8B8B8);
+            region(x + col[i] * t, y + 2, cw * t, TAB_HEADER - 2, null, el.var != null
+              ? { type: 'set', var: String(el.var).toLowerCase(), value: tb.id, then: [] }
+              : { type: 'page', id: 'tab:' + key, page: tb.id });
+          });
+          const cells = Array.from({ length: head + body }, (_, r) => Array.from({ length: cols },
+            (_, cc) => r >= head || (ai >= 0 && cc >= col[ai] && cc < col[ai + 1])));
+          if (!c.shape(frameName, x, y, cells, null)) errors.push({ top, text: `frame '${frameName}'` });
+          tabs.forEach((tb, i) => {
+            const isOn = i === ai;
+            const ty = y + (isOn ? 0 : 2);
+            let tx = x + col[i] * t, tw = (col[i + 1] - col[i]) * t;
+            if (tb.icon != null && drawIcon(c, String(tb.icon).trim(), tx + 3, ty)) { tx += ICON + 3; tw -= ICON + 3; }
+            c.centered(fit(String(tb.title ?? tb.id), tw - 6), tx, tw, ty + 5, skin.text & 0xffffff);
+          });
           boxes.push({ top, x, y, w, h });
           break;
         }

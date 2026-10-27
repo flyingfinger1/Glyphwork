@@ -227,7 +227,7 @@ function pixelOf(e) {
   return [(e.clientX - r.left) * (stage.width / r.width) / zoom, (e.clientY - r.top) * (stage.height / r.height) / zoom];
 }
 
-const RESIZABLE = new Set(['button', 'panel', 'hitbox', 'label', 'slider', 'choice', 'list', 'grid']);
+const RESIZABLE = new Set(['button', 'panel', 'hitbox', 'label', 'slider', 'choice', 'list', 'grid', 'tabs']);
 const resizable = (el) => el && el.use == null && RESIZABLE.has(kindOf(el)) && !(kindOf(el) === 'panel' && el.shape != null);
 
 function hitElement(px, py) {
@@ -327,6 +327,11 @@ function resize(start, dw, dh) {
   let el = start;
   const set = (key, v) => { el = setField(el, key, v); };
   switch (k) {
+    case 'tabs': {
+      set('width', Math.max(32, snapTo(n(start.width, 160) + dw)));
+      set('height', Math.max(32, snapTo(n(start.height, 100) + dh)));
+      break;
+    }
     case 'button': case 'panel': case 'hitbox': {
       const w0 = n(start.width, k === 'button' ? 64 : 16), h0 = n(start.height, 16);
       set('width', Math.max(8, snapTo(w0 + dw)));
@@ -655,6 +660,7 @@ function refreshProps() {
     if (kind === 'item') { box.append(itemTemplateEditor(k)); continue; }
     if (kind === 'use') { box.append(field('use', 'select', templateNames(), get('use'), put('use'), 'el' + selected)); continue; }
     if (kind === 'values') { box.append(valuesEditor()); continue; }
+    if (kind === 'yaml') { box.append(yamlField(key)); continue; }
     const f = field(key, kind, extra, get(key), put(key), 'el' + selected);
     // x/y and width/height side by side
     if (['x', 'width', 'cols', 'min'].includes(key)) {
@@ -781,6 +787,33 @@ function valuesEditor() {
     changed(false);
   };
   wrap.append(ta);
+  return wrap;
+}
+
+/** One setting as YAML text (the tabs of a tabs element with their elements). */
+function yamlField(key) {
+  const wrap = document.createElement('label');
+  const caption = document.createElement('span');
+  caption.textContent = labelFor(key);
+  const ta = document.createElement('textarea');
+  ta.rows = 12;
+  ta.spellcheck = false;
+  ta.value = current()[key] == null ? '' : jsyaml.dump(current()[key], { lineWidth: -1 });
+  const btn = document.createElement('button');
+  btn.className = 'small';
+  btn.textContent = t('apply');
+  btn.onclick = (e) => {
+    e.preventDefault();
+    try {
+      const v = ta.value.trim() ? jsyaml.load(ta.value) : undefined;
+      before();
+      replaceSelected(setField(current(), key, v));
+      refreshAll();
+    } catch (err) {
+      toast(`${t('yamlError')}: ${err.message}`, true);
+    }
+  };
+  wrap.append(caption, ta, btn);
   return wrap;
 }
 

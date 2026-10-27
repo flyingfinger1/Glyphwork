@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Tabs:** `type: tabs` / `Tabs.of(...)` puts tabs on top of a panel; the active tab merges with
+  the panel into one frame, the others sit slightly lower and darker behind it. Only the active
+  tab's elements are drawn and clickable, a click on another tab switches. Elements inside a tab are
+  placed relative to the panel and can be anything (templates, `show-if` and cooldowns included);
+  `var` keeps the active tab in a menu variable. The designer draws and switches tabs too.
 - **Action `add:`** counts: `add: points 1`, `add: amount -1 min 1 max 64` (amounts and limits may
   be placeholders, decimals work) and redraws the menu like `set:`.
 - **Saved variables:** `persist: true` (or a list of names) keeps menu variables in the player's

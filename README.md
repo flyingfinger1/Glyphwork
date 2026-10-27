@@ -6,7 +6,7 @@ serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.
 
 **Status:** all spec milestones (M0–M5) done: primitives proven in a vanilla client, autotiled
 skins with an editor, public scene API, YAML menus, item icons, an example plugin. Other
-plugins build screens with panels, labels, buttons, lists, grids, sliders, checkboxes, choice buttons, navigation, text input and forms:
+plugins build screens with panels, labels, buttons, lists, grids, tabs, sliders, checkboxes, choice buttons, navigation, text input and forms:
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
 **Item icons:** 16 x 16 icons for 1595 items (in grids, buttons, lists, menus), drawn from the

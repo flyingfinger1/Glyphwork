@@ -264,9 +264,10 @@ public final class Menus {
     private void element(Consumer<Element> b, Node n, int index, String type) throws MenuException {
         switch (type) {
             case "label" -> {
-                n.only(with("type", "x", "y", "text", "color", "width", "align"));
+                n.only(with("type", "x", "y", "text", "color", "width", "align", "shadow"));
                 Label l = Label.of(n.integer("x"), n.integer("y"), text(n.string("text")))
-                    .color(n.optColor("color", Label.DARK));
+                    .color(n.optColor("color", Label.DARK))
+                    .shadow(n.optBool("shadow", false));
                 if (n.has("width")) {
                     l.width(n.integer("width"));
                 }

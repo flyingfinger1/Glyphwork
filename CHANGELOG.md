@@ -11,6 +11,13 @@
   drawing still work; it stops when the player closes the menu (also with ESC), opens another one or
   an inventory. `beispiel-spieler.yml` refreshes every 5 seconds and shows the players per world as
   counts.
+- **Text shadows like in vanilla:** the text of buttons, lists, grid cells and the page arrows now
+  has a drop shadow (before, all text was flat). Grayed-out buttons stay flat, and so do labels,
+  like inventory titles; `shadow: true` (YAML) or `Label.shadow(true)` turns it on for a label.
+  Arrows of a page button that cannot be used are gray now.
+- List frames and the menu background are rounded **up** to whole tiles: rows of a list whose
+  height is no multiple of 8 (2 rows of 18 px) stuck out of the frame, and content near the bottom
+  of a menu with such a height sat on or past the edge. Other frames still round down.
 - New placeholder `%time%`: the server clock (HH:MM:SS).
 - Closing a menu with its exit button or ESC now ends the player's session right away (before, it
   stayed until the next menu).

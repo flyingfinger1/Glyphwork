@@ -106,6 +106,20 @@ class CountRefreshTest {
         return out;
     }
 
+    /** The first text component that contains {@code s} (unshadowed text shares its component with cursor moves). */
+    private static TextComponent containing(Component c, String s) {
+        if (c instanceof TextComponent tc && tc.content().contains(s)) {
+            return tc;
+        }
+        for (Component child : c.children()) {
+            TextComponent t = containing(child, s);
+            if (t != null) {
+                return t;
+            }
+        }
+        return null;
+    }
+
     @Test
     void countSitsAtTheBottomRightWithAShadow() {
         Scene s = Scene.builder("t", 100, 60).add(Icon.of(10, 20, "diamond").count(64)).build();
@@ -163,6 +177,53 @@ class CountRefreshTest {
         assertEquals(4, digits.size());
         assertEquals(8, digits.get(0)[1]);
         assertEquals(16 + 8, digits.get(2)[1]);
+    }
+
+    @Test
+    void listAndBackgroundFramesRoundUpToCoverTheirContent() {
+        Scene list = Scene.builder("t", 120, 60)
+            .add(de.flyingfinger.glyphwork.api.ListView.of("l", 0, 0, 96, 2, v -> List.of("a", "b")).rowHeight(18))
+            .build();
+        Layout l = layout(render(list));
+        // 2 rows of 18 px = 36 px: the frame is 40 px (5 tiles), not 32
+        assertEquals(40, l.drawn.stream().mapToInt(d -> d.y() + d.img().getHeight()).max().orElse(0));
+
+        Scene bg = Scene.builder("t", 100, 134).background().build();
+        Layout b = layout(render(bg));
+        assertEquals(136, b.drawn.stream().mapToInt(d -> d.y() + d.img().getHeight()).max().orElse(0));
+        assertEquals(104, b.drawn.stream().mapToInt(d -> d.x() + d.img().getWidth()).max().orElse(0));
+    }
+
+    @Test
+    void textShadowsLikeVanilla() throws MenuException {
+        Scene s = new Menus().parse("t", """
+            background: none
+            elements:
+              - { type: label, x: 0, y: 0, text: Titel }
+              - { type: label, x: 0, y: 10, text: Hell, color: white, shadow: true }
+              - { type: button, x: 0, y: 20, text: An }
+              - { type: button, x: 0, y: 40, text: Aus, enabled-if: "a == b" }
+              - type: list
+                x: 0
+                y: 60
+                items: [{ text: Zeile }]
+              - type: grid
+                x: 0
+                y: 90
+                cols: 1
+                rows: 1
+                items: [{ text: Z }]
+            """).scene();
+        Component msg = render(s);
+        assertNull(containing(msg, "Titel").shadowColor());     // labels: flat by default
+        assertEquals(LineBuilder.shadowOf(net.kyori.adventure.text.format.TextColor.color(0xFFFFFF)),
+            containing(msg, "Hell").shadowColor());
+        assertNotNull(containing(msg, "An").shadowColor());
+        assertNull(containing(msg, "Aus").shadowColor());       // grayed out: flat
+        assertNotNull(containing(msg, "Zeile").shadowColor());
+        assertNotNull(containing(msg, "Z").shadowColor());
+        assertThrows(MenuException.class, () -> new Menus().parse("t",
+            "elements: [{ type: label, x: 0, y: 0, text: a, shadow: vielleicht }]\n"));
     }
 
     @Test

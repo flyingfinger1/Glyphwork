@@ -30,8 +30,11 @@ Glyphwork.get().open(player, settings);
 - Content can depend on the viewer: every `Function<View, ...>` is evaluated each time the scene is
   rendered. Build a scene once and reuse it.
 - Elements are drawn in the order they are added; later ones are on top and win clicks.
-  **Text is always drawn above frames.**
+  **Text is always drawn above frames.** Button, list and grid text has a drop shadow like in
+  vanilla (not on grayed-out buttons); labels are flat unless `.shadow(true)`.
 - Frame sizes are rounded down to whole tiles of the active skin (8 px for the built-in one).
+  Two exceptions round up, so that their content lies inside: the background of a list (2 rows of
+  18 px get a 40 px frame) and a panel covering the whole scene (`background()`).
 - `.refresh(Duration.ofSeconds(5))` on the builder redraws the open scene every 5 seconds (at least
   half a second), for content that changes by itself: players online, balances, countdowns. Clicks
   on the previous drawing still work; it stops when the player closes the scene (also with ESC),
@@ -42,7 +45,7 @@ Glyphwork.get().open(player, settings);
 | Element | Use |
 |---|---|
 | `Panel.of(x, y, w, h)` / `Panel.shape(x, y, "##.", "###")` | autotiled frame (`panel` by default, `.frame("slot")` etc.), optional `tint`, `tooltip`, `onClick` |
-| `Label.of(x, y, text)` | one line of text; `.color`, `.width` (clips with "..."), `.align` / `.center(width)` |
+| `Label.of(x, y, text)` | one line of text; `.color`, `.width` (clips with "..."), `.align` / `.center(width)`, `.shadow(true)` |
 | `Button.of(x, y, w, h)` | frame + centered text; `.text`, `.tint`, `.textColor`, `.tooltip`, `.enabled`, `.onClick` |
 | `Hitbox.of(x, y, w, h)` | invisible clickable area (min. 8 x 8), e.g. over a label |
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |

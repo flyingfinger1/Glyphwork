@@ -23,6 +23,7 @@ public final class Label implements Element {
     private Function<View, TextColor> color = v -> DARK;
     private int width = -1;
     private Align align = Align.LEFT;
+    private boolean shadow;
 
     private Label(int x, int y, Function<View, String> text) {
         this.x = x;
@@ -52,6 +53,19 @@ public final class Label implements Element {
     public Label width(int width) {
         this.width = width;
         return this;
+    }
+
+    /**
+     * Draws the text with a drop shadow, like button and list text. Off by default: labels are
+     * usually dark text on a light panel, like inventory titles, which have no shadow either.
+     */
+    public Label shadow(boolean shadow) {
+        this.shadow = shadow;
+        return this;
+    }
+
+    public boolean shadow() {
+        return shadow;
     }
 
     public Label align(Align align) {

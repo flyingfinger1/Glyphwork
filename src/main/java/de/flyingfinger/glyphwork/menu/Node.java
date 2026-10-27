@@ -62,7 +62,25 @@ final class Node {
         return optInt(key, 0);
     }
 
-    int optInt(String key, int fallback) throws MenuException {
+    boolean optBool(String key, boolean fallback) throws MenuException {
+        Object v = map.get(key);
+        if (v == null) {
+            return fallback;
+        }
+        if (v instanceof Boolean b) {
+            return b;
+        }
+        String t = String.valueOf(v).trim().toLowerCase();
+        if (t.equals("true") || t.equals("yes")) {
+            return true;
+        }
+        if (t.equals("false") || t.equals("no")) {
+            return false;
+        }
+        throw error(key, "true or false expected, got '" + v + "'");
+    }
+
+        int optInt(String key, int fallback) throws MenuException {
         Object v = map.get(key);
         if (v == null) {
             return fallback;

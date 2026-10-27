@@ -38,11 +38,13 @@ sends the whole menu again, so a few seconds are better than one.
 
 ## Elements
 
-Drawn in order (later ones on top). Text is always drawn above frames.
+Drawn in order (later ones on top). Text is always drawn above frames. Like in vanilla, the text
+of buttons, lists and grids has a drop shadow (grayed-out buttons do not); labels have none unless
+`shadow: true`, like inventory titles.
 
 | type | settings |
 |---|---|
-| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`) |
+| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground) |
 | `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `text-color`, `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24) |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
@@ -74,7 +76,9 @@ moves:
 | list with `row-height: 18` | 3, 12, 21, 30, 39, 48, 57, 66 ... (9n + 3) |
 | list with `row-height: 9` (compact, like the tab list) | 8, 17, 26, 35, 44, 53 ... (9n + 8) |
 
-Button heights count as drawn: frames are whole tiles, so a 20 px button is drawn (and centered) as
+The menu background and list frames are rounded up to whole tiles (8 px), so a 134 px high menu
+gets a 136 px background and a list with 2 rows of 18 px a 40 px frame; other frames are rounded
+down. Button heights count as drawn: frames are whole tiles, so a 20 px button is drawn (and centered) as
 16 px. Lists need a row height of 9 or 18 and grids a cell pitch of 18 or 27, otherwise later rows sit
 differently from the first (Glyphwork logs a hint). Lists with `items-from: online-players` use 18 px
 rows by default. Heads show in every display mode and in the plain dialog (in front of the button

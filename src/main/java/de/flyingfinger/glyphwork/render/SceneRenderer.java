@@ -41,6 +41,7 @@ public final class SceneRenderer {
     }
 
     private static final TextColor WHITE = TextColor.color(0xFFFFFF);
+    private static final TextColor DISABLED_TEXT = TextColor.color(0xA0A0A0);
 
     private final VanillaText text;
     private final Theme theme;
@@ -99,7 +100,7 @@ public final class SceneRenderer {
                     continue;                      // the name index still counts it, so click names stay stable
                 }
                 switch (e) {
-                    case Panel p -> panel(line, p, view, binder, name);
+                    case Panel p -> panel(line, p, view, binder, name, scene);
                     case Label l -> label(line, l, view);
                     case Button b -> button(line, b, view, binder, name);
                     case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
@@ -216,7 +217,7 @@ public final class SceneRenderer {
     }
 
     /** Inventory count color and its shadow (a quarter of the brightness, like vanilla). */
-    private static final ShadowColor COUNT_SHADOW = ShadowColor.shadowColor(0xFF3F3F3F);
+    private static final ShadowColor COUNT_SHADOW = LineBuilder.shadowOf(WHITE);
 
     /**
      * The stack size at the bottom right of a 16 x 16 icon at (x, y), placed like in the inventory:
@@ -256,7 +257,12 @@ public final class SceneRenderer {
         return f == null ? null : f.apply(view);
     }
 
-    private void panel(LineBuilder line, Panel p, View view, Binder binder, String name) {
+    /** Rounds a size up to whole tiles. */
+    private static int tilesUp(int size, int tile) {
+        return Math.max(tile, (size + tile - 1) / tile * tile);
+    }
+
+    private void panel(LineBuilder line, Panel p, View view, Binder binder, String name, Scene scene) {
         Frame f = frame(p.frame());
         if (f == null) {
             return;
@@ -265,6 +271,10 @@ public final class SceneRenderer {
         Component tip = tooltip(p.tooltip(), view);
         if (p.cells() != null) {
             line.frame(f, p.x(), p.y(), p.cells(), p.tint().apply(view), click, tip);
+        } else if (p.x() == 0 && p.y() == 0 && p.width() == scene.width() && p.height() == scene.height()) {
+            // the background covers the whole scene, also when its size is no multiple of the tile
+            int t = f.tileSize();
+            line.frame(f, 0, 0, tilesUp(p.width(), t), tilesUp(p.height(), t), p.tint().apply(view), click, tip);
         } else {
             line.frame(f, p.x(), p.y(), p.width(), p.height(), p.tint().apply(view), click, tip);
         }
@@ -285,7 +295,8 @@ public final class SceneRenderer {
                 case RIGHT -> l.width() - w;
             };
         }
-        line.text(s, x, l.y(), skinText(l.color().apply(view)));
+        TextColor color = skinText(l.color().apply(view));
+        line.text(s, x, l.y(), color, l.shadow() ? LineBuilder.shadowOf(color) : null);
     }
 
     private void button(LineBuilder line, Button b, View view, Binder binder, String name) {
@@ -315,8 +326,9 @@ public final class SceneRenderer {
         String s = b.text().apply(view);
         if (s != null && !s.isEmpty()) {
             s = line.fit(s, textW - 6);
-            line.centered(s, textX, textW, textY,
-                enabled ? b.textColor().apply(view) : TextColor.color(0xA0A0A0));
+            TextColor color = enabled ? b.textColor().apply(view) : TextColor.color(0xA0A0A0);
+            // like vanilla buttons: shadow while enabled, flat when grayed out
+            line.centered(s, textX, textW, textY, color, enabled ? LineBuilder.shadowOf(color) : null);
         }
     }
 
@@ -357,8 +369,11 @@ public final class SceneRenderer {
         }
         int ly = l.y() + (heads ? headShift("List", name, l.y(), l.y() + (l.rowHeight() - LineBuilder.HEAD) / 2) : 0);
         Frame bg = frame(l.frame());
+        int frameHeight = height;
         if (bg != null) {
-            line.frame(bg, l.x(), ly, l.width(), height, null, null, null);
+            // rounded up to whole tiles, so that every row lies inside the frame (2 rows of 18 px: 40 px)
+            frameHeight = tilesUp(height, bg.tileSize());
+            line.frame(bg, l.x(), ly, l.width(), frameHeight, null, null, null);
         }
         T selected = l.selected() == null ? null : l.selected().apply(view);
         Frame highlight = theme.find("button");
@@ -389,12 +404,13 @@ public final class SceneRenderer {
                 }
             }
             String s = line.fit(String.valueOf(l.text().apply(item)), l.x() + l.width() - 4 - textX);
-            line.text(s, textX, textY, l.color().apply(item));
+            TextColor color = l.color().apply(item);
+            line.text(s, textX, textY, color, LineBuilder.shadowOf(color));
             ClickEvent<?> click = l.onSelect() == null ? null
                 : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
             hitbox(line, l.x(), top, l.width(), l.rowHeight(), click, l.tooltip() == null ? null : l.tooltip().apply(item));
         }
-        pager(line, l.id(), page, pages(items.size(), perPage), l.x(), ly + height + 4, l.width(), binder, name);
+        pager(line, l.id(), page, pages(items.size(), perPage), l.x(), ly + frameHeight + 4, l.width(), binder, name);
     }
 
     private <T> void grid(LineBuilder line, Grid<T> g, View view, Binder binder, String name) {
@@ -451,7 +467,8 @@ public final class SceneRenderer {
                         label = shortName(g.icon().apply(item));
                     }
                     String s = line.fit(label == null ? "" : label, g.cellSize() - 2);
-                    line.centered(s, cx, g.cellSize(), cy + (g.cellSize() - 7) / 2, g.labelColor().apply(item));
+                    TextColor color = g.labelColor().apply(item);
+                    line.centered(s, cx, g.cellSize(), cy + (g.cellSize() - 7) / 2, color, LineBuilder.shadowOf(color));
                 }
             }
         }
@@ -502,8 +519,8 @@ public final class SceneRenderer {
             line.frame(button, x + w - 16, y, 16, 16, next ? Button.GRAY : Button.DISABLED,
                 next ? binder.bind(name + ":next", c -> { c.set(key, page + 1); c.reopen(); }) : null, null);
         }
-        line.centered("<", x, 16, y + 4, WHITE);
-        line.centered(">", x + w - 16, 16, y + 4, WHITE);
+        line.centered("<", x, 16, y + 4, prev ? WHITE : DISABLED_TEXT, prev ? LineBuilder.shadowOf(WHITE) : null);
+        line.centered(">", x + w - 16, 16, y + 4, next ? WHITE : DISABLED_TEXT, next ? LineBuilder.shadowOf(WHITE) : null);
         line.centered((page + 1) + "/" + pages, x, w, y + 4, skinText(Label.DARK));
     }
 }

@@ -157,7 +157,17 @@ public final class LineBuilder {
 
     /** Text horizontally centered in [x, x + w). */
     public LineBuilder centered(String s, int x, int w, int y, TextColor color) {
-        return text(s, x + (w - visibleWidth(s)) / 2, y, color);
+        return centered(s, x, w, y, color, null);
+    }
+
+    public LineBuilder centered(String s, int x, int w, int y, TextColor color, @Nullable ShadowColor shadow) {
+        return text(s, x + (w - visibleWidth(s)) / 2, y, color, shadow);
+    }
+
+    /** The vanilla text shadow of a color: a quarter of its brightness, opaque. */
+    public static ShadowColor shadowOf(TextColor color) {
+        int rgb = (color.value() & 0xFCFCFC) >> 2;
+        return ShadowColor.shadowColor(0xFF000000 | rgb);
     }
 
     /** Width of the drawn pixels (the advance minus the trailing 1 px gap). */

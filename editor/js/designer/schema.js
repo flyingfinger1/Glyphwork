@@ -17,9 +17,11 @@ export const FIELDS = {
   icon: [['x', 'int'], ['y', 'int'], ['item', 'text'], ['count', 'text'], ['item-tooltip', 'bool'], ['tint', 'color'],
     ['tooltip', 'text'], ['actions', 'lines']],
   list: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['rows', 'int'], ['row-height', 'int'],
-    ['item-tooltip', 'bool'], ['items', 'items'], ['items-from', 'from'], ['item', 'item']],
+    ['item-tooltip', 'bool'], ['head-size', 'select', ['8', '16', '24', '32']], ['items', 'items'], ['items-from', 'from'],
+    ['item', 'item']],
   grid: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['cols', 'int'], ['rows', 'int'], ['cell', 'int'], ['size', 'int'],
-    ['frame', 'text'], ['item-tooltip', 'bool'], ['items', 'items'], ['items-from', 'from'], ['item', 'item']],
+    ['frame', 'text'], ['item-tooltip', 'bool'], ['head-size', 'select', ['8', '16', '24', '32']], ['items', 'items'],
+    ['items-from', 'from'], ['item', 'item']],
   slider: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['var', 'text'], ['min', 'int'], ['max', 'int'], ['step', 'text'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   checkbox: [['x', 'int'], ['y', 'int'], ['var', 'text'], ['text', 'text'], ['color', 'color'], ['tooltip', 'text'],
@@ -28,6 +30,9 @@ export const FIELDS = {
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   bar: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'select', ['8', '16']], ['value', 'text'], ['max', 'text'],
     ['color', 'color'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text']],
+  image: [['x', 'int'], ['y', 'int'], ['image', 'text'], ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
+  head: [['x', 'int'], ['y', 'int'], ['player', 'text'], ['size', 'select', ['8', '16', '24', '32']], ['tooltip', 'text'],
+    ['actions', 'lines']],
   use: [['use', 'use'], ['x', 'int'], ['y', 'int'], ['values', 'values']],
 };
 
@@ -41,7 +46,7 @@ export const ITEM_FIELDS = {
     ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines']],
 };
 
-export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice', 'bar'];
+export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice', 'bar', 'image', 'head'];
 
 /** Field names that map to i18n keys (f_...). */
 export const FIELD_KEY = {
@@ -52,7 +57,7 @@ export const FIELD_KEY = {
   id: 'f_id', rows: 'f_rows', 'row-height': 'f_rowHeight', cols: 'f_cols', cell: 'f_cell', size: 'f_size', var: 'f_var',
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
   'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
-  value: 'f_value',
+  value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize',
 };
 
 /** A new element of this type at (x, y). */
@@ -70,6 +75,8 @@ export function create(type, x, y, de) {
     case 'checkbox': return { type, x, y, var: 'option', text: tx('Option', 'Option') };
     case 'choice': return { type, x, y, width: 80, var: 'modus', options: tx(['leicht', 'normal', 'schwer'], ['easy', 'normal', 'hard']) };
     case 'bar': return { type, x, y, width: 100, value: 30, max: 100, text: '30 / 100' };
+    case 'image': return { type, x, y, image: 'logo' };
+    case 'head': return { type, x, y, player: '%player%', size: 32 };
     default: return { type, x, y };
   }
 }

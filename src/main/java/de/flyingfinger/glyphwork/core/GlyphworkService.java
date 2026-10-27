@@ -185,6 +185,15 @@ public final class GlyphworkService implements Glyphwork {
         }
         LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, scene, name, action),
             mode != DisplayMode.NO_ICONS, hasServerPack.test(player));
+        java.util.Set<String> missing = renderer.takeMissingFaces();
+        if (!missing.isEmpty() && renderer.faces() != null) {
+            // big heads whose skin is still loading: draw again once one arrives (clicks stay valid)
+            renderer.faces().whenLoaded(missing, () -> {
+                if (player.isOnline() && s.generation == generation && s.stack.peek() == scene && !inventoryOpen(player)) {
+                    show(player, s, true);
+                }
+            });
+        }
         DialogFactory.show(player, DialogFactory.gui(scene.title().apply(view), line.build(scene.height()),
             Math.max(scene.width(), line.width()), exitLabel(player, scene), () -> exited(player, s, generation),
             DialogFactory.callbackOptions(lifetime(scene))));

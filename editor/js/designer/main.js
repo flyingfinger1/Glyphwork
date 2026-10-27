@@ -8,7 +8,7 @@ import { Theme } from '../model.js';
 import { renderMenu, fill, varValue, allHold, plain, optionsOf, SAMPLES } from './menu-render.js';
 import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField } from './schema.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
-import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource } from './assets.js';
+import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, importPictures } from './assets.js';
 import { useMinecraftFont, minecraftFont } from '../font.js';
 
 const $ = (id) => document.getElementById(id);
@@ -37,6 +37,7 @@ let skinKey = 'vanilla';
 let mode = 'edit';
 let last = null;           // last render result
 let icons = null;          // item -> texture layers, when Minecraft textures are loaded
+let pictures = new Map();  // the server's own pictures loaded into the designer (id -> Pix)
 const undoStack = [];
 const redoStack = [];
 let lastMerge = null;
@@ -164,7 +165,7 @@ let drag = null;
 let hoverRegion = null;
 
 function draw() {
-  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons });
+  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, pictures });
   const { pix } = last;
   off.width = pix.w;
   off.height = pix.h;
@@ -1253,7 +1254,11 @@ function loadMenu(text, id) {
 // ------------------------------------------------------------------ Minecraft textures
 
 async function loadTextures() {
-  const { sources, images } = await loadStored();
+  const { sources, images, pictures: pics } = await loadStored();
+  pictures = pics || new Map();
+  $('picStatus').textContent = pictures.size
+    ? t('picturesLoaded', { n: pictures.size, ids: [...pictures.keys()].slice(0, 12).join(', ') + (pictures.size > 12 ? ' …' : '') })
+    : t('picturesNone');
   if (!images.size) {
     icons = null;
     useMinecraftFont(null);
@@ -1406,6 +1411,20 @@ function init() {
     changed(false);
   };
   $('mcClear').onclick = async () => { await clearStored(); await loadTextures(); changed(false); };
+  const loadPics = async (input) => {
+    try {
+      await importPictures([...input.files]);
+    } catch (e) {
+      toast(e.message, true);
+    }
+    input.value = '';
+    await loadTextures();
+    changed(false);
+  };
+  $('picLoad').onclick = () => $('picFile').click();
+  $('picFolder').onclick = () => $('picDir').click();
+  $('picFile').onchange = () => loadPics($('picFile'));
+  $('picDir').onchange = () => loadPics($('picDir'));
 
   zoom = Number($('zoom').value);
   refreshAll();

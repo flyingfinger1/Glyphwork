@@ -81,6 +81,23 @@ public final class FallbackRenderer {
                     case Grid<?> g -> grid(g, view, actions);
                     case Slider s -> slider(s, view, actions);
                     case Bar b -> bars.add(b);
+                    case de.flyingfinger.glyphwork.api.Head hd -> {
+                        // the client's small head in front of the tooltip, as a button when clickable
+                        if (hd.onClick() != null) {
+                            Component tip = hd.tooltip() == null ? null : hd.tooltip().apply(view);
+                            String who = hd.player().apply(view);
+                            actions.add(new Action(withHead(tip != null ? tip : Component.text(who == null ? "•" : who),
+                                who == null ? null : "head:" + who), null, hd.onClick()));
+                        }
+                    }
+                    case de.flyingfinger.glyphwork.api.Image im -> {
+                        // pictures need the pack; a clickable one becomes a button named by its tooltip
+                        if (im.onClick() != null) {
+                            Component tip = im.tooltip() == null ? null : im.tooltip().apply(view);
+                            String id = im.image().apply(view);
+                            actions.add(new Action(tip != null ? tip : Component.text(id == null ? "•" : id), null, im.onClick()));
+                        }
+                    }
                     case Checkbox cb -> {
                         if (cb.onToggle() != null) {
                             boolean on = Boolean.TRUE.equals(cb.checked().apply(view));

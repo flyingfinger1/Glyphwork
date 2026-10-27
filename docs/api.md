@@ -51,6 +51,8 @@ Glyphwork.get().open(player, settings);
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected`, `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
+| `Head.of(x, y, "Steve")` | a face painted from the skin, `.size(8/16/24/32)`, also `v -> name`; `.tooltip`, `.onClick`. `Grid` / `ListView`: `.headSize(16)` for their `head:` icons |
+| `Image.of(x, y, "logo")` | a picture from `plugins/Glyphwork/images/` (also `v -> "ranks/" + rank(v)`); `.tint`, `.tooltip`, `.onClick` |
 | `Bar.of(x, y, w)` | progress bar, 8 or 16 px high; `.value(v -> ...)`, `.max(...)`, `.color`, `.text`, `.tooltip`: fills pixel exact |
 | `Slider.of(x, y, w, min, max, step)` | track + knob, 16 px high; `.value`, `.onChange((click, value) -> ...)`, `.tint`, `.tooltip(value -> ...)`: a click on the track picks the value under the cursor (no dragging) |
 | `Checkbox.of(x, y)` | 16 x 16 box with a check mark and text; `.text`, `.checked`, `.onToggle((click, on) -> ...)` |

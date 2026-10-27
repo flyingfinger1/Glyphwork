@@ -138,6 +138,16 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    /** Skin faces for big heads; kept across reloads (the cache survives). */
+    private de.flyingfinger.glyphwork.core.@org.jspecify.annotations.Nullable SkinFaces faces;
+
+    private de.flyingfinger.glyphwork.core.SkinFaces faces() {
+        if (faces == null) {
+            faces = new de.flyingfinger.glyphwork.core.SkinFaces(this);
+        }
+        return faces;
+    }
+
     private Build build() {
         Settings s = Settings.read(getConfig());
         GlyphAllocator alloc = new GlyphAllocator();
@@ -147,6 +157,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         sheets.add(hit);
         de.flyingfinger.glyphwork.font.FillSheets fills = new de.flyingfinger.glyphwork.font.FillSheets(alloc);
         sheets.addAll(fills.sheets());
+        de.flyingfinger.glyphwork.font.SquareSheets squares = new de.flyingfinger.glyphwork.font.SquareSheets(alloc);
+        sheets.add(squares.sheet());
         PackFiles pack = new PackFiles();
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
@@ -156,8 +168,20 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             applySourcePack(icons, s, alloc);
         }
         ShiftFonts.write(pack, sheets, s.maxHeight(), text, icons);
+        Path imageDir = getDataFolder().toPath().resolve("images");
+        try {
+            Files.createDirectories(imageDir);
+        } catch (IOException e) {
+            getLogger().warning("Could not create images/: " + e.getMessage());
+        }
+        de.flyingfinger.glyphwork.font.ImageCatalog images = de.flyingfinger.glyphwork.font.ImageCatalog.load(imageDir, alloc, getLogger());
+        images.write(pack);
+        if (images.size() > 0) {
+            getLogger().info(images.size() + " picture(s) from images/: " + String.join(", ", images.ids()));
+        }
         byte[] zip = pack.toZip();
-        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons).fills(fills);
+        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons).fills(fills).images(images)
+            .bigHeads(squares, faces());
         return new Build(s, theme.name(), renderer, zip, PackFiles.sha1(zip));
     }
 

@@ -101,10 +101,42 @@ export async function loadStored() {
   }).then((p) => p);
   db.close();
   const images = new Map();
+  const pictures = new Map();
   for (const [path, data] of entries) {
-    try { images.set(path, await decode(data)); } catch { /* not a PNG the browser can read */ }
+    try {
+      if (path.startsWith(PICTURE)) pictures.set(path.slice(PICTURE.length), await decode(data));
+      else images.set(path, await decode(data));
+    } catch { /* not a PNG the browser can read */ }
   }
-  return { sources, images };
+  return { sources, images, pictures };
+}
+
+/** Key prefix of the server's own pictures (images/) loaded into the designer. */
+const PICTURE = 'picture:';
+
+/**
+ * Stores PNGs of the server's images/ folder. Files from a folder pick keep their path below the
+ * picked folder ("ranks/gold"), single files their name; ids are lower case without ".png".
+ * @returns the ids stored
+ */
+export async function importPictures(files) {
+  const db = await open();
+  const ids = [];
+  const items = [];
+  for (const f of files) {
+    if (!/\.png$/i.test(f.name)) continue;
+    const rel = f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(1).join('/') : f.name;
+    const id = rel.replace(/\.png$/i, '').toLowerCase();
+    items.push([id, new Uint8Array(await f.arrayBuffer())]);
+  }
+  await tx(db, [STORE], 'readwrite', (t) => {
+    for (const [id, data] of items) {
+      t.objectStore(STORE).put(data, PICTURE + id);
+      ids.push(id);
+    }
+  });
+  db.close();
+  return ids;
 }
 
 /** PNG bytes -> Pix through the browser (handles every PNG type: palette, gray, 16 bit ...). */

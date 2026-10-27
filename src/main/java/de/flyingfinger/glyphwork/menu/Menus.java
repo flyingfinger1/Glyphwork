@@ -269,6 +269,8 @@ public final class Menus {
             case Checkbox x -> x.visible(visible);
             case Choice x -> x.visible(visible);
             case Bar x -> x.visible(visible);
+            case de.flyingfinger.glyphwork.api.Image x -> x.visible(visible);
+            case de.flyingfinger.glyphwork.api.Head x -> x.visible(visible);
         }
     }
 
@@ -363,7 +365,8 @@ public final class Menus {
                 b.accept(ic);
             }
             case "list" -> {
-                n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item", "item-tooltip"));
+                n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item", "item-tooltip",
+                    "head-size"));
                 ListView<Row> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
                         n.optInt("width", 120), n.optInt("rows", 4), rows(n))
                     // lists of players show heads, which need rows of 9 or 18 px to look even
@@ -374,12 +377,13 @@ public final class Menus {
                     .icon(e -> e.icon)
                     .count(e -> e.count)
                     .itemTooltip(n.optBool("item-tooltip", false))
+                    .headSize(n.optInt("head-size", 8))
                     .onSelect((c, e) -> e.onClick.accept(c));
                 b.accept(l);
             }
             case "grid" -> {
                 n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items", "items-from", "item",
-                    "item-tooltip"));
+                    "item-tooltip", "head-size"));
                 Grid<Row> g = Grid.of(n.optString("id", "grid" + index), n.integer("x"), n.integer("y"),
                         n.optInt("cols", 4), n.optInt("rows", 2), rows(n))
                     .cell(n.optInt("cell", 18), n.optInt("size", 16))
@@ -390,6 +394,7 @@ public final class Menus {
                     .icon(e -> e.icon)
                     .count(e -> e.count)
                     .itemTooltip(n.optBool("item-tooltip", false))
+                    .headSize(n.optInt("head-size", 8))
                     .frame(n.optString("frame", "slot"))
                     .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(g);
@@ -468,6 +473,35 @@ public final class Menus {
                 }
                 b.accept(ch);
             }
+            case "head" -> {
+                n.only(with("type", "x", "y", "player", "size", "tooltip", "actions"));
+                int size = n.optInt("size", 32);
+                if (size % 8 != 0 || size < 8 || size > 32) {
+                    throw n.error("size", "8, 16, 24 or 32");
+                }
+                de.flyingfinger.glyphwork.api.Head hd = de.flyingfinger.glyphwork.api.Head.of(n.integer("x"), n.integer("y"),
+                    text(n.optString("player", "%player%"))).size(size);
+                if (tooltip(n) != null) {
+                    hd.tooltip(tooltip(n));
+                }
+                if (n.has("actions")) {
+                    hd.onClick(actions(n));
+                }
+                b.accept(hd);
+            }
+            case "image" -> {
+                n.only(with("type", "x", "y", "image", "tint", "tooltip", "actions"));
+                TextColor tint = n.optColor("tint", null);
+                de.flyingfinger.glyphwork.api.Image im = de.flyingfinger.glyphwork.api.Image.of(n.integer("x"), n.integer("y"),
+                    text(n.string("image"))).tint(v -> tint);   // placeholders: image: "ranks/%menu_rank%"
+                if (tooltip(n) != null) {
+                    im.tooltip(tooltip(n));
+                }
+                if (n.has("actions")) {
+                    im.onClick(actions(n));
+                }
+                b.accept(im);
+            }
             case "bar" -> {
                 n.only(with("type", "x", "y", "width", "height", "value", "max", "color", "text", "tooltip", "frame"));
                 int h = n.optInt("height", 8);
@@ -490,7 +524,7 @@ public final class Menus {
                 b.accept(bar);
             }
             default -> throw n.error("type", "unknown type '" + type
-                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar)");
+                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar, image, head)");
         }
     }
 

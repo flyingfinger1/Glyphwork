@@ -20,6 +20,10 @@ After that icons, tints and text look like in game, including the text widths th
 - Minecraft launcher: `.minecraft/versions/<version>/<version>.jar`
 - Prism Launcher / MultiMC: `libraries/com/mojang/minecraft/<version>/minecraft-<version>-client.jar`
 
+Your own pictures (`plugins/Glyphwork/images/`) show as a box with their name until you load them
+under *Own pictures*: single PNGs, or the whole `images` folder (sub folders keep their path,
+`ranks/gold`). They also stay in the browser only.
+
 Resource packs (ZIP) loaded afterwards replace textures of the jar, like in game, and items of their
 own (`myserver:ruby` from `assets/myserver/textures/item/ruby.png`) work as icons. Player heads stay
 placeholders (skins come from Mojang's servers). *Remove* deletes the stored textures.

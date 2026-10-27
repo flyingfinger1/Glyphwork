@@ -13,7 +13,8 @@ plugins build screens with panels, labels, buttons, lists, grids, sliders, check
 textures every client already has. They follow your server's resource pack: replaced textures
 are measured, and the pack's own items (`myserver:ruby`) work as icons. Player heads
 (`head:Steve`) show as small 8 x 8 icons, e.g. in a list of online players. Icons can carry a
-stack count at the bottom right, like in the inventory.
+stack count at the bottom right, like in the inventory. Your own pictures (PNG files in
+`plugins/Glyphwork/images/`, any size) can be placed like any element.
 
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus, ask for input or show forms, PlaceholderAPI support, a

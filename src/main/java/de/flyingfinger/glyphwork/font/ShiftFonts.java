@@ -53,7 +53,7 @@ public final class ShiftFonts {
             return false;
         }
         char c = key.value().charAt(0);
-        return c == 'y' || c == 't' || c == 'i' || c == 'c';
+        return c == 'y' || c == 't' || c == 'i' || c == 'c' || c == 'm';
     }
 
     public static void write(PackFiles pack, Collection<Sheet> sheets, int maxHeight, VanillaText text,

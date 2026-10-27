@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Big heads:** `type: head` / `Head.of(x, y, player).size(32)` paints a player's face pixel by
+  pixel from the skin, 8 to 32 px, at any position, for any player without changing the pack;
+  `head-size` on lists and grids does the same for their `head:` icons. Skins load in the
+  background (Paper profile, Mojang lookup for other names) and are cached; until then the small
+  client head stands in and the menu redraws when the face arrives.
+- **Own pictures:** PNGs in `plugins/Glyphwork/images/` (folders too) go into the pack and are
+  placed with `type: image` / `Image.of(x, y, "logo")`, pixel exact and at their own size; names
+  may use placeholders (`ranks/%menu_rank%`), `tint` multiplies the colors. Pictures of any size
+  are cut into tiles of at most 128 x 128 px (the client cannot load bigger glyphs). Logos,
+  banners, rank badges and big player heads are all just pictures. The designer shows them once you
+  load the PNGs (or the folder) into it.
 - **Progress bars:** `type: bar` / `Bar.of(...)` fills pixel exact from `value` / `max`
   (placeholders work), in any color, 8 or 16 px high, with an optional text in the middle. The
   plain dialog shows ten blocks plus the text.

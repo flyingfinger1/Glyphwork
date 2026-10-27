@@ -38,6 +38,7 @@ public final class Grid<T> implements Element {
     private @Nullable Function<T, @Nullable String> icon;
     private @Nullable Function<T, @Nullable String> count;
     private boolean itemTooltip;
+    private int headSize = 8;
     private @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem;
 
     private Grid(String id, int x, int y, int cols, int rows, Function<View, List<T>> items) {
@@ -136,6 +137,19 @@ public final class Grid<T> implements Element {
 
     public boolean itemTooltip() {
         return itemTooltip;
+    }
+
+    /**
+     * Size of player heads ("head:Name" icons): 8 (default) is the client's own head, 16, 24 or 32
+     * paints the face from the skin, centered, at any position (see {@link Head}).
+     */
+    public Grid<T> headSize(int size) {
+        this.headSize = Head.sizeOf(size);
+        return this;
+    }
+
+    public int headSize() {
+        return headSize;
     }
 
     public @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem() {

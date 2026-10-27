@@ -8,8 +8,10 @@ import de.flyingfinger.glyphwork.api.Slider;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
+import de.flyingfinger.glyphwork.api.Head;
 import de.flyingfinger.glyphwork.api.Hitbox;
 import de.flyingfinger.glyphwork.api.Icon;
+import de.flyingfinger.glyphwork.api.Image;
 import de.flyingfinger.glyphwork.api.Label;
 import de.flyingfinger.glyphwork.api.ListView;
 import de.flyingfinger.glyphwork.api.Panel;
@@ -81,6 +83,65 @@ public final class SceneRenderer {
         return this;
     }
 
+    /** The server's pictures (images/); without them image elements draw nothing. */
+    private de.flyingfinger.glyphwork.font.ImageCatalog images = de.flyingfinger.glyphwork.font.ImageCatalog.empty();
+
+    public SceneRenderer images(de.flyingfinger.glyphwork.font.ImageCatalog images) {
+        this.images = images;
+        return this;
+    }
+
+    /** Squares and skin faces for big heads; without them big heads fall back to the client's 8 x 8 head. */
+    private de.flyingfinger.glyphwork.font.@Nullable SquareSheets squares;
+    private @Nullable FaceSource faces;
+    /** Faces asked for in the current pass that are still loading. */
+    private final java.util.Set<String> missingFaces = new java.util.HashSet<>();
+
+    public SceneRenderer bigHeads(de.flyingfinger.glyphwork.font.SquareSheets squares, FaceSource faces) {
+        this.squares = squares;
+        this.faces = faces;
+        return this;
+    }
+
+    public @Nullable FaceSource faces() {
+        return faces;
+    }
+
+    /** Faces the last render could not draw yet (still loading); empties the set. */
+    public java.util.Set<String> takeMissingFaces() {
+        java.util.Set<String> s = java.util.Set.copyOf(missingFaces);
+        missingFaces.clear();
+        return s;
+    }
+
+    /**
+     * A face of {@code size} px (8..32) with its top-left at (x, y), painted from the skin. While
+     * the skin loads (or without skins), the client's 8 x 8 head stands in, centered.
+     */
+    private void bigHead(LineBuilder line, String who, int x, int y, int size) {
+        int px = Math.max(1, Math.min(4, size / 8));
+        int[] face = squares == null || faces == null ? null : faces.face(who);
+        if (face == null) {
+            if (faces != null) {
+                missingFaces.add(who);
+            }
+            Component small = headOf("head:" + who);
+            if (small != null) {
+                line.head(small, x + (size - LineBuilder.HEAD) / 2, y + (size - LineBuilder.HEAD) / 2);
+            }
+            return;
+        }
+        Glyph g = squares.square(px);
+        for (int i = 0; i < 64; i++) {
+            line.glyph(g, x + (i % 8) * px, y + (i / 8) * px, TextColor.color(face[i] & 0xFFFFFF), null, null);
+        }
+    }
+
+    /** "head:Name" -> "Name", otherwise null. */
+    private static @Nullable String headName(@Nullable String item) {
+        return isHead(item) ? item.substring(5).trim() : null;
+    }
+
     public LineBuilder render(Scene scene, View view, Binder binder) {
         return render(scene, view, binder, true, true);
     }
@@ -101,6 +162,7 @@ public final class SceneRenderer {
      *                      textures are left out (the client would draw boxes for them)
      */
     public LineBuilder render(Scene scene, View view, Binder binder, boolean showIcons, boolean packTextures) {
+        missingFaces.clear();
         iconsThisPass = showIcons;
         packIconsThisPass = packTextures;
         if (scene.height() > maxHeight) {
@@ -140,6 +202,15 @@ public final class SceneRenderer {
                     case Checkbox cb -> checkbox(line, cb, view, binder, name);
                     case Choice ch -> choice(line, ch, view, binder, name);
                     case Bar b -> bar(line, b, view);
+                    case Image im -> image(line, im, view, binder, name);
+                    case Head hd -> {
+                        String who = hd.player().apply(view);
+                        if (who != null && !who.isBlank()) {
+                            bigHead(line, who.trim(), hd.x(), hd.y(), hd.size());
+                            hitbox(line, hd.x(), hd.y(), hd.size(), hd.size(),
+                                hd.onClick() == null ? null : binder.bind(name, hd.onClick()), tooltip(hd.tooltip(), view));
+                        }
+                    }
                 }
             } catch (RuntimeException ex) {
                 // a failing binding hides this element instead of breaking the whole screen
@@ -371,6 +442,22 @@ public final class SceneRenderer {
         hitbox(line, b.x(), b.y(), w, h, null, tooltip(b.tooltip(), view));
     }
 
+    private void image(LineBuilder line, Image im, View view, Binder binder, String name) {
+        String id = im.image().apply(view);
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        de.flyingfinger.glyphwork.font.ImageCatalog.Picture p = images.get(id);
+        if (p == null) {
+            warnOnce("image:" + id, "No picture '" + id + "' in plugins/Glyphwork/images/ (known: "
+                + (images.size() == 0 ? "none" : String.join(", ", images.ids())) + ")");
+            return;
+        }
+        line.image(p, im.x(), im.y(), im.tint() == null ? null : im.tint().apply(view));
+        hitbox(line, im.x(), im.y(), Math.max(1, p.width()), Math.max(1, p.height()),
+            im.onClick() == null ? null : binder.bind(name, im.onClick()), tooltip(im.tooltip(), view));
+    }
+
     private @Nullable Frame frame(String name) {
         Frame f = theme.find(name);
         if (f == null) {
@@ -506,7 +593,7 @@ public final class SceneRenderer {
         boolean itemIcons = false;
         for (int r = 0; r < l.rows() && page * perPage + r < items.size() && l.icon() != null; r++) {
             String ic = l.icon().apply(items.get(page * perPage + r));
-            if (headOf(ic) != null) {
+            if (headOf(ic) != null && l.headSize() <= LineBuilder.HEAD) {
                 heads = true;
             } else if (ic != null && !ic.isBlank()) {
                 itemIcons = true;
@@ -542,7 +629,11 @@ public final class SceneRenderer {
             int textY = top + (l.rowHeight() - 7) / 2;
             String rowIcon = l.icon() == null ? null : l.icon().apply(item);
             Component rowHead = headOf(rowIcon);
-            if (rowHead != null) {
+            if (rowHead != null && l.headSize() > LineBuilder.HEAD) {
+                int hs = Math.min(l.headSize(), l.rowHeight());
+                bigHead(line, headName(rowIcon), l.x() + 3, top + (l.rowHeight() - hs) / 2, hs);
+                textX += hs + 3;
+            } else if (rowHead != null) {
                 int hx = wideColumn ? l.x() + 3 + (IconCatalog.SIZE - LineBuilder.HEAD) / 2 : l.x() + 4;
                 line.head(rowHead, hx, top + (l.rowHeight() - LineBuilder.HEAD) / 2);
                 textX += wideColumn ? IconCatalog.SIZE + 2 : LineBuilder.HEAD + 3;
@@ -578,6 +669,7 @@ public final class SceneRenderer {
         for (int i = page * perPage; i < Math.min(items.size(), (page + 1) * perPage) && g.icon() != null; i++) {
             heads |= headOf(g.icon().apply(items.get(i))) != null;
         }
+        heads &= g.headSize() <= LineBuilder.HEAD;     // painted heads sit anywhere
         if (heads && g.rows() > 1 && g.cellPitch() % ShiftFonts.LINE != 0) {
             warnOnce("headcells:" + name, "Grid " + name + " shows player heads with a cell pitch of " + g.cellPitch()
                 + "; heads sit on the 9 px text grid, so rows only look even with a pitch of 18 or 27");
@@ -605,7 +697,11 @@ public final class SceneRenderer {
                 if (item != null && g.icon() != null) {
                     String cellIcon = g.icon().apply(item);
                     Component cellHead = headOf(cellIcon);
-                    if (cellHead != null) {
+                    if (cellHead != null && g.headSize() > LineBuilder.HEAD) {
+                        int hs = Math.min(g.headSize(), g.cellSize());
+                        bigHead(line, headName(cellIcon), cx + (g.cellSize() - hs) / 2, cy + (g.cellSize() - hs) / 2, hs);
+                        drewIcon = true;
+                    } else if (cellHead != null) {
                         int off = (g.cellSize() - LineBuilder.HEAD) / 2;
                         line.head(cellHead, cx + off, cy + off);
                         drewIcon = true;

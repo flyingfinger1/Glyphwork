@@ -303,16 +303,18 @@ export function headShift(headTop) {
   return index * LINE - 1 - headTop;
 }
 
-function drawHead(c, x, top) {
-  // a stand-in face: the client draws the real skin here (8 x 8, face + hat)
-  c.fillRect(x, top, 8, 8, 0xff6b4a2f);
-  c.fillRect(x, top + 2, 8, 6, 0xffc7926b);
-  c.fillRect(x + 1, top + 4, 2, 1, 0xffffffff);
-  c.fillRect(x + 5, top + 4, 2, 1, 0xffffffff);
-  c.fillRect(x + 2, top + 4, 1, 1, 0xff3a3a8a);
-  c.fillRect(x + 5, top + 4, 1, 1, 0xff3a3a8a);
-  c.fillRect(x + 3, top + 6, 2, 1, 0xff7a4a3a);
+function drawHead(c, x, top, s = 1) {
+  // a stand-in face (s px per face pixel): the server paints the real skin here
+  c.fillRect(x, top, 8 * s, 8 * s, 0xff6b4a2f);
+  c.fillRect(x, top + 2 * s, 8 * s, 6 * s, 0xffc7926b);
+  c.fillRect(x + s, top + 4 * s, 2 * s, s, 0xffffffff);
+  c.fillRect(x + 5 * s, top + 4 * s, 2 * s, s, 0xffffffff);
+  c.fillRect(x + 2 * s, top + 4 * s, s, s, 0xff3a3a8a);
+  c.fillRect(x + 5 * s, top + 4 * s, s, s, 0xff3a3a8a);
+  c.fillRect(x + 3 * s, top + 6 * s, 2 * s, s, 0xff7a4a3a);
 }
+
+const headSizeOf = (v) => Math.max(8, Math.min(32, Math.floor(int(v, 8) / 8) * 8));
 
 /**
  * Item icon (16 x 16): the real textures when the user loaded a client jar (c.icons), otherwise a
@@ -509,6 +511,35 @@ export function renderMenu(menu, skin, ctx = {}) {
           boxes.push({ top, x, y, w, h: 16 });
           break;
         }
+        case 'head': {
+          const size = headSizeOf(el.size ?? 32);
+          drawHead(c, x, y, size / 8);
+          region(x, y, size, size, tip, actionsOf(el));
+          boxes.push({ top, x, y, w: size, h: size });
+          break;
+        }
+        case 'image': {
+          const id = f(el.image ?? '').trim().toLowerCase().replace(/\.png$/, '');
+          const pic = ctx.pictures?.get(id);
+          if (pic) {
+            const tnt = color(el.tint);
+            for (let yy = 0; yy < pic.h; yy++) {
+              for (let xx = 0; xx < pic.w; xx++) {
+                const v = pic.get(xx, yy);
+                if (v >>> 24) blend(c.pix, x + xx, y + yy, tnt == null ? v : tint(v, tnt));
+              }
+            }
+            region(x, y, pic.w, pic.h, tip, actionsOf(el));
+            boxes.push({ top, x, y, w: pic.w, h: pic.h });
+          } else {
+            // not loaded into the designer: a box with the name (the server knows the real size)
+            c.fillRect(x, y, 48, 24, 0x40ffffff);
+            c.textOut(fit(id || '?', 44), x + 2, y + 8, 0x303030);
+            region(x, y, 48, 24, tip, actionsOf(el));
+            boxes.push({ top, x, y, w: 48, h: 24, placeholder: true });
+          }
+          break;
+        }
         case 'bar': {
           const t = c.tileSize();
           const w = Math.max(t, Math.floor(int(el.width, 100) / t) * t);
@@ -618,7 +649,8 @@ function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
   const pages = Math.max(1, Math.ceil(all.length / nRows));
   const page = Math.max(0, Math.min(ctx.pages?.[id] ?? 0, pages - 1));
   const shown = all.slice(page * nRows, page * nRows + nRows);
-  const heads = shown.some((r) => isHead(r.icon));
+  const hsize = headSizeOf(el['head-size']);
+  const heads = hsize <= 8 && shown.some((r) => isHead(r.icon));
   const itemIcons = shown.some((r) => r.icon && !isHead(r.icon));
   const wide = heads && itemIcons;
   let ly = y;
@@ -636,7 +668,11 @@ function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
     const rt = ly + i * rh;
     let tx = x + 4;
     const ty = rt + Math.floor((rh - 7) / 2);
-    if (isHead(r.icon)) {
+    if (isHead(r.icon) && hsize > 8) {
+      const hs = Math.min(hsize, rh);
+      drawHead(c, x + 3, rt + Math.floor((rh - hs) / 2), Math.max(1, Math.floor(hs / 8)));
+      tx += hs + 3;
+    } else if (isHead(r.icon)) {
       const hx = wide ? x + 3 + (ICON - HEAD) / 2 : x + 4;
       drawHead(c, hx, rt + Math.floor((rh - HEAD) / 2));
       tx += wide ? ICON + 2 : HEAD + 3;
@@ -665,7 +701,8 @@ function gridEl(c, el, top, ctx, boxes, regions, hints) {
   const page = Math.max(0, Math.min(ctx.pages?.[id] ?? 0, pages - 1));
   const shown = all.slice(page * per, page * per + per);
   let gy = y;
-  if (shown.some((r) => isHead(r.icon))) {
+  const hsize = headSizeOf(el['head-size']);
+  if (hsize <= 8 && shown.some((r) => isHead(r.icon))) {
     const dy = headShift(y + Math.floor((size - HEAD) / 2));
     if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
     gy += dy;
@@ -677,7 +714,12 @@ function gridEl(c, el, top, ctx, boxes, regions, hints) {
       if (!noFrame) c.rect(String(el.frame ?? 'slot'), cx, cy, size, size, cell ? cell.tint : null);
       if (!cell) continue;
       let drew = false;
-      if (isHead(cell.icon)) {
+      if (isHead(cell.icon) && hsize > 8) {
+        const hs = Math.min(hsize, size);
+        const off = Math.floor((size - hs) / 2);
+        drawHead(c, cx + off, cy + off, Math.max(1, Math.floor(hs / 8)));
+        drew = true;
+      } else if (isHead(cell.icon)) {
         const off = Math.floor((size - HEAD) / 2);
         drawHead(c, cx + off, cy + off);
         drew = true;

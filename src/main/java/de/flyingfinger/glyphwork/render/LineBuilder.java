@@ -140,6 +140,24 @@ public final class LineBuilder {
         return this;
     }
 
+    /**
+     * One of the server's pictures with its top-left pixel at (x, y): every tile goes on the text
+     * line it falls into (above all frames), in the picture font for its offset.
+     */
+    public LineBuilder image(de.flyingfinger.glyphwork.font.ImageCatalog.Picture picture, int x, int y, @Nullable TextColor tint) {
+        for (de.flyingfinger.glyphwork.font.ImageCatalog.Tile t : picture.tiles()) {
+            int ty = y + t.dy();
+            if (ty < 0) {
+                continue;
+            }
+            int index = ty / ShiftFonts.LINE;
+            line(index).draw(String.valueOf(t.codepoint()), t.advance(), x + t.dx(),
+                de.flyingfinger.glyphwork.font.ImageCatalog.font(ty - index * ShiftFonts.LINE),
+                tint == null ? NamedTextColor.WHITE : tint, null, null);
+        }
+        return this;
+    }
+
     /** Size of a player head glyph: the client draws it as 8 x 8 px, it cannot be scaled. */
     public static final int HEAD = 8;
 

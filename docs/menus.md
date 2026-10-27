@@ -55,9 +55,11 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
+| `head` | a player's face painted from the skin: `x`, `y`, `player` (name, UUID or placeholder, default `%player%`), `size` (8, 16, 24 or 32; default 32), `tooltip`, `actions` |
+| `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `tint`, `tooltip`, `actions` |
 | `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `color` (fill), `text` (in the middle), `tooltip`, `frame` (`slot`) |
-| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`; page buttons appear below when needed (+20 px) |
-| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`; page buttons below when needed |
+| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`; page buttons appear below when needed (+20 px) |
+| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed |
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
 | `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
 | `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
@@ -67,6 +69,22 @@ like in the inventory, blocks show one face, and items drawn by special renderer
 beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `cell: 26`, `size: 24`.
 Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icon-source-pack` in
 `config.yml`.
+
+**Big heads:** `type: head` (and `head-size: 16`, `24` or `32` on lists and grids, for their
+`head:` icons) paints a player's face pixel by pixel in the colors of the skin: no pack change, so
+it works for every player, also ones who just joined, and at any position (no 9 px grid). The
+server fetches the skin in the background (online players carry it, other names are looked up at
+Mojang) and keeps the faces in memory; until a face is there, the small client head stands in, and
+the open menu is drawn again when it arrives. A big head is 64 colored glyphs, so a list with many
+of them makes the dialog bigger; that is fine for a few dozen.
+
+**Pictures:** put PNG files into `plugins/Glyphwork/images/` (folders work: `images/ranks/gold.png`
+is `image: ranks/gold`; names use a-z, 0-9, `_`, `-`, `.`), then `/glyphwork reload`. They are
+drawn at their own size, pixel exact, above frames like text, and become part of the pack (players
+download them once). Any size works: Glyphwork cuts pictures into tiles of at most 128 x 128 px,
+because the client cannot load bigger glyphs. Transparent parts stay transparent; `tint` multiplies
+the colors. A big player head, a logo, a banner or a rank badge are all just pictures. The plain
+dialog leaves pictures out (a clickable one becomes a button named by its tooltip).
 
 **Item tooltips:** `item-tooltip: true` (on an `icon`, or on a `list` / `grid` for all its entries)
 shows the item's own tooltip when hovering, like in the inventory, instead of the text tooltip.

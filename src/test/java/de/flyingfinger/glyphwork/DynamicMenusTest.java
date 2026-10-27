@@ -173,6 +173,19 @@ class DynamicMenusTest {
     }
 
     @Test
+    void iconsOfIconsAndButtonsTakePlaceholders() throws MenuException {
+        Scene s = new Menus().parse("t", """
+            background: none
+            elements:
+              - { type: icon, x: 0, y: 0, item: "head:%player%" }
+              - { type: button, x: 0, y: 20, icon: "head:%player%", text: Ich }
+            """).scene();
+        TestClick c = new TestClick(s, "Steve", new ArrayList<>());
+        assertEquals("head:Steve", ((de.flyingfinger.glyphwork.api.Icon) s.elements().get(0)).item().apply(c));
+        assertEquals("head:Steve", button(s, 1).icon().apply(c));
+    }
+
+    @Test
     void errorsNameTheProblem() {
         Menus m = new Menus();
         assertError(m, "elements:\n  - { type: list, x: 0, y: 0, items-from: mobs }\n",

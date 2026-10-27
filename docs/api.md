@@ -55,7 +55,8 @@ icons are drawn above frames.
 **Player heads:** `Icon.head(x, y, "Steve")` or `"head:<name or uuid>"` wherever an item id goes
 (`Grid.icon(p -> "head:" + p.getUniqueId())`, `Button.icon(...)`, `ListView.icon(...)`). The
 client draws heads as 8 x 8 px (no scaling) and only on its 9 px text grid, so a head sits up to 4 px
-higher or lower than asked; list and button text follows it. Online players send their skin along,
+higher or lower than asked; list and button text follows it. Use `rowHeight(18)` (or 9) for lists
+with heads so that every row gets the same offset. Online players send their skin along,
 others are looked up by the client. Heads are not part of the pack: they show in every display mode
 and in the plain dialog.
 

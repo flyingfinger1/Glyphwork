@@ -4,7 +4,7 @@
 
 title: "<gold>Spieler & Welten"
 width: 176
-height: 192
+height: 200
 variables:
   tab: spieler        # welcher Reiter offen ist
   filter: ""          # Suchtext für die Spielerliste
@@ -44,6 +44,7 @@ elements:
     y: 62
     width: 160
     rows: 5
+    row-height: 18      # Köpfe sitzen auf dem 9-px-Raster: Zeilenhöhe 9 oder 18 hält die Zeilen gleichmäßig
     show-if: "%menu_tab% == spieler"
     items-from: online-players
     item:
@@ -73,7 +74,7 @@ elements:
 
   - type: button
     x: 8
-    y: 170
+    y: 178
     width: 56
     text: "Schließen"
     actions: ["close"]

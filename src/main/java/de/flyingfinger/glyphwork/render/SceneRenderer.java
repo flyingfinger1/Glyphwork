@@ -13,6 +13,7 @@ import de.flyingfinger.glyphwork.api.Scene;
 import de.flyingfinger.glyphwork.api.View;
 import de.flyingfinger.glyphwork.font.Glyph;
 import de.flyingfinger.glyphwork.font.IconCatalog;
+import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.VanillaText;
 import de.flyingfinger.glyphwork.theme.Frame;
 import de.flyingfinger.glyphwork.theme.Theme;
@@ -309,6 +310,10 @@ public final class SceneRenderer {
             int textY = top + (l.rowHeight() - 7) / 2;
             String rowIcon = l.icon() == null ? null : l.icon().apply(item);
             Integer headTop = isHead(rowIcon) ? head(line, rowIcon, l.x() + 4, top + l.rowHeight() / 2) : null;
+            if (headTop != null && l.rowHeight() % ShiftFonts.LINE != 0) {
+                warnOnce("headrows:" + name, "List " + name + " shows player heads with row height " + l.rowHeight()
+                    + "; heads sit on the 9 px line grid, so rows only look even with a row height of 9 or 18");
+            }
             if (headTop != null) {
                 // the head snaps to the 9 px line grid; the name follows it
                 textX += LineBuilder.HEAD + 3;

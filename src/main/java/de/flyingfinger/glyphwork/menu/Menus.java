@@ -284,7 +284,7 @@ public final class Menus {
                     bt.tooltip(tip);
                 }
                 if (n.has("icon")) {
-                    bt.icon(n.string("icon"));
+                    bt.icon(text(n.string("icon")));        // placeholders: icon: "head:%player%"
                 }
                 b.accept(bt);
             }
@@ -313,9 +313,8 @@ public final class Menus {
             }
             case "icon" -> {
                 n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions"));
-                String item = n.string("item");
                 TextColor tint = n.optColor("tint", null);
-                Icon ic = Icon.of(n.integer("x"), n.integer("y"), item).tint(v -> tint);
+                Icon ic = Icon.of(n.integer("x"), n.integer("y"), text(n.string("item"))).tint(v -> tint);
                 if (tooltip(n) != null) {
                     ic.tooltip(tooltip(n));
                 }

@@ -52,7 +52,8 @@ Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `ic
 
 **Player heads:** `icon: "head:Steve"` (name or UUID; `%player%` and `%item_head%` work too). The
 client draws heads as 8 x 8 px, they cannot be scaled, and only on its 9 px text line grid: a head
-sits up to 4 px higher or lower than asked. In lists and buttons the text follows the head; in
+sits up to 4 px higher or lower than asked. Give lists with heads `row-height: 18` (or 9 for a
+compact list like the tab list), otherwise the rows look uneven. In lists and buttons the text follows the head; in
 grids the head is small in the middle of the cell. Heads show in every display mode and in the plain
 dialog (in front of the button text).
 

@@ -10,8 +10,8 @@ sends by itself. Everything is clickable exactly where it is drawn.
 
 - **Server admins:** describe menus in YAML files (buttons that run commands, open other menus or
   ask for input, sliders, checkboxes, choices and forms, PlaceholderAPI, a command per menu,
-  conditions, templates, variables, lists of online players or worlds, menus that refresh
-  themselves) - no coding. See the
+  conditions, templates, variables, tabs, scroll panes, cooldowns, lists of online players,
+  worlds, RSS feeds or JSON web APIs, menus that refresh themselves) - no coding. See the
   [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md), or build them
   with the mouse in the [menu designer](https://flyingfinger1.github.io/Glyphwork/designer.html).
 - **Plugin developers:** build screens with the Java API.
@@ -35,8 +35,10 @@ elements:
 
 - **Scene API** for plugin developers: panels of any tile shape, labels, buttons, invisible
   hitboxes, lists and grids with automatic paging, tooltips, colors, per-player state, navigation
-  (open / back / reopen / close), sliders, checkboxes and choice buttons drawn from the skin, and
-  text input or whole forms (text, slider, checkbox, choice) through small native dialogs.
+  (open / back / reopen / close), tabs, scroll panes, progress bars, own pictures, big player
+  heads, text with bold / italics / underline, sliders, checkboxes and choice buttons drawn from
+  the skin, and text input or whole forms (text, slider, checkbox, choice) through small native
+  dialogs. Stable from 1.0 on: no breaking changes within 1.x.
 - **Item icons** for 1595 items in grids, buttons, lists and menus, drawn from the textures every
   client already has. Icons follow your server's resource pack: replaced textures are measured,
   and the pack's own items (`myserver:ruby`) work as icons. **Player heads** as small 8 x 8 icons
@@ -50,7 +52,8 @@ elements:
   icons and font (read only in your browser).
 - **Example plugin** to copy from: a small trader built against the API, attached to every release.
 - **Resource pack handled for you:** generated on start, stable hash (no re-downloads), served by
-  a built-in web server or written to disk for your own web server / CDN.
+  a built-in web server, written to disk for your own web server / CDN, or merged into the pack
+  your server or proxy sends.
 - **Plain dialog:** players who decline the pack, and Bedrock players through Geyser, get a native
   dialog built from the same screen (or an own plain view of the menu).
 - **Display mode per player** (full / without icons / plain) for players whose own resource pack
@@ -87,7 +90,8 @@ Documentation: [API](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/a
 
 ## Limits
 
-- Paper 26.3 only for now; the API may still change before 1.0.
+- Paper 26.3 only for now. Parts marked experimental (tabs, scroll panes, web sources, the own
+  plain view, Bedrock behaviour) may still change in a minor version.
 - Text and icons are always drawn on top of frames; blocks show one face (no 3D), items drawn by
   special renderers (chests, beds, banners, shields) have no icon; player heads are 8 x 8 and sit on
   the 9 px text grid (elements with a head move by up to 4 px).

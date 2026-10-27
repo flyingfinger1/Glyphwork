@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 – stable API, tabs, scroll panes, feeds and Bedrock
 
 **1.0: the API, the menu format and `config.yml` are now stable** (see "Compatibility" in the
 README). Before that promise some names were cleaned up; plugins built against 0.9 need these

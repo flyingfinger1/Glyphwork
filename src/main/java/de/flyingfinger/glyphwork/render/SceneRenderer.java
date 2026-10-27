@@ -104,8 +104,11 @@ public final class SceneRenderer {
                     case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
                         h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
                     case Icon ic -> {
-                        icon(line, ic.item().apply(view), ic.x(), ic.y(), ic.tint() == null ? null : ic.tint().apply(view));
-                        hitbox(line, ic.x(), ic.y(), IconCatalog.SIZE, IconCatalog.SIZE,
+                        String item = ic.item().apply(view);
+                        int dy = headOf(item) != null
+                            ? headShift("Icon", name, ic.y(), ic.y() + (IconCatalog.SIZE - LineBuilder.HEAD) / 2) : 0;
+                        icon(line, item, ic.x(), ic.y() + dy, ic.tint() == null ? null : ic.tint().apply(view));
+                        hitbox(line, ic.x(), ic.y() + dy, IconCatalog.SIZE, IconCatalog.SIZE,
                             ic.onClick() == null ? null : binder.bind(name, ic.onClick()), tooltip(ic.tooltip(), view));
                     }
                     case ListView<?> l -> list(line, l, view, binder, name);
@@ -150,6 +153,25 @@ public final class SceneRenderer {
                 ? Component.object(ObjectContents.playerHead(src)) : Component.object(ObjectContents.playerHead(who));
         }
     }
+
+    /**
+     * How far an element must move so that its player head (wanted at {@code headTop}) lands on the
+     * 9 px text grid: heads cannot be shifted, so the element moves with them (at most 4 px). Logs
+     * once which position avoids the move.
+     */
+    private int headShift(String what, String name, int y, int headTop) {
+        int index = Math.max(1, Math.round((headTop + 1) / (float) ShiftFonts.LINE));
+        int dy = index * ShiftFonts.LINE - 1 - headTop;
+        if (dy != 0 && hinted.add(name + ":" + y + ":" + dy)) {
+            log.info(what + " " + name + " at y=" + y + " moved " + Math.abs(dy) + " px " + (dy > 0 ? "down" : "up")
+                + " so that its player head sits in the middle (heads only fit the 9 px text grid); y=" + (y + dy)
+                + " avoids the move");
+        }
+        return dy;
+    }
+
+    /** Elements already reported by {@link #headShift}. */
+    private final java.util.Set<String> hinted = new java.util.HashSet<>();
 
     static boolean isHead(@Nullable String item) {
         return item != null && item.regionMatches(true, 0, "head:", 0, 5);
@@ -244,22 +266,21 @@ public final class SceneRenderer {
         Frame f = frame(b.frame());
         boolean enabled = Boolean.TRUE.equals(b.enabled().apply(view));
         ClickEvent<?> click = enabled && b.onClick() != null ? binder.bind(name, b.onClick()) : null;
+        String bIcon = b.icon() == null ? null : b.icon().apply(view);
+        Component bHead = headOf(bIcon);
+        int y = b.y() + (bHead != null ? headShift("Button", name, b.y(), b.y() + (b.height() - LineBuilder.HEAD) / 2) : 0);
         if (f != null) {
-            line.frame(f, b.x(), b.y(), b.width(), b.height(), enabled ? b.tint().apply(view) : Button.DISABLED,
+            line.frame(f, b.x(), y, b.width(), b.height(), enabled ? b.tint().apply(view) : Button.DISABLED,
                 click, tooltip(b.tooltip(), view));
         }
         int textX = b.x();
         int textW = b.width();
-        int textY = b.y() + (b.height() - 7) / 2;
-        String bIcon = b.icon() == null ? null : b.icon().apply(view);
-        if (isHead(bIcon)) {
-            Integer headTop = head(line, bIcon, b.x() + 4, b.y() + b.height() / 2);
-            if (headTop != null) {
-                textX += LineBuilder.HEAD + 4;
-                textW -= LineBuilder.HEAD + 4;
-                textY = headTop + 1;                       // the text follows the head on the line grid
-            }
-        } else if (bIcon != null && icon(line, bIcon, b.x() + 3, b.y() + (b.height() - IconCatalog.SIZE) / 2, null)) {
+        int textY = y + (b.height() - 7) / 2;
+        if (bHead != null) {
+            line.head(bHead, b.x() + 4, y + (b.height() - LineBuilder.HEAD) / 2);
+            textX += LineBuilder.HEAD + 4;
+            textW -= LineBuilder.HEAD + 4;
+        } else if (bIcon != null && icon(line, bIcon, b.x() + 3, y + (b.height() - IconCatalog.SIZE) / 2, null)) {
             textX += IconCatalog.SIZE + 4;
             textW -= IconCatalog.SIZE + 4;
         }
@@ -290,9 +311,18 @@ public final class SceneRenderer {
         int perPage = Math.max(1, l.rows());
         int page = pageOf(view, l.id(), items.size(), perPage);
         int height = l.rows() * l.rowHeight();
+        boolean heads = false;
+        for (int r = 0; r < l.rows() && page * perPage + r < items.size() && l.icon() != null; r++) {
+            heads |= headOf(l.icon().apply(items.get(page * perPage + r))) != null;
+        }
+        if (heads && l.rowHeight() % ShiftFonts.LINE != 0) {
+            warnOnce("headrows:" + name, "List " + name + " shows player heads with row height " + l.rowHeight()
+                + "; heads sit on the 9 px text grid, so rows only look even with a row height of 9 or 18");
+        }
+        int ly = l.y() + (heads ? headShift("List", name, l.y(), l.y() + (l.rowHeight() - LineBuilder.HEAD) / 2) : 0);
         Frame bg = frame(l.frame());
         if (bg != null) {
-            line.frame(bg, l.x(), l.y(), l.width(), height, null, null, null);
+            line.frame(bg, l.x(), ly, l.width(), height, null, null, null);
         }
         T selected = l.selected() == null ? null : l.selected().apply(view);
         Frame highlight = theme.find("button");
@@ -302,22 +332,17 @@ public final class SceneRenderer {
                 break;
             }
             T item = items.get(index);
-            int top = l.y() + r * l.rowHeight();
+            int top = ly + r * l.rowHeight();
             if (selected != null && selected.equals(item) && highlight != null) {
                 line.frame(highlight, l.x(), top, l.width(), l.rowHeight(), l.selectedTint(), null, null);
             }
             int textX = l.x() + 4;
             int textY = top + (l.rowHeight() - 7) / 2;
             String rowIcon = l.icon() == null ? null : l.icon().apply(item);
-            Integer headTop = isHead(rowIcon) ? head(line, rowIcon, l.x() + 4, top + l.rowHeight() / 2) : null;
-            if (headTop != null && l.rowHeight() % ShiftFonts.LINE != 0) {
-                warnOnce("headrows:" + name, "List " + name + " shows player heads with row height " + l.rowHeight()
-                    + "; heads sit on the 9 px line grid, so rows only look even with a row height of 9 or 18");
-            }
-            if (headTop != null) {
-                // the head snaps to the 9 px line grid; the name follows it
+            Component rowHead = headOf(rowIcon);
+            if (rowHead != null) {
+                line.head(rowHead, l.x() + 4, top + (l.rowHeight() - LineBuilder.HEAD) / 2);
                 textX += LineBuilder.HEAD + 3;
-                textY = headTop + 1;
             } else if (rowIcon != null && icon(line, rowIcon, l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2, null)) {
                 textX += IconCatalog.SIZE + 2;
             }
@@ -327,7 +352,7 @@ public final class SceneRenderer {
                 : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
             hitbox(line, l.x(), top, l.width(), l.rowHeight(), click, l.tooltip() == null ? null : l.tooltip().apply(item));
         }
-        pager(line, l.id(), page, pages(items.size(), perPage), l.x(), l.y() + height + 4, l.width(), binder, name);
+        pager(line, l.id(), page, pages(items.size(), perPage), l.x(), ly + height + 4, l.width(), binder, name);
     }
 
     private <T> void grid(LineBuilder line, Grid<T> g, View view, Binder binder, String name) {
@@ -337,11 +362,20 @@ public final class SceneRenderer {
         boolean noFrame = "none".equalsIgnoreCase(g.frame());
         Frame cell = noFrame ? null : frame(g.frame());
         T selected = g.selected() == null ? null : g.selected().apply(view);
+        boolean heads = false;
+        for (int i = page * perPage; i < Math.min(items.size(), (page + 1) * perPage) && g.icon() != null; i++) {
+            heads |= headOf(g.icon().apply(items.get(i))) != null;
+        }
+        if (heads && g.rows() > 1 && g.cellPitch() % ShiftFonts.LINE != 0) {
+            warnOnce("headcells:" + name, "Grid " + name + " shows player heads with a cell pitch of " + g.cellPitch()
+                + "; heads sit on the 9 px text grid, so rows only look even with a pitch of 18 or 27");
+        }
+        int gy = g.y() + (heads ? headShift("Grid", name, g.y(), g.y() + (g.cellSize() - LineBuilder.HEAD) / 2) : 0);
         for (int r = 0; r < g.rows(); r++) {
             for (int c = 0; c < g.cols(); c++) {
                 int index = page * perPage + r * g.cols() + c;
                 int cx = g.x() + c * g.cellPitch();
-                int cy = g.y() + r * g.cellPitch();
+                int cy = gy + r * g.cellPitch();
                 T item = index < items.size() ? items.get(index) : null;
                 ClickEvent<?> click = item == null || g.onClick() == null ? null
                     : binder.bind(name + ":cell" + index, k -> g.onClick().accept(k, item));
@@ -354,8 +388,16 @@ public final class SceneRenderer {
                 }
                 boolean drewIcon = false;
                 if (item != null && g.icon() != null) {
-                    int off = (g.cellSize() - IconCatalog.SIZE) / 2;
-                    drewIcon = icon(line, g.icon().apply(item), cx + off, cy + off, null);
+                    String cellIcon = g.icon().apply(item);
+                    Component cellHead = headOf(cellIcon);
+                    if (cellHead != null) {
+                        int off = (g.cellSize() - LineBuilder.HEAD) / 2;
+                        line.head(cellHead, cx + off, cy + off);
+                        drewIcon = true;
+                    } else {
+                        int off = (g.cellSize() - IconCatalog.SIZE) / 2;
+                        drewIcon = icon(line, cellIcon, cx + off, cy + off, null);
+                    }
                 }
                 if (item != null) {
                     String label = g.label().apply(item);
@@ -367,7 +409,7 @@ public final class SceneRenderer {
                 }
             }
         }
-        pager(line, g.id(), page, pages(items.size(), perPage), g.x(), g.y() + g.rows() * g.cellPitch() + 2,
+        pager(line, g.id(), page, pages(items.size(), perPage), g.x(), gy + g.rows() * g.cellPitch() + 2,
             g.cols() * g.cellPitch() - (g.cellPitch() - g.cellSize()), binder, name);
     }
 

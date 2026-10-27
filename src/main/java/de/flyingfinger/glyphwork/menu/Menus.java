@@ -327,7 +327,8 @@ public final class Menus {
                 n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item"));
                 ListView<Row> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
                         n.optInt("width", 120), n.optInt("rows", 4), rows(n))
-                    .rowHeight(n.optInt("row-height", 16))
+                    // lists of players show heads, which need rows of 9 or 18 px to look even
+                    .rowHeight(n.optInt("row-height", "online-players".equalsIgnoreCase(n.optString("items-from", "")) ? 18 : 16))
                     .text(e -> e.text)
                     .color(e -> e.color)
                     .tooltip(e -> e.tooltip)

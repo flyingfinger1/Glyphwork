@@ -75,20 +75,22 @@ class HeadsTest {
     void listRowTextFollowsTheHead() {
         Scene s = Scene.builder("t", 176, 120)
             .add(ListView.of("p", 8, 13, 120, 4, v -> List.of("Alex", "Steve", "Zoe")).icon(n -> "head:" + n)
-                .onSelect((c, n) -> { }))
+                .rowHeight(18).onSelect((c, n) -> { }))
             .build();
         Layout l = layout(s);
         assertEquals(3, l.heads.size());
+        // the list moves as a whole (13 -> 12, the nearest fit) so that every head sits in the middle of its 18 px row
         for (int i = 0; i < 3; i++) {
             int[] h = l.heads.get(i);
             onGrid(h);
-            int rowTop = 13 + 16 * i;
-            assertTrue(h[1] >= rowTop - 4 && h[1] + 8 <= rowTop + 16 + 4, "row " + i + ": head " + h[1]);
+            assertEquals(12 + 18 * i + 5, h[1], "row " + i);
             int headTop = h[1];
-            assertTrue(l.textRuns.stream().anyMatch(t -> t[1] == headTop + 1 && t[0] == 8 + 4 + 8 + 3),
+            assertTrue(l.textRuns.stream().anyMatch(t -> t[1] == headTop && t[0] == 8 + 4 + 8 + 3),
                 "name next to head " + i);
         }
-        assertEquals("t#0:row1", l.hit(60, 13 + 16 + 8));                // rows stay clickable
+        assertEquals("t#0:row1", l.hit(60, 12 + 18));                   // rows (and their hitboxes) moved too
+        assertEquals("t#0:row0", l.hit(60, 12));
+        assertEquals(null, l.hit(60, 11));
     }
 
     @Test
@@ -100,9 +102,14 @@ class HeadsTest {
         Layout l = layout(s);
         assertEquals(3, l.heads.size());
         l.heads.forEach(HeadsTest::onGrid);
+        // grid: cells 24 px, heads in the middle -> the grid moves from y=8 to y=9 (head top 17)
+        assertEquals(17, l.heads.get(0)[1]);
+        assertEquals(8 + 8, l.heads.get(0)[0]);
+        // button 20 px high at y=50: head wanted at 56 -> moved to 53 (head 53 = 9 * 6 - 1), text beside it
         int[] button = l.heads.get(2);
         assertEquals(12, button[0]);
-        assertTrue(l.textRuns.stream().anyMatch(t -> t[1] == button[1] + 1), "button text follows the head");
+        assertEquals(53, button[1]);
+        assertTrue(l.textRuns.stream().anyMatch(t -> t[1] == 53), "button text centered like the head");
     }
 
     @Test

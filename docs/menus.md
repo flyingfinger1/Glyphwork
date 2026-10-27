@@ -51,11 +51,23 @@ Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `ic
 `config.yml`.
 
 **Player heads:** `icon: "head:Steve"` (name or UUID; `%player%` and `%item_head%` work too). The
-client draws heads as 8 x 8 px, they cannot be scaled, and only on its 9 px text line grid: a head
-sits up to 4 px higher or lower than asked. Give lists with heads `row-height: 18` (or 9 for a
-compact list like the tab list), otherwise the rows look uneven. In lists and buttons the text follows the head; in
-grids the head is small in the middle of the cell. Heads show in every display mode and in the plain
-dialog (in front of the button text).
+client draws heads as 8 x 8 px, they cannot be scaled, and only on its 9 px text grid. So that a head
+still sits exactly in the middle of its button, row or cell, Glyphwork moves that element (frame,
+head and text together) by up to 4 px and logs which `y` avoids the move. Positions where nothing
+moves:
+
+| element with a head | `y` that needs no move |
+|---|---|
+| `icon`, button 16 px high, grid cell `size: 16` | 4, 13, 22, 31, 40, 49, 58, 67, 76, 85 ... (`y` = 9n + 4) |
+| button 20 px high | 2, 11, 20, 29, 38, 47, 56, 65 ... (9n + 2) |
+| button 24 px high, grid cell `size: 24` | 0, 9, 18, 27, 36, 45, 54, 63 ... (9n) |
+| list with `row-height: 18` | 3, 12, 21, 30, 39, 48, 57, 66 ... (9n + 3) |
+| list with `row-height: 9` (compact, like the tab list) | 8, 17, 26, 35, 44, 53 ... (9n + 8) |
+
+Lists need a row height of 9 or 18 and grids a cell pitch of 18 or 27, otherwise later rows sit
+differently from the first (Glyphwork logs a hint). Lists with `items-from: online-players` use 18 px
+rows by default. Heads show in every display mode and in the plain dialog (in front of the button
+text).
 
 `y` of a text is the top of the letters; in a 16 px button the text starts 4 px below the top.
 Items with a `permission` are only shown to players who have it. Every element and every list or

@@ -41,10 +41,9 @@ elements:
   - type: list
     id: spieler
     x: 8
-    y: 62
+    y: 66               # mit Köpfen und 18-px-Zeilen: y = 9n + 3 (siehe docs/menus.md), dann rückt nichts
     width: 160
     rows: 5
-    row-height: 18      # Köpfe sitzen auf dem 9-px-Raster: Zeilenhöhe 9 oder 18 hält die Zeilen gleichmäßig
     show-if: "%menu_tab% == spieler"
     items-from: online-players
     item:

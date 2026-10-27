@@ -14,6 +14,10 @@ pack.failed: "<gray>The Glyphwork pack could not be loaded (<status>). Menus are
 
 menu.unknown: "<red>Menu '<id>' does not exist."
 menu.usage: "<gray>/glyphwork menu \\<id> [player] – menus: <menus>"
+item.usage: "<gray>/glyphwork item \\<menu> [player] – menus with an item: <menus>"
+item.none: "<red>Menu '<id>' has no item (open-on.item)."
+item.given: "<green>Gave the item of menu '<id>' to <player>."
+item.has: "<gray><player> has that item already (or may not open the menu)."
 
 reload.menus: "<green><count> menu(s) loaded."
 reload.pack-sent: "<green>Glyphwork reloaded: theme '<theme>', new pack sent to <count> player(s)."
@@ -23,7 +27,7 @@ reload.failed: "<red>Reload failed: <error>"
 status.pack: "<gray>Theme '<theme>', pack <sha1> (<hosting>)\n<url>"
 
 help.player: "<gray>/glyphwork \\<pack|display>"
-help.admin: "<gray>/glyphwork \\<pack|display|menu \\<id> [player]|test [fallback]|status|reload>"
+help.admin: "<gray>/glyphwork \\<pack|display|menu \\<id> [player]|item \\<menu> [player]|test [fallback]|status|reload>"
 
 cmd.display: "display"
 cmd.full: "full"

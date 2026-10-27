@@ -817,8 +817,50 @@ const MENU_FIELDS = [
   ['title', 'text', 'menuTitle'], ['width', 'int', 'width'], ['height', 'int', 'height'],
   ['background', 'text', 'background'], ['command', 'text', 'command'], ['aliases', 'lines', 'aliases'],
   ['permission', 'text', 'permission'], ['description', 'text', 'description'], ['exit-label', 'text', 'exitLabel'],
-  ['refresh', 'text', 'refresh'],
+  ['refresh', 'text', 'refresh'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
+  ['open-on.join', 'select', 'openOnJoin', ['true', 'first']], ['open-on.item.material', 'text', 'openOnItem'],
+  ['open-on.item.name', 'text', 'openOnItemName'], ['open-on.item.slot', 'int', 'openOnItemSlot'],
+  ['open-on.item.give', 'select', 'openOnItemGive', ['join', 'first', 'no']], ['open-on.item.keep', 'select', 'openOnItemKeep', ['true', 'false']],
 ];
+
+/** Reads a dotted path ("open-on.item.name") of the menu. */
+function menuGet(path) {
+  let v = menu;
+  for (const k of path.split('.')) {
+    if (v == null || typeof v !== 'object') return undefined;
+    v = v[k];
+  }
+  // open-on.item may be a plain material
+  if (path === 'open-on.item.material' && v === undefined && typeof menu['open-on']?.item === 'string') return menu['open-on'].item;
+  return v;
+}
+
+/** Writes a dotted path, creating and removing the maps on the way. */
+function menuPut(path, value) {
+  const keys = path.split('.');
+  const root = { ...menu };
+  if (keys[0] === 'open-on' && typeof root['open-on']?.item === 'string') {
+    root['open-on'] = { ...root['open-on'], item: { material: root['open-on'].item } };
+  }
+  const walk = (obj, i) => {
+    const o = { ...(obj && typeof obj === 'object' ? obj : {}) };
+    if (i === keys.length - 1) {
+      if (value === undefined || (Array.isArray(value) && !value.length)) delete o[keys[i]];
+      else o[keys[i]] = value;
+    } else {
+      const sub = walk(o[keys[i]], i + 1);
+      if (Object.keys(sub).length) o[keys[i]] = sub; else delete o[keys[i]];
+    }
+    return o;
+  };
+  const next = walk(root, 0);
+  const order = ['title', 'width', 'height', 'background', 'command', 'aliases', 'permission', 'description',
+    'exit-label', 'refresh', 'open-on', 'on-open', 'on-close', 'templates', 'variables', 'forms', 'elements'];
+  const out = {};
+  for (const k of order) if (k in next) out[k] = next[k];
+  for (const k of Object.keys(next)) if (!(k in out)) out[k] = next[k];
+  menu = out;
+}
 
 function refreshMenuProps() {
   const box = $('menuProps');
@@ -832,18 +874,13 @@ function refreshMenuProps() {
   id.append(idIn);
   box.append(id);
   let pair = null;
-  for (const [key, kind, label] of MENU_FIELDS) {
-    const f = field(key, kind, null, () => menu[key], (v) => {
-      const next = {};
-      const order = ['title', 'width', 'height', 'background', 'command', 'aliases', 'permission', 'description',
-        'exit-label', 'refresh', 'templates', 'variables', 'forms', 'elements'];
-      const m = { ...menu };
-      if (v === undefined || (Array.isArray(v) && !v.length)) delete m[key];
-      else m[key] = v;
-      for (const k of order) if (k in m) next[k] = m[k];
-      for (const k of Object.keys(m)) if (!(k in next)) next[k] = m[k];
-      menu = next;
-    }, 'menu');
+  for (const [key, kind, label, extra] of MENU_FIELDS) {
+    if (key === 'on-open') {
+      const h = document.createElement('h3');
+      h.textContent = t('triggers');
+      box.append(h);
+    }
+    const f = field(key, kind, extra, () => menuGet(key), (v) => menuPut(key, v), 'menu');
     f.querySelector('span').textContent = t(label);
     if (key === 'width') { pair = document.createElement('div'); pair.className = 'pair'; pair.append(f); box.append(pair); }
     else if (key === 'height' && pair) { pair.append(f); pair = null; }

@@ -34,8 +34,41 @@ templates: {...}              # optional: templates only for this menu, see belo
 variables: { tab: shop }      # optional: menu variables and their defaults, see below
 refresh: 5                    # optional: redraw every 5 seconds while open (at least 1), see below
 forms: {...}                  # optional: forms with several input fields, see below
+open-on: {...}                # optional: open by itself on joining or with a menu item, see below
+on-open: [...]                # optional: actions when the menu opens (before it is drawn)
+on-close: [...]               # optional: actions when the player closes it
 elements: [...]
 ```
+
+**Opening by itself:**
+
+```yaml
+open-on:
+  join: true            # open when a player joins (first = only on their very first join)
+  item:                 # a menu item in the hotbar: right-click opens the menu
+    material: compass
+    name: "<gold>Server menu"
+    lore: ["<gray>Right-click to open"]
+    slot: 8             # hotbar slot it is put into (0-8, default 8)
+    give: join          # join (default) = on every join if missing, first = only on the first join,
+                        # no = only with /glyphwork item or the action give-item
+    keep: true          # true (default) = cannot be dropped, comes back after death; false = a normal item
+on-open: ["sound: block.note_block.chime"]
+on-close: ["message: <gray>See you!"]
+```
+
+The join menu waits until the player's Glyphwork pack is loaded (or declined): the pack reload
+would close a menu opened earlier. If several menus open on joining, the first by file name wins.
+The menu item carries the menu id, so only it opens the menu (not every compass); `item: compass`
+is short for a plain compass in slot 8 with the defaults. Players who lack the menu's `permission`
+never get it. With `give: join` it is handed out on every join and after `/glyphwork reload` if
+missing; with `keep: true` it cannot be dropped and comes back after death (it can still be moved in
+the inventory). Not everyone wants it: `give: first` + `keep: false` gives newcomers one they may
+throw away, and a button with `give-item: hub` (or `/glyphwork item hub [player]`) hands it out
+again on request. `on-open` runs before the menu is drawn (so `set:` shows at once), whenever it
+is opened (command, `open:`, trigger), not on redraws or `back`. `on-close` runs when the player
+closes the menu (exit button, ESC, `close`); the screen is gone by then, so use it for messages,
+sounds or commands.
 
 **`refresh`** redraws the open menu every few seconds, so placeholders and dynamic lists stay
 current (players online, balances, a countdown). Clicks on the previous drawing still work. It stops
@@ -159,6 +192,7 @@ A list of strings, run in order:
 | `set: tab shop` | sets the [menu variable](#variables) `tab` to `shop` (placeholders allowed: `set: filter %input%`); `set: tab` resets it to its default |
 | `toggle: sound` | switches the variable between `true` and `false` |
 | `form: settings` | opens the [form](#forms) `settings` of this menu |
+| `give-item: hub` | gives the player the menu item of menu `hub` (`open-on.item`), unless they carry it already |
 
 After `set` or `toggle` the menu is drawn again by itself, unless an action already opened, closed,
 or redrew it. `open:` takes placeholders too (`open: shop-%menu_tab%`).

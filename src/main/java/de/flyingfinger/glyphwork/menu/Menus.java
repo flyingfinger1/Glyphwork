@@ -43,16 +43,34 @@ public final class Menus {
 
     /** One menu file. */
     public record Menu(String id, Scene scene, @Nullable String command, List<String> aliases,
-                       @Nullable String permission, @Nullable String description) {
+                       @Nullable String permission, @Nullable String description, @Nullable Trigger trigger) {
 
         public boolean allowed(Player p) {
             return permission == null || p.hasPermission(permission);
         }
     }
 
+    /**
+     * When a menu opens by itself ("open-on:"). {@code join}: on joining ("first": only the first
+     * time); {@code item}: right-clicking the menu item.
+     */
+    public record Trigger(boolean join, boolean firstJoinOnly, @Nullable MenuItem item) {
+    }
+
+    /** When the menu item is handed out automatically. */
+    public enum Give { JOIN, FIRST, NO }
+
+    /**
+     * The item that opens a menu, put into hotbar {@code slot}. {@code keep}: it cannot be dropped and
+     * comes back after death.
+     */
+    public record MenuItem(String material, @Nullable String name, List<String> lore, int slot, Give give, boolean keep) {
+    }
+
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
-        "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms");
+        "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms",
+        "on-open", "on-close", "open-on");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -161,6 +179,15 @@ public final class Menus {
         if (root.has("refresh")) {
             b.refresh(refresh(root));
         }
+        if (root.has("on-open")) {
+            Actions.Chain open = Actions.parse(root.strings("on-open"), root, "on-open", this::get, vars, forms);
+            b.onOpen(k -> open.run(k, null));
+        }
+        if (root.has("on-close")) {
+            Actions.Chain close = Actions.parse(root.strings("on-close"), root, "on-close", this::get, vars, forms);
+            b.onClose(k -> close.run(k, null));
+        }
+        Trigger trigger = trigger(root);
         String background = root.optString("background", "panel");
         if (!"none".equalsIgnoreCase(background)) {
             b.add(Panel.of(0, 0, width, height).frame(background));
@@ -187,7 +214,63 @@ public final class Menus {
             }
         }
         return new Menu(id, b.build(), command, root.strings("aliases").stream().map(String::toLowerCase).toList(),
-            root.optString("permission", null), root.optString("description", null));
+            root.optString("permission", null), root.optString("description", null), trigger);
+    }
+
+    /** "open-on:" with join and item. */
+    private static @Nullable Trigger trigger(Node root) throws MenuException {
+        Object raw = Templates.plain(root.raw().get("open-on"));
+        if (raw == null) {
+            return null;
+        }
+        if (!(raw instanceof Map<?, ?> m)) {
+            throw root.error("open-on", "settings expected, e.g. open-on: { join: true, item: compass }");
+        }
+        Node n = new Node(m, root.path + ".open-on");
+        n.only(Set.of("join", "item"));
+        boolean join = false;
+        boolean first = false;
+        String j = n.optString("join", "false").trim().toLowerCase();
+        switch (j) {
+            case "true", "yes", "always" -> join = true;
+            case "first" -> { join = true; first = true; }
+            case "false", "no" -> { }
+            default -> throw n.error("join", "true, first or false");
+        }
+        MenuItem item = null;
+        Object it = Templates.plain(n.raw().get("item"));
+        if (it instanceof String material) {
+            item = new MenuItem(material(n, material), null, List.of(), 8, Give.JOIN, true);
+        } else if (it instanceof Map<?, ?> im) {
+            Node i = new Node(im, n.path + ".item");
+            i.only(Set.of("material", "name", "lore", "slot", "give", "keep"));
+            int slot = i.optInt("slot", 8);
+            if (slot < 0 || slot > 8) {
+                throw i.error("slot", "hotbar slot 0 to 8");
+            }
+            Give give = switch (i.optString("give", "join").trim().toLowerCase()) {
+                case "join", "true", "yes" -> Give.JOIN;
+                case "first" -> Give.FIRST;
+                case "no", "false", "never" -> Give.NO;
+                default -> throw i.error("give", "join, first or no");
+            };
+            item = new MenuItem(material(i, i.string("material")), i.optString("name", null), i.strings("lore"), slot,
+                give, i.optBool("keep", true));
+        } else if (it != null) {
+            throw n.error("item", "a material (item: compass) or settings (material, name, lore, slot, give)");
+        }
+        return join || item != null ? new Trigger(join, first, item) : null;
+    }
+
+    private static String material(Node at, String material) throws MenuException {
+        String s = material.trim().toLowerCase();
+        if (s.startsWith("minecraft:")) {
+            s = s.substring("minecraft:".length());
+        }
+        if (!s.matches("[a-z0-9_]+")) {
+            throw at.error("material", "item id expected (e.g. compass), got '" + material + "'");
+        }
+        return s;
     }
 
     /** "refresh: 5" or "2.5" seconds, at least 1. */

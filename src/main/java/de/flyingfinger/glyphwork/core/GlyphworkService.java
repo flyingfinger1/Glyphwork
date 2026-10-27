@@ -106,19 +106,52 @@ public final class GlyphworkService implements Glyphwork {
     /** Opens a scene; with {@code forceFallback} it shows the plain version (preview for admins). */
     public void openAs(Player player, Scene scene, boolean forceFallback) {
         Session s = session(player);
+        if (!s.stack.isEmpty()) {
+            closedHook(player, s, s.stack.peek());   // another screen replaces this one
+        }
         s.forceFallback = forceFallback;
         s.stack.clear();
         s.stack.push(scene);
-        show(player, s);
+        if (openedHook(player, s, scene)) {
+            show(player, s);
+        }
+    }
+
+    /** Runs the scene's onOpen; false if the hook already showed or closed something itself. */
+    private boolean openedHook(Player player, Session s, Scene scene) {
+        if (scene.onOpen() == null) {
+            return true;
+        }
+        HookClick c = new HookClick(player, s, scene, false);
+        try {
+            scene.onOpen().accept(c);
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.WARNING, "onOpen of " + scene.id() + " failed", e);
+        }
+        return !c.navigated;
+    }
+
+    /** Runs the scene's onClose (the screen is already gone). */
+    private void closedHook(Player player, Session s, @org.jspecify.annotations.Nullable Scene scene) {
+        if (scene == null || scene.onClose() == null || !player.isOnline()) {
+            return;
+        }
+        try {
+            scene.onClose().accept(new HookClick(player, s, scene, true));
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.WARNING, "onClose of " + scene.id() + " failed", e);
+        }
     }
 
     @Override
     public void close(Player player) {
         Session s = sessions.get(player.getUniqueId());
         if (s != null) {
+            Scene top = s.stack.peek();
             s.stack.clear();
             s.generation++;
             s.stopRefresh();
+            closedHook(player, s, top);
         }
         player.closeDialog();
     }
@@ -231,9 +264,11 @@ public final class GlyphworkService implements Glyphwork {
     private void exited(Player player, Session s, int generation) {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (s.generation == generation) {
+                Scene top = s.stack.peek();
                 s.stack.clear();
                 s.generation++;
                 s.stopRefresh();
+                closedHook(player, s, top);
             }
         });
     }
@@ -316,7 +351,61 @@ public final class GlyphworkService implements Glyphwork {
         }
     }
 
-    private final class ClickImpl extends ViewImpl implements Click {
+    /**
+     * The Click handed to onOpen / onClose. While opening, reopen is not needed (the scene is drawn
+     * next) and open/close replace it; after closing, nothing navigates.
+     */
+    private final class HookClick extends ClickImpl {
+        private final boolean closed;
+        boolean navigated;
+
+        HookClick(Player player, Session session, Scene scene, boolean closed) {
+            super(player, session, scene);
+            this.closed = closed;
+        }
+
+        @Override
+        public void reopen() {
+        }
+
+        @Override
+        public void open(Scene next) {
+            if (!closed) {
+                navigated = true;
+                super.open(next);
+            }
+        }
+
+        @Override
+        public void back() {
+        }
+
+        @Override
+        public void close() {
+            if (!closed) {
+                navigated = true;
+                super.close();
+            }
+        }
+
+        @Override
+        public void prompt(Component title, String initial, Consumer<String> onSubmit) {
+            if (!closed) {
+                navigated = true;
+                super.prompt(title, initial, onSubmit);
+            }
+        }
+
+        @Override
+        public void form(de.flyingfinger.glyphwork.api.Form form, Consumer<de.flyingfinger.glyphwork.api.Form.Values> onSubmit) {
+            if (!closed) {
+                navigated = true;
+                super.form(form, onSubmit);
+            }
+        }
+    }
+
+    private class ClickImpl extends ViewImpl implements Click {
 
         ClickImpl(Player player, Session session, Scene scene) {
             super(player, session, scene);
@@ -330,7 +419,9 @@ public final class GlyphworkService implements Glyphwork {
         @Override
         public void open(Scene next) {
             session.stack.push(next);
-            show(player, session);
+            if (openedHook(player, session, next)) {
+                show(player, session);
+            }
         }
 
         @Override

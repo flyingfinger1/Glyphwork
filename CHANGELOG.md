@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Menus that open by themselves:** `open-on: { join: true }` (or `first`) opens a menu when a
+  player joins, once the Glyphwork pack is loaded; `open-on: { item: compass }` (or with name,
+  lore, slot) hands out a menu item that opens it on right-click, cannot be dropped and comes back
+  after death (`give: join|first|no`, `keep: true|false`; `/glyphwork item <menu> [player]` and the
+  action `give-item:` hand it out on request). `on-open` / `on-close` actions run when the menu opens (before drawing) and when the
+  player closes it; API `Scene.Builder.onOpen` / `onClose`. The designer has fields for all of it.
 - **Own dialog warning button:** `dialog-warning.icon` / `icon-hover` in `config.yml` replace the
   warning sign next to every dialog title with one of your pictures, and
   `dialog.warning-tooltip` in the language files replaces its tooltip text (written into the pack

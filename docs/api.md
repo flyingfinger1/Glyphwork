@@ -35,6 +35,8 @@ Glyphwork.get().open(player, settings);
 - Frame sizes are rounded down to whole tiles of the active skin (8 px for the built-in one).
   Two exceptions round up, so that their content lies inside: the background of a list (2 rows of
   18 px get a 40 px frame) and a panel covering the whole scene (`background()`).
+- `.onOpen(c -> ...)` runs when the scene is opened, before it is drawn (set state there);
+  `.onClose(c -> ...)` when the player closes the screen while it is shown (messages, sounds).
 - `.refresh(Duration.ofSeconds(5))` on the builder redraws the open scene every 5 seconds (at least
   half a second), for content that changes by itself: players online, balances, countdowns. Clicks
   on the previous drawing still work; it stops when the player closes the scene (also with ESC),

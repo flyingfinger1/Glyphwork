@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -22,9 +23,13 @@ public final class Scene {
     private final @Nullable Component exitLabel;
     private final List<Element> elements;
     private final @Nullable Duration refresh;
+    private final @Nullable Consumer<Click> onOpen;
+    private final @Nullable Consumer<Click> onClose;
 
     private Scene(Builder b) {
         this.refresh = b.refresh;
+        this.onOpen = b.onOpen;
+        this.onClose = b.onClose;
         this.id = b.id;
         this.width = b.width;
         this.height = b.height;
@@ -67,6 +72,16 @@ public final class Scene {
         return elements;
     }
 
+    /** Runs when the scene is opened (not when it is redrawn or returned to with back). */
+    public @Nullable Consumer<Click> onOpen() {
+        return onOpen;
+    }
+
+    /** Runs when the player closes the screen while this scene is shown. */
+    public @Nullable Consumer<Click> onClose() {
+        return onClose;
+    }
+
     /** How often the open scene redraws itself, or null if only after clicks. */
     public @Nullable Duration refresh() {
         return refresh;
@@ -80,6 +95,8 @@ public final class Scene {
         private @Nullable Component exitLabel;
         private final List<Element> elements = new ArrayList<>();
         private @Nullable Duration refresh;
+        private @Nullable Consumer<Click> onOpen;
+        private @Nullable Consumer<Click> onClose;
 
         private Builder(String id, int width, int height) {
             this.id = id;
@@ -119,6 +136,26 @@ public final class Scene {
                 throw new IllegalArgumentException("refresh must be at least 500 ms, got " + every);
             }
             this.refresh = every;
+            return this;
+        }
+
+        /**
+         * Runs when the scene is opened (by open, a command or a trigger), before it is drawn: set
+         * state here and it shows right away. {@code reopen()} is not needed; {@code open(...)} or
+         * {@code close()} replace the scene instead. Not run on redraws or when returning with back.
+         */
+        public Builder onOpen(Consumer<Click> onOpen) {
+            this.onOpen = onOpen;
+            return this;
+        }
+
+        /**
+         * Runs when the player closes the screen while this scene is shown (exit button, ESC or a
+         * close() call), e.g. for a message or a sound. The screen is gone: open, back and reopen do
+         * nothing here.
+         */
+        public Builder onClose(Consumer<Click> onClose) {
+            this.onClose = onClose;
             return this;
         }
 

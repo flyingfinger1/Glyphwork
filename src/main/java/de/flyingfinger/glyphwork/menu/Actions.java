@@ -25,6 +25,7 @@ import java.util.function.Function;
  * set: tab shop                 menu variable %menu_tab% = shop ("set: tab" = back to the default)
  * toggle: sound                 %menu_sound% switches between true and false
  * form: settings                open the form "settings" of this menu (fields = menu variables)
+ * give-item: hub                hand out the menu item of menu "hub" (open-on.item)
  * </pre>
  * After set/toggle the menu is drawn again, unless an action already opened, closed or redrew it.
  */
@@ -180,6 +181,15 @@ final class Actions {
                     r.changed = true;
                 });
             }
+            case "give-item" -> {
+                String id = require(arg, at, key, "a menu id").toLowerCase();
+                yield go((c, in, r) -> {
+                    MenuTriggers t = MenuTriggers.active();
+                    if (t != null && c.player() != null) {
+                        t.give(c.player(), vars.fill(c, id, r.item, in).trim().toLowerCase(), true);
+                    }
+                });
+            }
             case "form" -> {
                 String name = require(arg, at, key, "a form name").toLowerCase();
                 Forms.Def def = forms.get(name);
@@ -199,7 +209,7 @@ final class Actions {
                 });
             }
             default -> throw at.error(key, "unknown action '" + type
-                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, toggle, form)");
+                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, toggle, form, give-item)");
         };
     }
 

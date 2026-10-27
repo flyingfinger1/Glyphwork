@@ -51,6 +51,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private String themeName = "";
     private final Demo demo = new Demo();
     private Menus menus = new Menus();
+    private de.flyingfinger.glyphwork.menu.MenuTriggers triggers;
     private MenuCommands menuCommands;
 
     /** Everything that depends on config + theme. */
@@ -75,6 +76,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         getServer().getServicesManager().register(Glyphwork.class, service, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(this, this);
         menuCommands = new MenuCommands(this);
+        triggers = new de.flyingfinger.glyphwork.menu.MenuTriggers(this, () -> menus, this::openMenu,
+            p -> settings.sendOnJoin());
+        getServer().getPluginManager().registerEvents(triggers, this);
         exportExampleMenus();
         loadMenus();
     }
@@ -107,6 +111,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             getLogger().warning("Menu not loaded: " + e);
         }
         menuCommands.register(menus, this::openMenu);
+        if (triggers != null) {
+            triggers.giveAll();
+        }
         getLogger().info(menus.all().size() + " menu(s) loaded" + (menus.errors().isEmpty() ? "" : ", "
             + menus.errors().size() + " with errors"));
         return menus.errors();
@@ -310,6 +317,13 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
         Player p = event.getPlayer();
         packs.status(p, event.getStatus());
+        boolean finished = switch (event.getStatus()) {
+            case SUCCESSFULLY_LOADED, DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED -> true;
+            default -> false;
+        };
+        if (finished && triggers != null) {
+            triggers.packDone(p);
+        }
         getLogger().info(p.getName() + " pack status: " + event.getStatus());
         switch (event.getStatus()) {
             case DECLINED -> p.sendMessage(msg().get(p, "pack.declined"));
@@ -388,6 +402,28 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                     }
                 }
             }
+            case "item" -> {
+                if (!sender.hasPermission(ADMIN)) {
+                    noPermission(sender);
+                    return true;
+                }
+                List<String> withItems = menus.all().stream()
+                    .filter(m -> m.trigger() != null && m.trigger().item() != null).map(Menus.Menu::id).toList();
+                if (args.length < 2) {
+                    sender.sendMessage(msg().get(sender, "item.usage", "menus", String.join(", ", withItems)));
+                    return true;
+                }
+                Player target = args.length > 2 ? getServer().getPlayerExact(args[2]) : sender instanceof Player p ? p : null;
+                if (target == null) {
+                    sender.sendMessage(msg().get(sender, "player-not-found"));
+                } else if (!withItems.contains(args[1].toLowerCase())) {
+                    sender.sendMessage(msg().get(sender, "item.none", "id", args[1]));
+                } else if (triggers.give(target, args[1].toLowerCase(), true)) {
+                    sender.sendMessage(msg().get(sender, "item.given", "id", args[1].toLowerCase(), "player", target.getName()));
+                } else {
+                    sender.sendMessage(msg().get(sender, "item.has", "player", target.getName()));
+                }
+            }
             case "reload" -> {
                 if (sender.hasPermission(ADMIN)) {
                     reload(sender);
@@ -458,7 +494,11 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         if (args.length == 2 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(ADMIN)) {
             return menus.all().stream().map(Menus.Menu::id).filter(id -> id.startsWith(args[1].toLowerCase())).toList();
         }
-        if (args.length == 3 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(ADMIN)) {
+        if (args.length == 2 && args[0].equalsIgnoreCase("item") && sender.hasPermission(ADMIN)) {
+            return menus.all().stream().filter(m -> m.trigger() != null && m.trigger().item() != null)
+                .map(Menus.Menu::id).filter(id -> id.startsWith(args[1].toLowerCase())).toList();
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("menu") || args[0].equalsIgnoreCase("item")) && sender.hasPermission(ADMIN)) {
             return getServer().getOnlinePlayers().stream().map(Player::getName)
                 .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase())).toList();
         }
@@ -473,7 +513,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             return List.of();
         }
         String display = msg().raw(lang, "cmd.display");
-        List<String> subs = sender.hasPermission(ADMIN) ? List.of(display, "menu", "pack", "reload", "status", "test")
+        List<String> subs = sender.hasPermission(ADMIN) ? List.of(display, "item", "menu", "pack", "reload", "status", "test")
             : List.of(display, "pack");
         return subs.stream().filter(s -> s.startsWith(args[0].toLowerCase())).toList();
     }

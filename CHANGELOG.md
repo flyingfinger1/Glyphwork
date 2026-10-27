@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Progress bars:** `type: bar` / `Bar.of(...)` fills pixel exact from `value` / `max`
+  (placeholders work), in any color, 8 or 16 px high, with an optional text in the middle. The
+  plain dialog shows ten blocks plus the text.
+- **Item tooltips:** `item-tooltip: true` on icons, lists and grids (API `itemTooltip(true)`)
+  shows the item's own vanilla tooltip when hovering; plugins can pass a full `ItemStack` with
+  enchantments and lore. The example trader uses it.
+- **Text blocks:** labels with `wrap: true` and a `width` break into lines at spaces
+  (`line-height`, default 10); `
+` starts a new line in any label.
+- The menu designer knows all three.
+- Button text is centered on the width that is drawn (frames are whole tiles: a 22 px button is
+  16 px wide); before, it sat to the right.
+
 ## 0.9.0 – forms, menu controls and the menu designer
 
 - **Menu designer** in the browser (https://flyingfinger1.github.io/Glyphwork/designer.html, next

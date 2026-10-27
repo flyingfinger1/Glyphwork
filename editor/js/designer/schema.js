@@ -6,7 +6,7 @@ const COMMON_TAIL = ['show-if'];
 
 export const FIELDS = {
   label: [['x', 'int'], ['y', 'int'], ['text', 'text'], ['color', 'color'], ['width', 'int'],
-    ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool']],
+    ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool'], ['wrap', 'bool'], ['line-height', 'int']],
   button: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['text', 'text'], ['tint', 'color'],
     ['text-color', 'color'], ['icon', 'text'], ['tooltip', 'text'], ['actions', 'lines'], ['permission', 'text'],
     ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text']],
@@ -14,18 +14,20 @@ export const FIELDS = {
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   hitbox: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['tooltip', 'text'], ['actions', 'lines'],
     ['permission', 'text']],
-  icon: [['x', 'int'], ['y', 'int'], ['item', 'text'], ['count', 'text'], ['tint', 'color'], ['tooltip', 'text'],
-    ['actions', 'lines']],
+  icon: [['x', 'int'], ['y', 'int'], ['item', 'text'], ['count', 'text'], ['item-tooltip', 'bool'], ['tint', 'color'],
+    ['tooltip', 'text'], ['actions', 'lines']],
   list: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['rows', 'int'], ['row-height', 'int'],
-    ['items', 'items'], ['items-from', 'from'], ['item', 'item']],
+    ['item-tooltip', 'bool'], ['items', 'items'], ['items-from', 'from'], ['item', 'item']],
   grid: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['cols', 'int'], ['rows', 'int'], ['cell', 'int'], ['size', 'int'],
-    ['frame', 'text'], ['items', 'items'], ['items-from', 'from'], ['item', 'item']],
+    ['frame', 'text'], ['item-tooltip', 'bool'], ['items', 'items'], ['items-from', 'from'], ['item', 'item']],
   slider: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['var', 'text'], ['min', 'int'], ['max', 'int'], ['step', 'text'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   checkbox: [['x', 'int'], ['y', 'int'], ['var', 'text'], ['text', 'text'], ['color', 'color'], ['tooltip', 'text'],
     ['actions', 'lines']],
   choice: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['var', 'text'], ['options', 'options'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
+  bar: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'select', ['8', '16']], ['value', 'text'], ['max', 'text'],
+    ['color', 'color'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text']],
   use: [['use', 'use'], ['x', 'int'], ['y', 'int'], ['values', 'values']],
 };
 
@@ -39,7 +41,7 @@ export const ITEM_FIELDS = {
     ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines']],
 };
 
-export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice'];
+export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice', 'bar'];
 
 /** Field names that map to i18n keys (f_...). */
 export const FIELD_KEY = {
@@ -49,7 +51,8 @@ export const FIELD_KEY = {
   'disabled-tooltip': 'f_disabledTooltip', 'show-if': 'f_showIf', shape: 'f_shape', item: 'f_item', count: 'f_count',
   id: 'f_id', rows: 'f_rows', 'row-height': 'f_rowHeight', cols: 'f_cols', cell: 'f_cell', size: 'f_size', var: 'f_var',
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
-  'items-from': 'itemsFrom',
+  'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
+  value: 'f_value',
 };
 
 /** A new element of this type at (x, y). */
@@ -66,6 +69,7 @@ export function create(type, x, y, de) {
     case 'slider': return { type, x, y, width: 96, var: 'wert', min: 0, max: 10 };
     case 'checkbox': return { type, x, y, var: 'option', text: tx('Option', 'Option') };
     case 'choice': return { type, x, y, width: 80, var: 'modus', options: tx(['leicht', 'normal', 'schwer'], ['easy', 'normal', 'hard']) };
+    case 'bar': return { type, x, y, width: 100, value: 30, max: 100, text: '30 / 100' };
     default: return { type, x, y };
   }
 }

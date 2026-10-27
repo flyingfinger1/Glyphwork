@@ -1,5 +1,6 @@
 package de.flyingfinger.glyphwork.render;
 
+import de.flyingfinger.glyphwork.api.Bar;
 import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Checkbox;
 import de.flyingfinger.glyphwork.api.Choice;
@@ -14,6 +15,7 @@ import de.flyingfinger.glyphwork.api.ListView;
 import de.flyingfinger.glyphwork.api.Panel;
 import de.flyingfinger.glyphwork.api.Scene;
 import de.flyingfinger.glyphwork.api.View;
+import de.flyingfinger.glyphwork.font.FillSheets;
 import de.flyingfinger.glyphwork.font.Glyph;
 import de.flyingfinger.glyphwork.font.IconCatalog;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
@@ -23,7 +25,10 @@ import de.flyingfinger.glyphwork.theme.Theme;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.object.ObjectContents;
 import net.kyori.adventure.text.object.PlayerHeadObjectContents;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.event.HoverEventSource;
 import net.kyori.adventure.text.format.ShadowColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.jspecify.annotations.Nullable;
@@ -66,6 +71,14 @@ public final class SceneRenderer {
         this.hit = hit;
         this.maxHeight = maxHeight;
         this.log = log;
+    }
+
+    /** Strips for pixel-exact bar fills (in the pack); without them bars fill in whole tiles. */
+    private @Nullable FillSheets fills;
+
+    public SceneRenderer fills(@Nullable FillSheets fills) {
+        this.fills = fills;
+        return this;
     }
 
     public LineBuilder render(Scene scene, View view, Binder binder) {
@@ -115,14 +128,18 @@ public final class SceneRenderer {
                         if (icon(line, item, ic.x(), ic.y() + dy, ic.tint() == null ? null : ic.tint().apply(view))) {
                             count(line, ic.count() == null ? null : ic.count().apply(view), ic.x(), ic.y() + dy);
                         }
+                        HoverEventSource<?> itemTip = ic.hoverItem() != null ? safeItem(ic.hoverItem().apply(view))
+                            : ic.itemTooltip() ? itemHover(item) : null;
                         hitbox(line, ic.x(), ic.y() + dy, IconCatalog.SIZE, IconCatalog.SIZE,
-                            ic.onClick() == null ? null : binder.bind(name, ic.onClick()), tooltip(ic.tooltip(), view));
+                            ic.onClick() == null ? null : binder.bind(name, ic.onClick()),
+                            itemTip != null ? itemTip : tooltip(ic.tooltip(), view));
                     }
                     case ListView<?> l -> list(line, l, view, binder, name);
                     case Grid<?> g -> grid(line, g, view, binder, name);
                     case Slider s -> slider(line, s, view, binder, name);
                     case Checkbox cb -> checkbox(line, cb, view, binder, name);
                     case Choice ch -> choice(line, ch, view, binder, name);
+                    case Bar b -> bar(line, b, view);
                 }
             } catch (RuntimeException ex) {
                 // a failing binding hides this element instead of breaking the whole screen
@@ -245,6 +262,115 @@ public final class SceneRenderer {
         line.text(s, x + 17 - line.textWidth(s), Math.min(y + 9, bottom - 8), WHITE, COUNT_SHADOW);
     }
 
+    /**
+     * Words of {@code text} in lines no wider than {@code width} px; "\n" starts a new line and a
+     * word longer than a line is cut into pieces.
+     */
+    static List<String> wrapText(LineBuilder line, String text, int width) {
+        List<String> out = new java.util.ArrayList<>();
+        for (String para : text.split("\n", -1)) {
+            StringBuilder cur = new StringBuilder();
+            for (String word : para.split(" ")) {
+                String next = cur.isEmpty() ? word : cur + " " + word;
+                if (line.visibleWidth(next) <= width) {
+                    cur.setLength(0);
+                    cur.append(next);
+                    continue;
+                }
+                if (!cur.isEmpty()) {
+                    out.add(cur.toString());
+                    cur.setLength(0);
+                }
+                // a word that does not fit on a line of its own is cut
+                String w = word;
+                while (line.visibleWidth(w) > width && w.length() > 1) {
+                    int n = w.length() - 1;
+                    while (n > 1 && line.visibleWidth(w.substring(0, n)) > width) {
+                        n--;
+                    }
+                    out.add(w.substring(0, n));
+                    w = w.substring(n);
+                }
+                cur.append(w);
+            }
+            out.add(cur.toString());
+        }
+        return out;
+    }
+
+    /** The vanilla tooltip of an item id ("diamond"), or null for heads, unknown and non-vanilla items. */
+    private @Nullable HoverEventSource<?> itemHover(@Nullable String item) {
+        if (item == null || isHead(item)) {
+            return null;
+        }
+        String id = item.trim().toLowerCase();
+        if (id.startsWith("minecraft:")) {
+            id = id.substring("minecraft:".length());
+        }
+        // the client rejects the whole dialog for an item it does not know, so only catalog items
+        if (id.contains(":") || icons == null || icons.icon(id) == null) {
+            return null;
+        }
+        return HoverEvent.showItem(Key.key("minecraft", id), 1);
+    }
+
+    /** An item hover from the API; item ids that are not vanilla items are dropped (see itemHover). */
+    private @Nullable HoverEventSource<?> safeItem(@Nullable HoverEventSource<?> src) {
+        if (src == null) {
+            return null;
+        }
+        HoverEvent<?> e = src.asHoverEvent();
+        if (e.action() == HoverEvent.Action.SHOW_ITEM && e.value() instanceof HoverEvent.ShowItem si
+            && si.item().namespace().equals("minecraft") && icons != null && icons.icon(si.item().value()) == null) {
+            return null;
+        }
+        return src;
+    }
+
+    /**
+     * Frame ("slot") with a fill from the left: value / max of the inner width (1 px inset),
+     * pixel exact with the fill strips, otherwise in whole tiles; text in the middle.
+     */
+    private void bar(LineBuilder line, Bar b, View view) {
+        Frame bg = frame(b.frame());
+        int t = bg == null ? 8 : bg.tileSize();
+        int w = Math.max(t, b.width() / t * t);
+        int h = Math.max(t, b.height() / t * t);
+        if (bg != null) {
+            line.frame(bg, b.x(), b.y(), w, h, null, null, null);
+        }
+        double ratio = Bar.ratio(b.value().apply(view), b.max().apply(view));
+        int inner = w - 2;
+        int fill = (int) Math.round(ratio * inner);
+        TextColor color = b.color().apply(view);
+        de.flyingfinger.glyphwork.font.Sheet strips = fills == null ? null : fills.forHeight(h - 2);
+        if (fill > 0 && strips != null) {
+            int x = b.x() + 1;
+            int rest = fill;
+            for (int i = 0; i < FillSheets.WIDTHS.length; i++) {
+                while (rest >= FillSheets.WIDTHS[i]) {
+                    line.glyph(strips.glyph(i), x, b.y() + 1, color, null, null);
+                    x += FillSheets.WIDTHS[i];
+                    rest -= FillSheets.WIDTHS[i];
+                }
+            }
+        } else if (fill > 0) {
+            Frame f = frame("button");
+            int tiles = Math.max(1, (int) Math.round(ratio * w / t));
+            if (f != null) {
+                line.frame(f, b.x(), b.y(), tiles * t, h, color, null, null);
+            }
+        }
+        String s = b.text().apply(view);
+        if (s != null && !s.isEmpty()) {
+            s = line.fit(s, w - 4);
+            // a bar 8 px high has no room for text: it goes above, like the experience level in vanilla
+            int ty = h <= 8 ? b.y() - 9 : b.y() + (h - 7) / 2;
+            line.centered(s, b.x(), w, ty, WHITE, LineBuilder.shadowOf(WHITE));
+        }
+        hitbox(line, b.x(), b.y(), w, h, null, tooltip(b.tooltip(), view));
+    }
+
     private @Nullable Frame frame(String name) {
         Frame f = theme.find(name);
         if (f == null) {
@@ -291,6 +417,24 @@ public final class SceneRenderer {
         if (s == null || s.isEmpty()) {
             return;
         }
+        if (l.wrap() || s.indexOf('\n') >= 0) {
+            List<String> lines = l.wrap() && l.width() > 0 ? wrapText(line, s, l.width()) : List.of(s.split("\n", -1));
+            TextColor color = skinText(l.color().apply(view));
+            for (int i = 0; i < lines.size(); i++) {
+                String part = lines.get(i);
+                if (l.width() > 0) {
+                    part = line.fit(part, l.width());
+                }
+                int w = line.visibleWidth(part);
+                int lx = l.x() + (l.width() <= 0 ? 0 : switch (l.align()) {
+                    case LEFT -> 0;
+                    case CENTER -> (l.width() - w) / 2;
+                    case RIGHT -> l.width() - w;
+                });
+                line.text(part, lx, l.y() + i * l.lineHeight(), color, l.shadow() ? LineBuilder.shadowOf(color) : null);
+            }
+            return;
+        }
         int x = l.x();
         if (l.width() > 0) {
             s = line.fit(s, l.width());
@@ -319,7 +463,8 @@ public final class SceneRenderer {
                 click, tooltip(b.tooltip(), view));
         }
         int textX = b.x();
-        int textW = b.width();
+        // like the height: a 22 px button is drawn 16 px wide, so center on what is drawn
+        int textW = f == null ? b.width() : Math.max(f.tileSize(), b.width() / f.tileSize() * f.tileSize());
         int textY = y + (h - 7) / 2;
         if (bHead != null) {
             line.head(bHead, b.x() + 4, y + (h - LineBuilder.HEAD) / 2);
@@ -339,7 +484,7 @@ public final class SceneRenderer {
     }
 
     /** Invisible clickable area, covered with 8 x 8 hit glyphs (the last row/column overlaps). */
-    private void hitbox(LineBuilder line, int x, int y, int w, int h, @Nullable ClickEvent<?> click, @Nullable Component tip) {
+    private void hitbox(LineBuilder line, int x, int y, int w, int h, @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> tip) {
         if (click == null && tip == null) {
             return;
         }
@@ -414,7 +559,10 @@ public final class SceneRenderer {
             line.text(s, textX, textY, color, LineBuilder.shadowOf(color));
             ClickEvent<?> click = l.onSelect() == null ? null
                 : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
-            hitbox(line, l.x(), top, l.width(), l.rowHeight(), click, l.tooltip() == null ? null : l.tooltip().apply(item));
+            HoverEventSource<?> rowItem = l.hoverItem() != null ? safeItem(l.hoverItem().apply(item))
+                : l.itemTooltip() ? itemHover(rowIcon) : null;
+            hitbox(line, l.x(), top, l.width(), l.rowHeight(), click,
+                rowItem != null ? rowItem : l.tooltip() == null ? null : l.tooltip().apply(item));
         }
         pager(line, l.id(), page, pages(items.size(), perPage), l.x(), ly + frameHeight + 4, l.width(), binder, name);
     }
@@ -443,7 +591,10 @@ public final class SceneRenderer {
                 T item = index < items.size() ? items.get(index) : null;
                 ClickEvent<?> click = item == null || g.onClick() == null ? null
                     : binder.bind(name + ":cell" + index, k -> g.onClick().accept(k, item));
-                Component tip = item == null || g.tooltip() == null ? null : g.tooltip().apply(item);
+                HoverEventSource<?> cellItem = item == null ? null : g.hoverItem() != null ? safeItem(g.hoverItem().apply(item))
+                    : g.itemTooltip() && g.icon() != null ? itemHover(g.icon().apply(item)) : null;
+                HoverEventSource<?> tip = cellItem != null ? cellItem
+                    : item == null || g.tooltip() == null ? null : g.tooltip().apply(item);
                 if (cell != null) {
                     TextColor tint = item == null ? null : item.equals(selected) ? g.selectedTint() : g.tint().apply(item);
                     line.frame(cell, cx, cy, g.cellSize(), g.cellSize(), tint, click, tip);

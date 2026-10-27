@@ -145,6 +145,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         Sheet hit = Sheet.invisible(alloc);
         List<Sheet> sheets = new ArrayList<>(theme.sheets());
         sheets.add(hit);
+        de.flyingfinger.glyphwork.font.FillSheets fills = new de.flyingfinger.glyphwork.font.FillSheets(alloc);
+        sheets.addAll(fills.sheets());
         PackFiles pack = new PackFiles();
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
@@ -155,7 +157,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
         ShiftFonts.write(pack, sheets, s.maxHeight(), text, icons);
         byte[] zip = pack.toZip();
-        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons);
+        SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), s.maxHeight(), getLogger(), icons).fills(fills);
         return new Build(s, theme.name(), renderer, zip, PackFiles.sha1(zip));
     }
 

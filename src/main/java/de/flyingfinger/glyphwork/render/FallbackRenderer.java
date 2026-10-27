@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.render;
 
 import de.flyingfinger.glyphwork.core.Messages;
+import de.flyingfinger.glyphwork.api.Bar;
 import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Checkbox;
 import de.flyingfinger.glyphwork.api.Choice;
@@ -48,6 +49,7 @@ public final class FallbackRenderer {
 
     public Model render(Scene scene, View view) {
         List<Label> labels = new ArrayList<>();
+        List<Bar> bars = new ArrayList<>();
         List<Action> actions = new ArrayList<>();
         for (Element e : scene.elements()) {
             try {
@@ -78,6 +80,7 @@ public final class FallbackRenderer {
                     case ListView<?> l -> list(l, view, actions);
                     case Grid<?> g -> grid(g, view, actions);
                     case Slider s -> slider(s, view, actions);
+                    case Bar b -> bars.add(b);
                     case Checkbox cb -> {
                         if (cb.onToggle() != null) {
                             boolean on = Boolean.TRUE.equals(cb.checked().apply(view));
@@ -101,12 +104,22 @@ public final class FallbackRenderer {
             }
         }
         List<Component> lines = new ArrayList<>();
-        labels.stream()
-            .sorted(Comparator.comparingInt(Label::y).thenComparingInt(Label::x))
-            .forEach(l -> {
-                String s = l.text().apply(view);
-                if (s != null && !s.isEmpty()) {
-                    lines.add(Component.text(s, readable(l.color().apply(view))));
+        List<de.flyingfinger.glyphwork.api.Element> texts = new ArrayList<>(labels);
+        texts.addAll(bars);
+        texts.stream()
+            .sorted(Comparator.comparingInt(de.flyingfinger.glyphwork.api.Element::y)
+                .thenComparingInt(de.flyingfinger.glyphwork.api.Element::x))
+            .forEach(e -> {
+                if (e instanceof Label l) {
+                    String s = l.text().apply(view);
+                    if (s != null && !s.isEmpty()) {
+                        // the dialog wraps by itself; "\n" lines stay lines
+                        for (String part : s.split("\n")) {
+                            lines.add(Component.text(part, readable(l.color().apply(view))));
+                        }
+                    }
+                } else if (e instanceof Bar b) {
+                    lines.add(barLine(b, view));
                 }
             });
         return new Model(scene.title().apply(view), lines, actions);
@@ -193,6 +206,18 @@ public final class FallbackRenderer {
     private static Component sliderLabel(Slider s, View view, float v) {
         Component tip = s.tooltip() == null ? null : s.tooltip().apply(view, v);
         return tip != null ? tip : Component.text(de.flyingfinger.glyphwork.dialog.FormValues.format(v));
+    }
+
+    /** A bar as text: ten blocks in its color, then its text or the percentage. */
+    static Component barLine(Bar b, View view) {
+        double r = Bar.ratio(b.value().apply(view), b.max().apply(view));
+        int full = (int) Math.round(r * 10);
+        String text = b.text().apply(view);
+        return Component.text()
+            .append(Component.text("\u2588".repeat(full), b.color().apply(view)))
+            .append(Component.text("\u2588".repeat(10 - full), NamedTextColor.DARK_GRAY))
+            .append(Component.text(" " + (text != null && !text.isEmpty() ? text : Math.round(r * 100) + " %"), LIGHT))
+            .build();
     }
 
     /** "Diamond" with count "64" -> "Diamond ×64" (gray); "1" and empty add nothing. */

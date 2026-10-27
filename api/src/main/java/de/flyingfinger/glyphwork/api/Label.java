@@ -24,6 +24,8 @@ public final class Label implements Element {
     private int width = -1;
     private Align align = Align.LEFT;
     private boolean shadow;
+    private boolean wrap;
+    private int lineHeight = 10;
 
     private Label(int x, int y, Function<View, String> text) {
         this.x = x;
@@ -66,6 +68,29 @@ public final class Label implements Element {
 
     public boolean shadow() {
         return shadow;
+    }
+
+    /**
+     * Breaks the text into lines at spaces so that each line fits {@link #width} (needs a width);
+     * "\n" in the text always starts a new line. Lines are {@link #lineHeight} apart.
+     */
+    public Label wrap(boolean wrap) {
+        this.wrap = wrap;
+        return this;
+    }
+
+    public boolean wrap() {
+        return wrap;
+    }
+
+    /** Distance between wrapped lines in pixels (default 10). */
+    public Label lineHeight(int lineHeight) {
+        this.lineHeight = Math.max(8, lineHeight);
+        return this;
+    }
+
+    public int lineHeight() {
+        return lineHeight;
     }
 
     public Label align(Align align) {

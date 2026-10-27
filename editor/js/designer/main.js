@@ -542,8 +542,8 @@ function field(key, kind, extra, get, put, mergeKey) {
         op.textContent = o || t('none');
         sel.append(op);
       }
-      sel.value = value ?? '';
-      sel.onchange = () => commit(sel.value || undefined);
+      sel.value = value == null ? '' : String(value);
+      sel.onchange = () => commit(sel.value === '' ? undefined : /^[0-9]+$/.test(sel.value) ? Number(sel.value) : sel.value);
       wrap.append(sel);
       break;
     }

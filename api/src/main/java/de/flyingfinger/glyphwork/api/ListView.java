@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.api;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEventSource;
 import net.kyori.adventure.text.format.TextColor;
 import org.jspecify.annotations.Nullable;
 
@@ -34,6 +35,8 @@ public final class ListView<T> implements Element {
     private String frame = "slot";
     private @Nullable Function<T, @Nullable String> icon;
     private @Nullable Function<T, @Nullable String> count;
+    private boolean itemTooltip;
+    private @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem;
 
     private ListView(String id, int x, int y, int w, int rows, Function<View, List<T>> items) {
         this.id = id;
@@ -108,6 +111,34 @@ public final class ListView<T> implements Element {
 
     public @Nullable Function<T, @Nullable String> count() {
         return count;
+    }
+
+    /**
+     * Shows the item's own tooltip when hovering (name, enchantments, lore) instead of the text
+     * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
+     * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
+     */
+    public ListView<T> itemTooltip(boolean itemTooltip) {
+        this.itemTooltip = itemTooltip;
+        return this;
+    }
+
+    /**
+     * Shows the item's own tooltip when hovering (name, enchantments, lore) instead of the text
+     * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
+     * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
+     */
+    public ListView<T> itemTooltip(Function<T, @Nullable HoverEventSource<?>> item) {
+        this.hoverItem = item;
+        return this;
+    }
+
+    public boolean itemTooltip() {
+        return itemTooltip;
+    }
+
+    public @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem() {
+        return hoverItem;
     }
 
     /** Frame of the list background (default "slot"). */

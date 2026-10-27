@@ -108,6 +108,7 @@ public final class Trader {
             .add(Grid.of("goods", 10, 20, 6, 2, v -> OFFERS)
                 .cell(26, 24)
                 .icon(Offer::item)
+                .itemTooltip(true)                          // hovering shows the item's own tooltip
                 .count(o -> String.valueOf(o.count()))     // pack size at the bottom right, like in the inventory
                 .tooltip(o -> Component.text(o.count() + "x " + o.name() + " - " + o.price() + " emeralds"))
                 .selected(Trader::offer)
@@ -176,8 +177,8 @@ public final class Trader {
             .add(modeButton(DisplayMode.FULL, 34))
             .add(modeButton(DisplayMode.NO_ICONS, 52))
             .add(modeButton(DisplayMode.SIMPLE, 70))
-            .add(Label.of(8, 92, "Icons or text out of place? Then"))
-            .add(Label.of(8, 102, "pick \"No icons\" or \"Simple\"."))
+            .add(Label.of(8, 92, "Icons or text out of place? Then pick \"No icons\" or \"Simple\".")
+                .width(160).wrap(true))                     // breaks into lines at spaces
             .add(Button.of(8, 114, 64, 16).text("< Back").onClick(Click::back))
             .build();
     }

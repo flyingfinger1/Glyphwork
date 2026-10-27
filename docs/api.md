@@ -51,6 +51,7 @@ Glyphwork.get().open(player, settings);
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected`, `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
+| `Bar.of(x, y, w)` | progress bar, 8 or 16 px high; `.value(v -> ...)`, `.max(...)`, `.color`, `.text`, `.tooltip`: fills pixel exact |
 | `Slider.of(x, y, w, min, max, step)` | track + knob, 16 px high; `.value`, `.onChange((click, value) -> ...)`, `.tint`, `.tooltip(value -> ...)`: a click on the track picks the value under the cursor (no dragging) |
 | `Checkbox.of(x, y)` | 16 x 16 box with a check mark and text; `.text`, `.checked`, `.onToggle((click, on) -> ...)` |
 | `Choice.of(x, y, w, "a", "b", ...)` | button "&lt; option &gt;"; left half = previous, right half = next; `.selected`, `.text(id -> shown)`, `.onSelect((click, id) -> ...)` |
@@ -64,6 +65,16 @@ text, best with height 24) and `ListView.icon(...)`. Icons use the textures the 
 has: flat items look like in the inventory, block items show one face (no 3D), and items drawn by
 special renderers (heads, chests, beds, banners, shields, shulker boxes) have no icon. Like text,
 icons are drawn above frames.
+
+**Item tooltips:** `Icon.itemTooltip(true)` (also `Grid` / `ListView`) shows the vanilla tooltip of
+the icon's item when hovering. For enchantments, names and lore pass the item itself:
+`Icon.itemTooltip(v -> myItemStack)` / `Grid.itemTooltip(offer -> offer.stack())` (Paper's
+`ItemStack` is a `HoverEventSource`). Item ids the client does not know are dropped, because the
+client would reject the whole screen.
+
+**Text blocks:** `Label.of(x, y, longText).width(160).wrap(true)` breaks at spaces; `.lineHeight(10)`;
+`"
+"` starts a new line.
 
 **Counts:** `Icon.count(64)`, `Grid.count(item -> String.valueOf(item.amount()))` and
 `ListView.count(...)` write a stack size at the bottom right of the icon, white with a shadow like in

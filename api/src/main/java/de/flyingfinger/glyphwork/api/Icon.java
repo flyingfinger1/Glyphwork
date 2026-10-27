@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.api;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEventSource;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Material;
 import org.jspecify.annotations.Nullable;
@@ -25,6 +26,8 @@ public final class Icon implements Element {
     private @Nullable Function<View, @Nullable Component> tooltip;
     private @Nullable Consumer<Click> onClick;
     private @Nullable Function<View, @Nullable String> count;
+    private boolean itemTooltip;
+    private @Nullable Function<View, @Nullable HoverEventSource<?>> hoverItem;
 
     private Icon(int x, int y, Function<View, @Nullable String> item) {
         this.x = x;
@@ -92,6 +95,34 @@ public final class Icon implements Element {
 
     public @Nullable Function<View, @Nullable String> count() {
         return count;
+    }
+
+    /**
+     * Shows the item's own tooltip when hovering (name, enchantments, lore) instead of the text
+     * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
+     * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
+     */
+    public Icon itemTooltip(boolean itemTooltip) {
+        this.itemTooltip = itemTooltip;
+        return this;
+    }
+
+    /**
+     * Shows the item's own tooltip when hovering (name, enchantments, lore) instead of the text
+     * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
+     * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
+     */
+    public Icon itemTooltip(Function<View, @Nullable HoverEventSource<?>> item) {
+        this.hoverItem = item;
+        return this;
+    }
+
+    public boolean itemTooltip() {
+        return itemTooltip;
+    }
+
+    public @Nullable Function<View, @Nullable HoverEventSource<?>> hoverItem() {
+        return hoverItem;
     }
 
     public Icon onClick(Consumer<Click> onClick) {

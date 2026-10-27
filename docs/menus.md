@@ -50,13 +50,14 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 
 | type | settings |
 |---|---|
-| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground) |
+| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10) |
 | `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `text-color`, `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24) |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
-| `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `tint`, `tooltip`, `actions` |
-| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)); page buttons appear below when needed (+20 px) |
-| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`; page buttons below when needed |
+| `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
+| `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `color` (fill), `text` (in the middle), `tooltip`, `frame` (`slot`) |
+| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`; page buttons appear below when needed (+20 px) |
+| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`; page buttons below when needed |
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
 | `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
 | `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
@@ -66,6 +67,22 @@ like in the inventory, blocks show one face, and items drawn by special renderer
 beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `cell: 26`, `size: 24`.
 Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icon-source-pack` in
 `config.yml`.
+
+**Item tooltips:** `item-tooltip: true` (on an `icon`, or on a `list` / `grid` for all its entries)
+shows the item's own tooltip when hovering, like in the inventory, instead of the text tooltip.
+Vanilla items only; with the API a plugin can pass a full item with enchantments and lore.
+
+**Text blocks:** a label with `width` and `wrap: true` breaks its text into lines at spaces; `
+`
+in the text (or a YAML block with `|`) always starts a new line, also without `wrap`. Lines are
+`line-height` (10) px apart.
+
+**Bars** fill pixel exact from the left (`value` / `max`, clamped), in `color` (default green),
+on the skin's `slot` frame. `height: 8` fills 6 px, `height: 16` fills 14 px; the width is rounded
+down to whole tiles like other frames. Numbers may come from placeholders (`1,234.5` works too); a
+value that is no number counts as 0. The `text` of an 8 px bar is drawn above it (like the
+experience level in vanilla; keep 9 px free there), in a 16 px bar inside. The plain dialog shows a
+bar as ten blocks plus its text.
 
 **Counts:** `count: 64` writes a number at the bottom right of the icon, white with a shadow like in
 the inventory. Any short text works, also placeholders (`count: "%item_players%"`); `1` and empty
@@ -87,7 +104,7 @@ moves:
 
 The menu background and list frames are rounded up to whole tiles (8 px), so a 134 px high menu
 gets a 136 px background and a list with 2 rows of 18 px a 40 px frame; other frames are rounded
-down. Button heights count as drawn: frames are whole tiles, so a 20 px button is drawn (and centered) as
+down. Button sizes count as drawn: frames are whole tiles, so a 20 px button is drawn (and centered) as
 16 px. Lists need a row height of 9 or 18 and grids a cell pitch of 18 or 27, otherwise later rows sit
 differently from the first (Glyphwork logs a hint). Lists with `items-from: online-players` use 18 px
 rows by default. Heads show in every display mode and in the plain dialog (in front of the button

@@ -38,7 +38,8 @@ const T = {
     mcWhereText: 'Minecraft-Launcher: .minecraft/versions/<Version>/<Version>.jar. Prism/MultiMC: libraries/com/mojang/minecraft/<Version>/minecraft-<Version>-client.jar. Ein Resource-Pack (ZIP) danach laden: seine Texturen ersetzen die der Jar, eigene Items (ns:name) werden als Icon nutzbar.',
     // element types
     t_label: 'Text', t_button: 'Button', t_panel: 'Panel', t_hitbox: 'Klickfläche', t_icon: 'Icon', t_list: 'Liste',
-    t_grid: 'Raster', t_slider: 'Schieberegler', t_checkbox: 'Checkbox', t_choice: 'Auswahl', t_use: 'Vorlage (use)',
+    t_grid: 'Raster', t_slider: 'Schieberegler', t_checkbox: 'Checkbox', t_choice: 'Auswahl', t_use: 'Vorlage (use)', t_bar: 'Balken',
+    f_wrap: 'Umbrechen', f_lineHeight: 'Zeilenabstand', f_itemTooltip: 'Item-Tooltip (wie im Inventar)', f_value: 'Wert',
     // fields
     f_x: 'x', f_y: 'y', f_text: 'Text', f_color: 'Farbe', f_width: 'Breite', f_height: 'Höhe', f_align: 'Ausrichtung',
     f_shadow: 'Schatten', f_tint: 'Tönung', f_textColor: 'Textfarbe', f_tooltip: 'Tooltip', f_actions: 'Aktionen (eine pro Zeile)',
@@ -84,7 +85,8 @@ const T = {
     mcWhere: 'Where is the jar?',
     mcWhereText: 'Minecraft launcher: .minecraft/versions/<version>/<version>.jar. Prism/MultiMC: libraries/com/mojang/minecraft/<version>/minecraft-<version>-client.jar. Load a resource pack (ZIP) afterwards: its textures replace those of the jar, its own items (ns:name) work as icons.',
     t_label: 'Text', t_button: 'Button', t_panel: 'Panel', t_hitbox: 'Click area', t_icon: 'Icon', t_list: 'List',
-    t_grid: 'Grid', t_slider: 'Slider', t_checkbox: 'Checkbox', t_choice: 'Choice', t_use: 'Template (use)',
+    t_grid: 'Grid', t_slider: 'Slider', t_checkbox: 'Checkbox', t_choice: 'Choice', t_use: 'Template (use)', t_bar: 'Bar',
+    f_wrap: 'Wrap', f_lineHeight: 'Line height', f_itemTooltip: 'Item tooltip (like in the inventory)', f_value: 'Value',
     f_x: 'x', f_y: 'y', f_text: 'Text', f_color: 'Color', f_width: 'Width', f_height: 'Height', f_align: 'Align',
     f_shadow: 'Shadow', f_tint: 'Tint', f_textColor: 'Text color', f_tooltip: 'Tooltip', f_actions: 'Actions (one per line)',
     f_permission: 'Permission', f_frame: 'Frame', f_icon: 'Icon (item id or head:Name)', f_enabledIf: 'Enabled if (one per line)',

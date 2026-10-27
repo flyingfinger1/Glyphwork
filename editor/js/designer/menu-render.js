@@ -263,6 +263,29 @@ export function fit(s, maxWidth) {
   return out.trimEnd() + '...';
 }
 
+/** Words in lines no wider than width px (SceneRenderer.wrapText). */
+export function wrapText(text, width) {
+  const out = [];
+  for (const para of String(text).split('\n')) {
+    let cur = '';
+    for (const word of para.split(' ')) {
+      const next = cur === '' ? word : cur + ' ' + word;
+      if (visibleWidth(next) <= width) { cur = next; continue; }
+      if (cur !== '') { out.push(cur); cur = ''; }
+      let w = word;
+      while (visibleWidth(w) > width && w.length > 1) {
+        let n = w.length - 1;
+        while (n > 1 && visibleWidth(w.slice(0, n)) > width) n--;
+        out.push(w.slice(0, n));
+        w = w.slice(n);
+      }
+      cur = w;
+    }
+    out.push(cur);
+  }
+  return out;
+}
+
 /** "diamond" -> "Dia", "gold_ingot" -> "GI" (SceneRenderer.shortName). */
 export function shortName(item) {
   if (!item) return '';
@@ -370,9 +393,27 @@ export function renderMenu(menu, skin, ctx = {}) {
     try {
       switch (type) {
         case 'label': {
-          let s = f(el.text ?? '');
+          const w0 = int(el.width, -1);
+          const wrap = el.wrap === true || el.wrap === 'true';
+          const full = f(el.text ?? '');
+          if ((wrap && w0 > 0) || full.includes('\n')) {
+            const lh = Math.max(8, int(el['line-height'], 10));
+            const lines = wrap && w0 > 0 ? wrapText(full, w0) : full.split('\n');
+            const rgb = skinText(color(el.color) ?? DARK);
+            const align = String(el.align ?? 'left').toLowerCase();
+            lines.forEach((ln, i) => {
+              const part = w0 > 0 ? fit(ln, w0) : ln;
+              const vw = visibleWidth(part);
+              const lx = x + (w0 <= 0 ? 0 : align === 'center' ? Math.floor((w0 - vw) / 2) : align === 'right' ? w0 - vw : 0);
+              c.textOut(part, lx, y + i * lh, rgb, el.shadow === true || el.shadow === 'true');
+            });
+            const bw = w0 > 0 ? w0 : Math.max(4, ...lines.map((l) => visibleWidth(l)));
+            boxes.push({ top, x, y, w: bw, h: (lines.length - 1) * lh + 8 });
+            break;
+          }
+          let s = full;
           let lx = x;
-          const w = int(el.width, -1);
+          const w = w0;
           if (w > 0) {
             s = fit(s, w);
             const vw = visibleWidth(s);
@@ -398,7 +439,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           }
           const enabled = allHold(el['enabled-if'] ?? [], (s) => f(s));
           c.rect(frameName, x, by, bw, bh, enabled ? (color(el.tint) ?? BUTTON_GRAY) : DISABLED);
-          let tx = x, tw = bw;
+          let tx = x, tw = Math.max(t, Math.floor(bw / t) * t);   // centered on the drawn width
           if (isHead(icon)) {
             drawHead(c, x + 4, by + Math.floor((h - HEAD) / 2));
             tx += HEAD + 4; tw -= HEAD + 4;
@@ -466,6 +507,26 @@ export function renderMenu(menu, skin, ctx = {}) {
           const w = s ? 20 + textWidth(s) : 16;
           region(x, y, w, 16, tip, { type: 'set', var: String(el.var ?? '').toLowerCase(), value: String(!v), then: list(el.actions) });
           boxes.push({ top, x, y, w, h: 16 });
+          break;
+        }
+        case 'bar': {
+          const t = c.tileSize();
+          const w = Math.max(t, Math.floor(int(el.width, 100) / t) * t);
+          const h = Math.max(t, Math.floor(int(el.height, 8) / t) * t);
+          c.rect(String(el.frame ?? 'slot'), x, y, w, h, null);
+          const toNum = (v) => {
+            const s = f(v ?? '').trim();
+            const n = /^-?[0-9]{1,3}(,[0-9]{3})+(\.[0-9]+)?$/.test(s) ? Number(s.replace(/,/g, '')) : Number(s);
+            return Number.isFinite(n) ? n : 0;
+          };
+          const max = toNum(el.max ?? 100);
+          const ratio = max > 0 ? Math.max(0, Math.min(1, toNum(el.value) / max)) : 0;
+          const fillW = Math.round(ratio * (w - 2));
+          if (fillW > 0) c.fillRect(x + 1, y + 1, fillW, h - 2, (0xff000000 | (color(el.color) ?? 0x80ff20)) >>> 0);
+          const s = f(el.text ?? '');
+          if (s) c.centered(fit(s, w - 4), x, w, h <= 8 ? y - 9 : y + Math.floor((h - 7) / 2), WHITE, true);
+          region(x, y, w, h, tip, null);
+          boxes.push({ top, x, y, w, h });
           break;
         }
         case 'choice': {

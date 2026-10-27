@@ -1,5 +1,6 @@
 package de.flyingfinger.glyphwork.menu;
 
+import de.flyingfinger.glyphwork.api.Bar;
 import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Checkbox;
 import de.flyingfinger.glyphwork.api.Choice;
@@ -267,16 +268,22 @@ public final class Menus {
             case Slider x -> x.visible(visible);
             case Checkbox x -> x.visible(visible);
             case Choice x -> x.visible(visible);
+            case Bar x -> x.visible(visible);
         }
     }
 
     private void element(Consumer<Element> b, Node n, int index, String type) throws MenuException {
         switch (type) {
             case "label" -> {
-                n.only(with("type", "x", "y", "text", "color", "width", "align", "shadow"));
+                n.only(with("type", "x", "y", "text", "color", "width", "align", "shadow", "wrap", "line-height"));
                 Label l = Label.of(n.integer("x"), n.integer("y"), text(n.string("text")))
                     .color(n.optColor("color", Label.DARK))
-                    .shadow(n.optBool("shadow", false));
+                    .shadow(n.optBool("shadow", false))
+                    .wrap(n.optBool("wrap", false))
+                    .lineHeight(n.optInt("line-height", 10));
+                if (l.wrap() && !n.has("width")) {
+                    throw n.error("wrap", "wrap needs a width (where lines break)");
+                }
                 if (n.has("width")) {
                     l.width(n.integer("width"));
                 }
@@ -340,12 +347,13 @@ public final class Menus {
                 b.accept(h);
             }
             case "icon" -> {
-                n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions", "count"));
+                n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions", "count", "item-tooltip"));
                 TextColor tint = n.optColor("tint", null);
                 Icon ic = Icon.of(n.integer("x"), n.integer("y"), text(n.string("item"))).tint(v -> tint);
                 if (n.has("count")) {
                     ic.count(text(n.string("count")));
                 }
+                ic.itemTooltip(n.optBool("item-tooltip", false));
                 if (tooltip(n) != null) {
                     ic.tooltip(tooltip(n));
                 }
@@ -355,7 +363,7 @@ public final class Menus {
                 b.accept(ic);
             }
             case "list" -> {
-                n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item"));
+                n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item", "item-tooltip"));
                 ListView<Row> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
                         n.optInt("width", 120), n.optInt("rows", 4), rows(n))
                     // lists of players show heads, which need rows of 9 or 18 px to look even
@@ -365,11 +373,13 @@ public final class Menus {
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
                     .count(e -> e.count)
+                    .itemTooltip(n.optBool("item-tooltip", false))
                     .onSelect((c, e) -> e.onClick.accept(c));
                 b.accept(l);
             }
             case "grid" -> {
-                n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items", "items-from", "item"));
+                n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items", "items-from", "item",
+                    "item-tooltip"));
                 Grid<Row> g = Grid.of(n.optString("id", "grid" + index), n.integer("x"), n.integer("y"),
                         n.optInt("cols", 4), n.optInt("rows", 2), rows(n))
                     .cell(n.optInt("cell", 18), n.optInt("size", 16))
@@ -379,6 +389,7 @@ public final class Menus {
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
                     .count(e -> e.count)
+                    .itemTooltip(n.optBool("item-tooltip", false))
                     .frame(n.optString("frame", "slot"))
                     .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(g);
@@ -457,9 +468,36 @@ public final class Menus {
                 }
                 b.accept(ch);
             }
+            case "bar" -> {
+                n.only(with("type", "x", "y", "width", "height", "value", "max", "color", "text", "tooltip", "frame"));
+                int h = n.optInt("height", 8);
+                if (h != 8 && h != 16) {
+                    throw n.error("height", "8 or 16");
+                }
+                Function<View, String> value = text(n.string("value"));
+                Function<View, String> max = text(n.optString("max", "100"));
+                TextColor color = n.optColor("color", Bar.GREEN);
+                Bar bar = Bar.of(n.integer("x"), n.integer("y"), n.optInt("width", 100))
+                    .height(h)
+                    .value(v -> number(value.apply(v)))
+                    .max(v -> number(max.apply(v)))
+                    .color(v -> color)
+                    .text(text(n.optString("text", "")))
+                    .frame(n.optString("frame", "slot"));
+                if (tooltip(n) != null) {
+                    bar.tooltip(tooltip(n));
+                }
+                b.accept(bar);
+            }
             default -> throw n.error("type", "unknown type '" + type
-                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice)");
+                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar)");
         }
+    }
+
+    /** A number from a filled-in placeholder ("12", "1,234.5"), 0 if it is none. */
+    private static double number(@Nullable String s) {
+        Double d = s == null ? null : Condition.number(s.trim());
+        return d == null ? 0 : d;
     }
 
     /** The menu variable an input element writes ("var: sichtweite"). */

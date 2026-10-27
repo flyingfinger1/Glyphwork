@@ -70,7 +70,7 @@ public final class Menus {
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
         "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms",
-        "on-open", "on-close", "open-on", "persist");
+        "on-open", "on-close", "open-on", "persist", "plain");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -221,6 +221,9 @@ public final class Menus {
             for (Node n : templates.expand(top)) {
                 element(b::add, n, index++);
             }
+        }
+        if (root.has("plain")) {
+            plain(root, b);
         }
         String command = root.optString("command", null);
         if (command != null) {
@@ -839,6 +842,37 @@ public final class Menus {
     private static double number(@Nullable String s) {
         Double d = s == null ? null : Condition.number(s.trim());
         return d == null ? 0 : d;
+    }
+
+    /**
+     * The hand-made plain dialog: "plain: [elements]" or "plain: { columns: 1, elements: [...] }".
+     * Positions do not matter there (x and y may be left out), the order does.
+     */
+    private void plain(Node root, Scene.Builder b) throws MenuException {
+        Object raw = Templates.plain(root.raw().get("plain"));
+        List<Node> nodes;
+        if (raw instanceof Map<?, ?> m) {
+            Node p = new Node(m, root.path + ".plain");
+            p.only(Set.of("columns", "elements"));
+            int columns = p.optInt("columns", 0);
+            if (columns < 0 || columns > 2) {
+                throw p.error("columns", "1 or 2 expected (or leave it out: chosen by the text lengths)");
+            }
+            b.plainColumns(columns);
+            nodes = p.nodes("elements");
+        } else if (raw instanceof List<?>) {
+            nodes = root.nodes("plain");
+        } else {
+            throw root.error("plain", "list of elements expected, or { columns: 1, elements: [...] }");
+        }
+        List<Element> out = new ArrayList<>();
+        int index = 100_000;                  // own cooldown keys, apart from the pixel GUI's elements
+        for (Node top : nodes) {
+            for (Node n : templates.expand(top)) {
+                element(out::add, shifted(n, 0, 0), index++);
+            }
+        }
+        b.plain(out);
     }
 
     /** A copy of an element node moved by (dx, dy) (its x and y default to 0). */

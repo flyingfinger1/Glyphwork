@@ -21,7 +21,13 @@ pack:
   # embedded: Glyphwork serves the pack itself (pack-server below).
   # external: no web server; the pack is written to plugins/Glyphwork/pack/<sha1>.zip and you host
   #           that folder yourself (e.g. behind your reverse proxy). Old zips are pruned to the last 5.
+  # provided: Glyphwork sends no pack; merge plugins/Glyphwork/pack/glyphwork.zip into the pack your
+  #           server or proxy (Velocity, BungeeCord) sends, again after changes to theme, pictures or
+  #           menu heights (the log and /glyphwork reload say when).
   hosting: embedded
+  # Only for hosting: provided. Who has the pack? always = everyone (a required pack, e.g. sent by
+  # the proxy); server-pack = players who loaded the pack of server.properties (resource-pack=).
+  provided-loaded: always
   # URL the client downloads from; {sha1} is replaced by the pack hash. It must be reachable from the
   # players' machines (not 127.0.0.1 on a real server).
   url: "http://127.0.0.1:8765/{sha1}.zip"

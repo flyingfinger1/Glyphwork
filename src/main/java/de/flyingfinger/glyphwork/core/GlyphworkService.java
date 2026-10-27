@@ -72,6 +72,8 @@ public final class GlyphworkService implements Glyphwork {
         int generation;
         /** Bedrock: what the last form showed, so that timed redraws send a form only on changes. */
         @org.jspecify.annotations.Nullable String formShown;
+        /** Bedrock: when the last form was sent (ms). */
+        long formShownAt;
         /** Show the plain fallback even with the pack (admin preview). */
         boolean forceFallback;
         /** The pending redraw of a scene with refresh, or null. */
@@ -323,14 +325,28 @@ public final class GlyphworkService implements Glyphwork {
             // every Bedrock form replaces the screen (close and open): timed redraws (cooldowns,
             // refresh) only send one when something visible changed; a countdown in a tooltip does not count
             String shown = formText(model, lines);
-            if (redraw && shown.equals(s.formShown)) {
-                return;
+            long now = System.currentTimeMillis();
+            if (redraw) {
+                if (shown.equals(s.formShown)) {
+                    return;
+                }
+                // at most one timed form every few seconds (a clock would flicker every second);
+                // a change held back is drawn when the pause is over
+                long wait = BEDROCK_REDRAW_GAP_MS - (now - s.formShownAt);
+                if (wait > 0) {
+                    view.redrawAfter(java.time.Duration.ofMillis(wait));
+                    return;
+                }
             }
             s.formShown = shown;
+            s.formShownAt = now;
         }
-        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, model.measure(),
+        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, model.measure(), scene.plainColumns(),
             exitLabel(player, scene), () -> exited(player, s, generation), bedrock));
     }
+
+    /** Shortest time between two Bedrock forms sent by timed redraws (cooldowns, refresh). */
+    static final long BEDROCK_REDRAW_GAP_MS = 5000;
 
     /** What a Bedrock form shows: title, texts, tabs and button texts (without tooltips). */
     static String formText(FallbackRenderer.Model model, List<Component> lines) {
@@ -339,7 +355,7 @@ public final class GlyphworkService implements Glyphwork {
         StringBuilder b = new StringBuilder(plain.serialize(model.title()));
         lines.forEach(l -> b.append('\n').append(plain.serialize(l)));
         model.tabs().forEach(t -> b.append("\n[").append(t.active() ? "*" : "").append(t.title()).append(']'));
-        model.actions().forEach(a -> b.append("\n> ").append(plain.serialize(a.label())));
+        model.actions().forEach(a -> b.append(a.disabled() ? "\n- " : "\n> ").append(plain.serialize(a.label())));
         return b.toString();
     }
 

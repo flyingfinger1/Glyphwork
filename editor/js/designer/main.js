@@ -186,6 +186,11 @@ function draw() {
     }
   }
   if (mode === 'edit' && $('outlines').checked) {
+    ctx2d.setLineDash([2, 3]);
+    ctx2d.strokeStyle = 'rgba(96, 165, 250, .85)';
+    for (const b of last.boxes.filter((x) => x.reserve)) {
+      ctx2d.strokeRect(b.x * zoom + 0.5, b.y * zoom + 0.5, b.w * zoom - 1, b.h * zoom - 1);
+    }
     ctx2d.setLineDash([3, 3]);
     for (const b of last.boxes) {
       if (b.invisible || b.missing) {
@@ -212,7 +217,7 @@ function draw() {
 
 /** Union of the boxes drawn for the selected entry (a template can draw several). */
 function selectionBox() {
-  const bs = (last?.boxes || []).filter((b) => b.top === selected && !b.hidden);
+  const bs = (last?.boxes || []).filter((b) => b.top === selected && !b.hidden && !b.reserve);
   if (!bs.length) {
     const el = current();
     return el ? { x: Number(el.x) || 0, y: Number(el.y) || 0, w: 8, h: 8 } : null;
@@ -234,7 +239,7 @@ function hitElement(px, py) {
   const boxes = last?.boxes || [];
   for (let i = boxes.length - 1; i >= 0; i--) {
     const b = boxes[i];
-    if (b.hidden) continue;
+    if (b.hidden || b.reserve) continue;
     if (px >= b.x && py >= b.y && px < b.x + Math.max(b.w, 4) && py < b.y + Math.max(b.h, 4)) return b.top;
   }
   return -1;
@@ -648,7 +653,7 @@ function refreshProps() {
   for (const h of (last?.hints || []).filter((x) => x.top === selected)) {
     const d = document.createElement('div');
     d.className = 'hintLine';
-    d.textContent = 'ℹ ' + h.text;
+    d.textContent = 'ℹ ' + (h.pagerOver ? t('pagerOverlap', { n: h.pagerOver }) : h.text);
     box.append(d);
   }
   const put = (key) => (v) => replaceSelected(setField(current(), key, v));

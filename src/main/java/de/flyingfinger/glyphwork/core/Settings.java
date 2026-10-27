@@ -22,7 +22,14 @@ public record Settings(
     String warningIcon,
     String warningIconHover,
     java.time.Duration feedCache,
-    String feedDateFormat) {
+    String feedDateFormat,
+    boolean provided,
+    boolean providedAlways) {
+
+    /** "embedded", "external" or "provided" (the Glyphwork part is merged into a pack the server or proxy sends). */
+    public String hosting() {
+        return provided ? "provided" : external ? "external" : "embedded";
+    }
 
     /** The prompt that config.yml had before 0.7; treated as "use the language files". */
     private static final String OLD_PROMPT = "Glyphwork braucht dieses Resource-Pack für die Menüs.";
@@ -53,7 +60,9 @@ public record Settings(
             c.getString("dialog-warning.icon", "").trim(),
             c.getString("dialog-warning.icon-hover", "").trim(),
             duration(c.getString("feeds.cache", "10m"), java.time.Duration.ofMinutes(10)),
-            c.getString("feeds.date-format", "dd.MM.yyyy HH:mm"));
+            c.getString("feeds.date-format", "dd.MM.yyyy HH:mm"),
+            "provided".equalsIgnoreCase(c.getString("pack.hosting", "embedded")),
+            !"server-pack".equalsIgnoreCase(c.getString("pack.provided-loaded", "always")));
     }
 
     /** "30s", "5m", "1h", "1d" or seconds; the fallback for anything else (at least 10 s). */

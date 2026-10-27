@@ -24,6 +24,7 @@ item.has: "<gray><player> hat das Item schon (oder darf das Menü nicht öffnen)
 reload.menus: "<green><count> Menü(s) geladen."
 reload.pack-sent: "<green>Glyphwork neu geladen: Theme '<theme>', neues Pack an <count> Spieler gesendet."
 reload.pack-same: "<green>Glyphwork neu geladen: Theme '<theme>', Pack unverändert."
+reload.pack-provided: "<yellow>Glyphwork neu geladen: Theme '<theme>'. Das Pack hat sich geändert: plugins/Glyphwork/pack/glyphwork.zip neu in das Server-/Proxy-Pack einbauen."
 reload.failed: "<red>Neu laden fehlgeschlagen: <error>"
 
 status.pack: "<gray>Theme '<theme>', Pack <sha1> (<hosting>)\n<url>"

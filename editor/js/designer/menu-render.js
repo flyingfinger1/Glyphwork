@@ -718,6 +718,12 @@ export function renderMenu(menu, skin, ctx = {}) {
       errors.push({ top, text: String(e?.message ?? e) });
     }
   }
+  // page buttons would cover other elements once a list gets more entries
+  for (const r of boxes.filter((b) => b.reserve)) {
+    const hit = boxes.find((b) => !b.reserve && !b.hidden && b.top !== r.top && b.w > 0 && b.h > 0
+      && b.x < r.x + r.w && r.x < b.x + b.w && b.y < r.y + r.h && r.y < b.y + b.h);
+    if (hit) hints.push({ top: r.top, text: `pager → ${hit.top + 1}.`, pagerOver: hit.top + 1 });
+  }
   return { pix: c.pix, boxes, regions, hints, errors };
 }
 
@@ -840,6 +846,8 @@ function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
   });
   pager(c, id, page, pages, x, ly + frameH + 4, w, regions);
   boxes.push({ top, x, y: ly, w, h: frameH + (pages > 1 ? 20 : 0) });
+  // room for the page buttons, which appear as soon as there are more entries than rows
+  if (pages <= 1) boxes.push({ top, x, y: ly + frameH + 4, w, h: 16, reserve: true });
 }
 
 function gridEl(c, el, top, ctx, boxes, regions, hints) {
@@ -890,6 +898,7 @@ function gridEl(c, el, top, ctx, boxes, regions, hints) {
   const gw = cols * pitch - (pitch - size);
   pager(c, id, page, pages, x, gy + nRows * pitch + 2, gw, regions);
   boxes.push({ top, x, y: gy, w: gw, h: nRows * pitch - (pitch - size) + (pages > 1 ? 18 : 0) });
+  if (pages <= 1) boxes.push({ top, x, y: gy + nRows * pitch + 2, w: gw, h: 16, reserve: true });
 }
 
 export function format(n) {

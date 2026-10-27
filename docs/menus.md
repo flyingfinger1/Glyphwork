@@ -580,6 +580,27 @@ elements:
 - Templates may use other templates. A `{key}` without a value and without a default is an error
   that names the menu, the element and the template.
 
+## Own plain view
+
+The plain dialog is normally derived from the pixel GUI. A menu can bring its own instead, written
+for that view: what players without the pack and Bedrock players see.
+
+```yaml
+plain:
+  columns: 1                 # 1 or 2 button columns; left out: chosen by the text lengths
+  elements:
+    - { type: label, text: "<gold>Shop</gold> – you have %menu_points% points" }
+    - { type: button, text: "Buy a diamond (100 points)", tooltip: "64 pieces", cooldown: 10s, cooldown-key: buy,
+        actions: ["require: %menu_points% >= 100 | message: <red>Not enough", "add: points -100"] }
+    - { type: button, text: "Collect points", actions: ["set: page points"], show-if: "%menu_page% == shop" }
+```
+
+`plain:` takes the same elements as `elements:` (also a plain list, without `columns`), but `x` and
+`y` do not matter: labels become the text in their order, buttons, lists, checkboxes and so on the
+buttons. Templates, conditions, variables and actions work as in the menu, and both views share the
+menu's variables. Cooldowns are kept per element; give the pixel button and its plain twin the same
+`cooldown-key` so they share one. API: `Scene.Builder.plain(elements...)`, `plainColumns(1)`.
+
 ## Without the pack
 
 Players without the resource pack get a plain dialog: labels as text, buttons, list rows and grid
@@ -589,11 +610,13 @@ client draws from its own textures (vanilla items and blocks; player heads too),
 stay recognizable without the pack. Short button texts come in two columns, as soon as one does
 not fit a narrow button all of them use one wide column (checked over all tabs, so switching tabs
 keeps the layout). Tabs are a clickable line above the buttons of the active tab. Grayed-out
-buttons (no permission, `enabled-if`, cooldown) are left out: native buttons cannot be grayed out.
+buttons (no permission, `enabled-if`, cooldown) stay in gray: native buttons cannot be grayed out,
+so a click on one only sends its tooltip ("available again in 8 s") as a chat message.
 
 **Bedrock players** (through [Geyser](https://geysermc.org/), optionally with Floodgate) cannot load
 the Java pack, and Bedrock forms have no clickable text. Glyphwork recognizes them and always sends
 them the plain dialog, which Geyser shows as a Bedrock form; they get no pack request and a join
 menu opens at once. Forms have no tooltips, so a button shows the first line of its tooltip below
 its text; tabs are buttons on top, followed by a divider. Every form replaces the screen, so timed
-redraws (cooldowns, `refresh`) send a new one only when something visible changed. `url:` cannot open links on Bedrock: the dialog shows the address as text.
+redraws (cooldowns, `refresh`) send a new one only when something visible changed, and at most one
+every 5 seconds (a held-back change follows when the pause is over). `url:` cannot open links on Bedrock: the dialog shows the address as text.

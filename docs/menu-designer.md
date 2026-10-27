@@ -37,7 +37,9 @@ placeholders (skins come from Mojang's servers). *Remove* deletes the stored tex
    checkbox, choice, bar, picture, head, tabs, scroll pane. A new element goes below the others,
    and the menu grows if needed. The elements of a tab or scroll pane are edited as YAML in that
    element; *Try it* switches tabs and scrolls with a click. The preview cuts a scroll pane by
-   pixel, the game leaves out what does not fit completely.
+   pixel, the game leaves out what does not fit completely. Below lists and grids a dashed area
+   (with *Outlines*) marks the room their page buttons need once there are more entries than rows;
+   the element panel says when another element is in the way.
 3. **Arrange them.** Drag an element to move it, drag the yellow corner to resize it (buttons,
    panels, lists, grids, sliders ...). Arrow keys move by the snap size (Shift: 8 px), Delete
    removes, Ctrl+D duplicates, Ctrl+Z / Ctrl+Y undo and redo. *Layers* lists the elements in

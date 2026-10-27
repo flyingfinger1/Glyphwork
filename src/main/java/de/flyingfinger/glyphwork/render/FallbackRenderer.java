@@ -51,7 +51,12 @@ public final class FallbackRenderer {
     public record Tab(String title, boolean active, Consumer<Click> onClick) {
     }
 
-    public record Action(Component label, @Nullable Component tooltip, Consumer<Click> onClick) {
+    /** @param disabled grayed out: shown in gray, a click only tells why (native buttons cannot be grayed out) */
+    public record Action(Component label, @Nullable Component tooltip, Consumer<Click> onClick, boolean disabled) {
+
+        public Action(Component label, @Nullable Component tooltip, Consumer<Click> onClick) {
+            this(label, tooltip, onClick, false);
+        }
     }
 
     private static final TextColor LIGHT = TextColor.color(0xE0E0E0);
@@ -90,7 +95,9 @@ public final class FallbackRenderer {
         List<Action> actions = new ArrayList<>();
         List<Tab> tabs = new ArrayList<>();
         List<Component> measure = new ArrayList<>();
-        collect(new java.util.ArrayDeque<>(scene.elements()), view, scene.id(), labels, bars, actions, tabs, measure);
+        // a hand-made plain view replaces the one derived from the pixel GUI
+        List<Element> source = scene.plain() != null ? scene.plain() : scene.elements();
+        collect(new java.util.ArrayDeque<>(source), view, scene.id(), labels, bars, actions, tabs, measure);
         return finish(scene, view, labels, bars, actions, tabs, measure);
     }
 
@@ -271,14 +278,25 @@ public final class FallbackRenderer {
     }
 
     private static void button(Button b, View view, List<Action> actions) {
-        if (b.onClick() == null || !Boolean.TRUE.equals(b.enabled().apply(view))) {
+        if (b.onClick() == null) {
             return;
         }
+        boolean enabled = Boolean.TRUE.equals(b.enabled().apply(view));
         String text = b.text().apply(view);
         Component tip = b.tooltip() == null ? null : b.tooltip().apply(view);
         Component label = text != null && !text.isBlank()
             ? (b.markup() ? net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(text) : Component.text(text))
             : tip != null ? tip : Component.text("•");
+        if (!enabled) {
+            // grayed out (permission, enabled-if, cooldown): visible, but a click only shows why
+            Component gray = Component.text().append(label).color(net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY).build();
+            actions.add(new Action(gray, tip, c -> {
+                if (tip != null && c.player() != null) {
+                    c.player().sendMessage(tip);
+                }
+            }, true));
+            return;
+        }
         actions.add(new Action(withHead(label, b.icon() == null ? null : b.icon().apply(view)), tip, b.onClick()));
     }
 

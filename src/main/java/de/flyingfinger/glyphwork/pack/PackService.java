@@ -52,7 +52,11 @@ public final class PackService {
     public boolean publish(Settings s, byte[] zip, String newSha1) throws IOException {
         Files.createDirectories(dir);
         Files.write(dir.resolve("latest.zip"), zip);
-        if (s.external()) {
+        if (s.provided()) {
+            // merged into the server's or proxy's own pack by the admin: a stable name, nothing to serve
+            Files.write(dir.resolve("glyphwork.zip"), zip);
+            stopServer();
+        } else if (s.external()) {
             Files.write(dir.resolve(newSha1 + ".zip"), zip);
             prune(newSha1);
             stopServer();
@@ -111,6 +115,9 @@ public final class PackService {
     }
 
     public void send(Player player) {
+        if (settings != null && settings.provided()) {
+            return;                                 // the server or proxy sends the pack with the Glyphwork part
+        }
         if (de.flyingfinger.glyphwork.core.Bedrock.is(player)) {
             return;                                 // Bedrock cannot load Java packs; it gets the plain dialog
         }
@@ -144,6 +151,10 @@ public final class PackService {
     }
 
     public boolean hasPack(Player player) {
+        if (settings != null && settings.provided()) {
+            // the Glyphwork part comes with the server's or proxy's pack
+            return settings.providedAlways() || hasServerPack(player);
+        }
         return status.get(player.getUniqueId()) == Status.SUCCESSFULLY_LOADED;
     }
 
@@ -176,6 +187,9 @@ public final class PackService {
     }
 
     public boolean hasServerPack(Player player) {
+        if (settings != null && settings.provided() && settings.providedAlways()) {
+            return true;                            // a pack everyone has (e.g. required on the proxy)
+        }
         return serverPack.contains(player.getUniqueId());
     }
 }

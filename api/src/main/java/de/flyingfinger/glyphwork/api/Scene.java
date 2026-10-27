@@ -25,6 +25,8 @@ public final class Scene {
     private final @Nullable Duration refresh;
     private final @Nullable Consumer<Click> onOpen;
     private final @Nullable Consumer<Click> onClose;
+    private final @Nullable List<Element> plain;
+    private final int plainColumns;
 
     private Scene(Builder b) {
         this.refresh = b.refresh;
@@ -36,6 +38,8 @@ public final class Scene {
         this.title = b.title;
         this.exitLabel = b.exitLabel;
         this.elements = List.copyOf(b.elements);
+        this.plain = b.plain == null ? null : List.copyOf(b.plain);
+        this.plainColumns = b.plainColumns;
     }
 
     /**
@@ -83,6 +87,19 @@ public final class Scene {
     }
 
     /** How often the open scene redraws itself, or null if only after clicks. */
+    /**
+     * Elements of the plain dialog (players without the pack, Bedrock) instead of the ones derived
+     * from {@link #elements()}; null: derived. Positions do not matter there, the order does.
+     */
+    public @Nullable List<Element> plain() {
+        return plain;
+    }
+
+    /** Button columns of the plain dialog: 1 or 2, 0 = chosen by the text lengths. */
+    public int plainColumns() {
+        return plainColumns;
+    }
+
     public @Nullable Duration refresh() {
         return refresh;
     }
@@ -97,6 +114,8 @@ public final class Scene {
         private @Nullable Duration refresh;
         private @Nullable Consumer<Click> onOpen;
         private @Nullable Consumer<Click> onClose;
+        private @Nullable List<Element> plain;
+        private int plainColumns;
 
         private Builder(String id, int width, int height) {
             this.id = id;
@@ -156,6 +175,26 @@ public final class Scene {
          */
         public Builder onClose(Consumer<Click> onClose) {
             this.onClose = onClose;
+            return this;
+        }
+
+        /**
+         * A hand-made plain dialog (for players without the pack and Bedrock players): labels become
+         * its text, buttons, lists, checkboxes and so on its buttons, in this order. Same scene, same
+         * state as the pixel GUI.
+         */
+        public Builder plain(List<Element> elements) {
+            this.plain = new ArrayList<>(elements);
+            return this;
+        }
+
+        public Builder plain(Element... elements) {
+            return plain(List.of(elements));
+        }
+
+        /** Button columns of the plain dialog: 1 or 2 (0 = by the text lengths, the default). */
+        public Builder plainColumns(int columns) {
+            this.plainColumns = Math.max(0, Math.min(2, columns));
             return this;
         }
 

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Own plain view:** `plain:` in a menu (API `Scene.Builder.plain(...)`) defines the dialog for
+  players without the pack and Bedrock players by hand, with `columns: 1|2`; same variables as the
+  pixel GUI.
+- **Grayed-out buttons in the plain dialog** stay visible in gray; a click sends their tooltip
+  (e.g. the remaining cooldown) instead of doing nothing visible.
+- **Pack from your server or proxy:** `pack.hosting: provided` sends no pack; merge
+  `plugins/Glyphwork/pack/glyphwork.zip` into the pack your server or proxy (Velocity) sends.
+  `pack.provided-loaded: always` (a required pack) or `server-pack` (the server.properties answer)
+  tells Glyphwork who has it.
+- **Designer:** a dashed area marks the room for the page buttons below lists and grids, with a hint
+  when another element is in the way.
 - **Plain dialog with pictures:** players without the pack see item icons in front of button, list
   and grid texts (sprite components the client draws from its own textures), and long button texts
   switch the buttons to one wide column instead of cutting them (measured over all tabs, so the
@@ -14,7 +25,7 @@
   quick second click can no longer hit a button of the previous screen and closing a menu closes
   it (Geyser's waiting form could not be removed from the server). Timed redraws (cooldowns,
   refresh, loading feeds) send a new form only when something visible changed, instead of closing
-  and reopening it every second.
+  and reopening it every second (and at most one every 5 s).
 - **Text formatting:** labels, buttons and list entries understand MiniMessage for parts of their
   text (`<b>`, `<i>`, `<u>`, `<st>`, colors); labels also have `bold`, `italic`, `underline` and
   `strikethrough` for the whole text. Bold counts 1 px per character when cutting, centering and

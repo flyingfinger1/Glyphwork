@@ -96,7 +96,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         menuCommands = new MenuCommands(this);
         triggers = new de.flyingfinger.glyphwork.menu.MenuTriggers(this, () -> menus, this::openMenu,
-            p -> settings.sendOnJoin() && !de.flyingfinger.glyphwork.core.Bedrock.is(p));
+            p -> settings.sendOnJoin() && !settings.provided() && !de.flyingfinger.glyphwork.core.Bedrock.is(p));
         getServer().getPluginManager().registerEvents(triggers, this);
         loadMenus();
     }
@@ -261,8 +261,12 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             getServer().getOnlinePlayers().forEach(Player::updateCommands);
         }
         getLogger().info("Theme '" + themeName + "', pack " + b.sha1() + " (" + b.zip().length / 1024 + " KB, height "
-            + b.height() + " px, " + (settings.external() ? "external" : "embedded") + ") at " + packs.url());
-        if (settings.external()) {
+            + b.height() + " px, " + settings.hosting() + ")" + (settings.provided() ? "" : " at " + packs.url()));
+        if (settings.provided()) {
+            getLogger().info("Pack provided by the server or proxy: merge "
+                + getDataFolder().toPath().resolve("pack").resolve("glyphwork.zip").toAbsolutePath()
+                + " into that pack (again after changes to theme, pictures or menu heights)");
+        } else if (settings.external()) {
             getLogger().info("External hosting: serve " + getDataFolder().toPath().resolve("pack").toAbsolutePath()
                 + " so that the URL above resolves");
         }
@@ -305,7 +309,9 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             for (String e : menuErrors) {
                 sender.sendMessage(Component.text("  " + e, NamedTextColor.RED));
             }
-            if (changed) {
+            if (changed && settings.provided()) {
+                sender.sendMessage(msg().get(sender, "reload.pack-provided", "theme", themeName));
+            } else if (changed) {
                 int n = packs.sendToAll();
                 sender.sendMessage(msg().get(sender, "reload.pack-sent", "theme", themeName, "count", n));
             } else {
@@ -467,7 +473,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 sender.sendMessage(msg().get(sender, "status.pack", "theme", themeName, "sha1", packs.sha1(),
-                    "hosting", settings.external() ? "external" : "embedded", "url", packs.url()));
+                    "hosting", settings.hosting(), "url", settings.provided() ? "-" : packs.url()));
                 for (Player p : getServer().getOnlinePlayers()) {
                     Status st = packs.status(p);
                     sender.sendMessage(Component.text("  " + p.getName() + ": " + (st == null ? "-" : st)

@@ -55,7 +55,7 @@ public final class DialogFactory {
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
                                   @Nullable Component exitLabel, Runnable onExit) {
-        return fallback(title, lines, buttons, List.of(), exitLabel, onExit, false);
+        return fallback(title, lines, buttons, List.of(), 0, exitLabel, onExit, false);
     }
 
     /**
@@ -65,11 +65,12 @@ public final class DialogFactory {
      *                that a closing menu cannot remove.
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
-                                  List<Component> measure, @Nullable Component exitLabel, Runnable onExit, boolean bedrock) {
+                                  List<Component> measure, int forcedColumns, @Nullable Component exitLabel, Runnable onExit,
+                                  boolean bedrock) {
         ActionButton exit = exitButton(exitLabel, onExit, callbackOptions());
         Component body = Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), lines);
         // like hand-made server dialogs: short texts in two columns, long ones in one wide column
-        int columns = columnsFor(buttons, measure);
+        int columns = forcedColumns > 0 ? forcedColumns : columnsFor(buttons, measure);
         int width = columns == 1 ? 300 : 150;
         List<ActionButton> actions = buttons.stream()
             .map(b -> {

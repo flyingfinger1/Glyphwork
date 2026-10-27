@@ -26,7 +26,8 @@ that redraw themselves every few seconds:
 Players without the pack get a plain native dialog built from the same scene; Bedrock players
 (Geyser/Floodgate) always get it, as a Bedrock form. The pack is served by
 a built-in HTTP server or written to `plugins/Glyphwork/pack/<sha1>.zip` for your own web server
-(`pack.hosting: external`, `pack.url` with `{sha1}`). `/glyphwork reload` rebuilds theme and pack and
+(`pack.hosting: external`, `pack.url` with `{sha1}`), or merged into the pack your server or proxy
+sends (`pack.hosting: provided`). `/glyphwork reload` rebuilds theme and pack and
 sends it to everyone online; `/glyphwork status` shows who has it. See `config.yml`.
 
 **Skin editor:** https://flyingfinger1.github.io/Glyphwork/ ([guide](docs/skin-editor.md))

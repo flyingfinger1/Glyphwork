@@ -70,7 +70,7 @@ public final class Menus {
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
         "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms",
-        "on-open", "on-close", "open-on");
+        "on-open", "on-close", "open-on", "persist");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -80,6 +80,10 @@ public final class Menus {
     private Function<String, List<Map<String, String>>> sources = Sources::fetch;
     /** Variables of the menu being parsed (parsing runs on one thread, one menu at a time). */
     private Vars vars = Vars.NONE;
+    /** Id of the menu being parsed (keys of saved variables and cooldowns). */
+    private String menuId = "";
+    /** Index of the element being parsed (the default cooldown key). */
+    private int elementIndex;
     /** Forms of the menu being parsed. */
     private Forms forms = Forms.NONE;
 
@@ -165,7 +169,8 @@ public final class Menus {
         }
         Node root = new Node(c.getValues(false), id + ".yml");
         root.only(MENU_KEYS);
-        vars = Vars.of(root);
+        vars = Vars.of(root, id);
+        menuId = id;
         forms = Forms.of(root, vars, this::get);
         Vars mv = vars;
         int width = root.optInt("width", 176);
@@ -311,11 +316,116 @@ public final class Menus {
     private Consumer<Click> actions(Node n) throws MenuException {
         Actions.Chain run = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
         String perm = n.optString("permission", null);
-        return c -> {
-            if (perm == null || c.player().hasPermission(perm)) {
-                run.run(c, null);
+        Cooldown cd = cooldown(n);
+        String waitText = n.optString("cooldown-message", null);
+        Vars cv = vars;
+        Consumer<Click> body = c -> {
+            if (perm != null && !c.player().hasPermission(perm)) {
+                return;
+            }
+            if (cd != null) {
+                long left = cd.left(c.player());
+                if (left > 0) {
+                    c.player().sendMessage(waitText != null
+                        ? MM.deserialize(cv.fill(c, waitText.replace("%cooldown%", formatDuration(left)), null, null))
+                        : de.flyingfinger.glyphwork.core.Messages.active().get(c.player(), "cooldown.wait", "time", formatDuration(left)));
+                    return;
+                }
+                cd.start(c.player());              // before the actions, so a redraw already shows it
+            }
+            if (!run.run(c, null) && cd != null) {
+                cd.reset(c.player());              // a "require" stopped the actions: nothing was used up
             }
         };
+        // a button on cooldown is grayed out: draw again unless the actions showed something else
+        return cd == null ? body : de.flyingfinger.glyphwork.render.Redraw.after(body);
+    }
+
+    /** A wait time per player after a click ("cooldown: 1h"), kept in the player's data. */
+    record Cooldown(String key, long millis) {
+
+        long left(org.bukkit.entity.@Nullable Player p) {
+            long until = PlayerData.getLong(p, "cooldown/" + key);
+            return Math.max(0, until - System.currentTimeMillis());
+        }
+
+        /**
+         * Time left, and asks the view to redraw when the shown time changes: every second in the
+         * last minute, at the next minute before, and when the cooldown runs out.
+         */
+        long left(View v) {
+            long left = left(v.player());
+            if (left > 0) {
+                long next = left <= 60_000 ? (left - 1) % 1000 + 1 : (left - 1) % 60_000 + 1;
+                v.redrawAfter(java.time.Duration.ofMillis(next + 50));
+            }
+            return left;
+        }
+
+        void start(org.bukkit.entity.@Nullable Player p) {
+            PlayerData.setLong(p, "cooldown/" + key, System.currentTimeMillis() + millis);
+        }
+
+        void reset(org.bukkit.entity.@Nullable Player p) {
+            PlayerData.setLong(p, "cooldown/" + key, 0);
+        }
+    }
+
+    /** "cooldown:" of an element (key: "cooldown-key" or menu + element number), or null. */
+    private @Nullable Cooldown cooldown(Node n) throws MenuException {
+        if (!n.has("cooldown")) {
+            if (n.has("cooldown-key")) {
+                throw n.error("cooldown-key", "only together with cooldown");
+            }
+            return null;
+        }
+        return new Cooldown(n.optString("cooldown-key", menuId + "/" + elementIndex).trim().toLowerCase(),
+            parseDuration(n, "cooldown"));
+    }
+
+    private static final java.util.regex.Pattern DURATION = java.util.regex.Pattern.compile("(\\d+)\\s*(d|h|min|m|s)?");
+
+    /** "90", "90s", "5m", "5min", "2h", "1d", "1d 12h" -> milliseconds (at least 1 s). */
+    static long parseDuration(Node n, String key) throws MenuException {
+        String s = n.string(key).trim().toLowerCase();
+        java.util.regex.Matcher m = DURATION.matcher(s);
+        long total = 0;
+        int end = 0;
+        while (m.find()) {
+            if (!s.substring(end, m.start()).isBlank()) {
+                break;
+            }
+            long v = Long.parseLong(m.group(1));
+            String unit = m.group(2) == null ? "s" : m.group(2);
+            total += v * switch (unit) {
+                case "d" -> 86_400_000L;
+                case "h" -> 3_600_000L;
+                case "m", "min" -> 60_000L;
+                default -> 1000L;
+            };
+            end = m.end();
+        }
+        if (end == 0 || !s.substring(end).isBlank() || total < 1000) {
+            throw n.error(key, "duration expected, e.g. 30s, 5m, 2h, 1d or 1d 12h; got '" + s + "'");
+        }
+        return total;
+    }
+
+    /** 7 s, 12 min, 3 h 12 min, 1 d 4 h */
+    static String formatDuration(long ms) {
+        long s = (ms + 999) / 1000;
+        if (s < 60) {
+            return s + " s";
+        }
+        long min = (s + 59) / 60;
+        if (min < 60) {
+            return min + " min";
+        }
+        long h = min / 60;
+        if (h < 24) {
+            return h + " h" + (min % 60 > 0 ? " " + min % 60 + " min" : "");
+        }
+        return h / 24 + " d" + (h % 24 > 0 ? " " + h % 24 + " h" : "");
     }
 
     /** Keys of an element: its own plus show-if, which every element has. */
@@ -326,6 +436,7 @@ public final class Menus {
     }
 
     private void element(Scene.Builder b, Node n, int index) throws MenuException {
+        elementIndex = index;
         String type = n.string("type").toLowerCase();
         List<Condition> showIf = Condition.all(n, "show-if");
         List<Element> added = new ArrayList<>();
@@ -382,7 +493,8 @@ public final class Menus {
             }
             case "button" -> {
                 n.only(with("type", "x", "y", "width", "height", "text", "tint", "text-color", "tooltip",
-                    "actions", "permission", "frame", "icon", "enabled-if", "disabled-tooltip"));
+                    "actions", "permission", "frame", "icon", "enabled-if", "disabled-tooltip", "cooldown", "cooldown-key",
+                    "cooldown-tooltip", "cooldown-message"));
                 Button bt = Button.of(n.integer("x"), n.integer("y"), n.optInt("width", 64), n.optInt("height", 16))
                     .text(text(n.optString("text", "")))
                     .tint(n.optColor("tint", Button.GRAY))
@@ -392,24 +504,35 @@ public final class Menus {
                 String perm = n.optString("permission", null);
                 List<Condition> enabledIf = Condition.all(n, "enabled-if");
                 Vars mv = vars;
-                Function<View, Boolean> enabled = v -> (perm == null || v.player().hasPermission(perm))
+                Cooldown cd = cooldown(n);
+                Function<View, Boolean> allowed = v -> (perm == null || v.player().hasPermission(perm))
                     && Condition.all(enabledIf, s -> mv.fill(v, s, null, null));
+                Function<View, Boolean> enabled = v -> allowed.apply(v) && (cd == null || cd.left(v) == 0);
                 bt.enabled(enabled);
                 Function<View, @Nullable Component> tip = tooltip(n);
                 String off = n.optString("disabled-tooltip", null);
-                if (off != null) {
-                    bt.tooltip(v -> enabled.apply(v) ? (tip == null ? null : tip.apply(v))
-                        : MM.deserialize(mv.fill(v, off, null, null)));
-                } else if (tip != null) {
-                    bt.tooltip(tip);
-                }
+                String coolTip = n.optString("cooldown-tooltip", null);
+                bt.tooltip(v -> {
+                    long left = cd == null ? 0 : cd.left(v);
+                    if (left > 0 && allowed.apply(v)) {
+                        return coolTip != null
+                            ? MM.deserialize(mv.fill(v, coolTip.replace("%cooldown%", formatDuration(left)), null, null))
+                            : de.flyingfinger.glyphwork.core.Messages.active().get(v.player(), "cooldown.tooltip",
+                                "time", formatDuration(left));
+                    }
+                    if (off != null && !allowed.apply(v)) {
+                        return MM.deserialize(mv.fill(v, off, null, null));
+                    }
+                    return tip == null ? null : tip.apply(v);
+                });
                 if (n.has("icon")) {
                     bt.icon(text(n.string("icon")));        // placeholders: icon: "head:%player%"
                 }
                 b.accept(bt);
             }
             case "panel" -> {
-                n.only(with("type", "x", "y", "width", "height", "shape", "frame", "tint", "tooltip", "actions"));
+                n.only(with("type", "x", "y", "width", "height", "shape", "frame", "tint", "tooltip", "actions", "cooldown",
+                    "cooldown-key", "cooldown-message"));
                 Panel p = n.has("shape")
                     ? Panel.shape(n.integer("x"), n.integer("y"), n.strings("shape").toArray(String[]::new))
                     : Panel.of(n.integer("x"), n.integer("y"), n.integer("width"), n.integer("height"));
@@ -423,7 +546,7 @@ public final class Menus {
                 b.accept(p);
             }
             case "hitbox" -> {
-                n.only(with("type", "x", "y", "width", "height", "tooltip", "actions", "permission"));
+                n.only(with("type", "x", "y", "width", "height", "tooltip", "actions", "permission", "cooldown", "cooldown-key", "cooldown-message"));
                 Hitbox h = Hitbox.of(n.integer("x"), n.integer("y"), n.integer("width"), n.integer("height"))
                     .onClick(actions(n));
                 if (tooltip(n) != null) {
@@ -432,7 +555,8 @@ public final class Menus {
                 b.accept(h);
             }
             case "icon" -> {
-                n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions", "count", "item-tooltip"));
+                n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions", "count", "item-tooltip", "cooldown",
+                    "cooldown-key", "cooldown-message"));
                 TextColor tint = n.optColor("tint", null);
                 Icon ic = Icon.of(n.integer("x"), n.integer("y"), text(n.string("item"))).tint(v -> tint);
                 if (n.has("count")) {
@@ -505,7 +629,7 @@ public final class Menus {
                     })
                     .tint(v -> tint)
                     .onChange((c, value) -> {
-                        Vars.set(c, var, de.flyingfinger.glyphwork.dialog.FormValues.format(value));
+                        mv.set(c, var, de.flyingfinger.glyphwork.dialog.FormValues.format(value));
                         then.run(c, null);
                     });
                 if (tip != null) {
@@ -525,7 +649,7 @@ public final class Menus {
                     .textColor(v -> color)
                     .checked(v -> "true".equalsIgnoreCase(mv.get(v, var).trim()))
                     .onToggle((c, on) -> {
-                        Vars.set(c, var, String.valueOf(on));
+                        mv.set(c, var, String.valueOf(on));
                         then.run(c, null);
                     });
                 if (tooltip(n) != null) {
@@ -548,7 +672,7 @@ public final class Menus {
                     .selected(v -> mv.get(v, var).trim())
                     .tint(v -> tint)
                     .onSelect((c, id) -> {
-                        Vars.set(c, var, id);
+                        mv.set(c, var, id);
                         then.run(c, null);
                     });
                 if (tooltip(n) != null) {
@@ -557,7 +681,7 @@ public final class Menus {
                 b.accept(ch);
             }
             case "head" -> {
-                n.only(with("type", "x", "y", "player", "size", "tooltip", "actions"));
+                n.only(with("type", "x", "y", "player", "size", "tooltip", "actions", "cooldown", "cooldown-key", "cooldown-message"));
                 int size = n.optInt("size", 32);
                 if (size % 8 != 0 || size < 8 || size > 32) {
                     throw n.error("size", "8, 16, 24 or 32");
@@ -573,7 +697,7 @@ public final class Menus {
                 b.accept(hd);
             }
             case "image" -> {
-                n.only(with("type", "x", "y", "image", "tint", "tooltip", "actions"));
+                n.only(with("type", "x", "y", "image", "tint", "tooltip", "actions", "cooldown", "cooldown-key", "cooldown-message"));
                 TextColor tint = n.optColor("tint", null);
                 de.flyingfinger.glyphwork.api.Image im = de.flyingfinger.glyphwork.api.Image.of(n.integer("x"), n.integer("y"),
                     text(n.string("image"))).tint(v -> tint);   // placeholders: image: "ranks/%menu_rank%"

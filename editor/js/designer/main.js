@@ -817,7 +817,7 @@ const MENU_FIELDS = [
   ['title', 'text', 'menuTitle'], ['width', 'int', 'width'], ['height', 'int', 'height'],
   ['background', 'text', 'background'], ['command', 'text', 'command'], ['aliases', 'lines', 'aliases'],
   ['permission', 'text', 'permission'], ['description', 'text', 'description'], ['exit-label', 'text', 'exitLabel'],
-  ['refresh', 'text', 'refresh'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
+  ['refresh', 'text', 'refresh'], ['persist', 'text', 'persist'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
   ['open-on.join', 'select', 'openOnJoin', ['true', 'first']], ['open-on.item.material', 'text', 'openOnItem'],
   ['open-on.item.name', 'text', 'openOnItemName'], ['open-on.item.slot', 'int', 'openOnItemSlot'],
   ['open-on.item.give', 'select', 'openOnItemGive', ['join', 'first', 'no']], ['open-on.item.keep', 'select', 'openOnItemKeep', ['true', 'false']],
@@ -880,7 +880,13 @@ function refreshMenuProps() {
       h.textContent = t('triggers');
       box.append(h);
     }
-    const f = field(key, kind, extra, () => menuGet(key), (v) => menuPut(key, v), 'menu');
+    // persist: true or a list of names, edited as "true" / "a, b"
+    const get = key === 'persist' ? () => { const v = menu.persist; return Array.isArray(v) ? v.join(', ') : v == null ? '' : String(v); }
+      : () => menuGet(key);
+    const put = key === 'persist' ? (v) => menuPut(key, v === undefined ? undefined : /^(true|false)$/i.test(v.trim())
+      ? v.trim().toLowerCase() === 'true' : v.split(',').map((x) => x.trim()).filter(Boolean))
+      : (v) => menuPut(key, v);
+    const f = field(key, kind, extra, get, put, 'menu');
     f.querySelector('span').textContent = t(label);
     if (key === 'width') { pair = document.createElement('div'); pair.className = 'pair'; pair.append(f); box.append(pair); }
     else if (key === 'height' && pair) { pair.append(f); pair = null; }

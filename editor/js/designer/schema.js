@@ -36,6 +36,12 @@ export const FIELDS = {
   use: [['use', 'use'], ['x', 'int'], ['y', 'int'], ['values', 'values']],
 };
 
+// clickable elements can have a cooldown (wait time per player, kept in the player's data)
+for (const k of ['button', 'panel', 'hitbox', 'icon', 'image', 'head']) {
+  FIELDS[k].push(['cooldown', 'text'], ['cooldown-key', 'text']);
+  if (k === 'button') FIELDS[k].push(['cooldown-tooltip', 'text']);
+  FIELDS[k].push(['cooldown-message', 'text']);
+}
 for (const k of Object.keys(FIELDS)) FIELDS[k].push(['show-if', 'lines']);
 
 /** Settings of one entry of a list (grids also have tint). */
@@ -57,7 +63,8 @@ export const FIELD_KEY = {
   id: 'f_id', rows: 'f_rows', 'row-height': 'f_rowHeight', cols: 'f_cols', cell: 'f_cell', size: 'f_size', var: 'f_var',
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
   'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
-  value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize',
+  value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize', cooldown: 'f_cooldown',
+  'cooldown-key': 'f_cooldownKey', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
 };
 
 /** A new element of this type at (x, y). */

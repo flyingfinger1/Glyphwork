@@ -24,18 +24,36 @@ final class Vars {
     private static final String KEY = "menu:var:";
 
     /** No variables (tests, menus without a "variables:" section). */
-    static final Vars NONE = new Vars(Map.of());
+    static final Vars NONE = new Vars(Map.of(), "", java.util.Set.of());
 
     private final Map<String, String> defaults;
+    /** Menu id (for the keys of saved variables). */
+    private final String menu;
+    /** Variables kept in the player's data ("persist:"), surviving logouts and restarts. */
+    private final java.util.Set<String> persist;
 
     Vars(Map<String, String> defaults) {
+        this(defaults, "", java.util.Set.of());
+    }
+
+    Vars(Map<String, String> defaults, String menu, java.util.Set<String> persist) {
         this.defaults = new LinkedHashMap<>(defaults);
+        this.menu = menu;
+        this.persist = java.util.Set.copyOf(persist);
     }
 
     static Vars of(Node root) throws MenuException {
+        return of(root, "");
+    }
+
+    /** "variables:" with their defaults and "persist:" (true = all, or a list of names). */
+    static Vars of(Node root, String menu) throws MenuException {
         Map<String, String> d = new LinkedHashMap<>();
         Object raw = Templates.plain(root.raw().get("variables"));
         if (raw == null) {
+            if (root.has("persist")) {
+                throw root.error("persist", "there are no variables: to keep");
+            }
             return new Vars(d);
         }
         if (!(raw instanceof Map<?, ?> m)) {
@@ -48,17 +66,42 @@ final class Vars {
             }
             d.put(name, e.getValue() == null ? "" : String.valueOf(e.getValue()));
         }
-        return new Vars(d);
+        java.util.Set<String> persist = new java.util.LinkedHashSet<>();
+        Object p = Templates.plain(root.raw().get("persist"));
+        if (p instanceof Boolean b || "true".equalsIgnoreCase(String.valueOf(p)) || "false".equalsIgnoreCase(String.valueOf(p))) {
+            if (Boolean.parseBoolean(String.valueOf(p))) {
+                persist.addAll(d.keySet());
+            }
+        } else if (p != null) {
+            for (String name : root.strings("persist")) {
+                String n = name.trim().toLowerCase();
+                if (!d.containsKey(n)) {
+                    throw root.error("persist", "'" + n + "' is not under variables: (there are: " + String.join(", ", d.keySet()) + ")");
+                }
+                persist.add(n);
+            }
+        }
+        return new Vars(d, menu, persist);
+    }
+
+    private String dataKey(String name) {
+        return "var/" + menu + "/" + name;
     }
 
     String get(@Nullable View v, String name) {
         String value = v == null ? null : v.get(KEY + name, (String) null);
+        if (value == null && v != null && persist.contains(name)) {
+            value = PlayerData.get(v.player(), dataKey(name));
+        }
         return value != null ? value : defaults.getOrDefault(name, "");
     }
 
-    /** {@code value} null = back to the default. */
-    static void set(View v, String name, @Nullable String value) {
+    /** {@code value} null = back to the default (also for saved variables). */
+    void set(View v, String name, @Nullable String value) {
         v.set(KEY + name, value);
+        if (persist.contains(name)) {
+            PlayerData.set(v.player(), dataKey(name), value);
+        }
     }
 
     String fill(@Nullable View v, String text, @Nullable Map<String, String> item, @Nullable String input) {

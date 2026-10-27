@@ -37,6 +37,8 @@ Glyphwork.get().open(player, settings);
   18 px get a 40 px frame) and a panel covering the whole scene (`background()`).
 - `.onOpen(c -> ...)` runs when the scene is opened, before it is drawn (set state there);
   `.onClose(c -> ...)` when the player closes the screen while it is shown (messages, sounds).
+- A binding that knows its value changes at a certain time (a countdown) can call
+  `view.redrawAfter(Duration)` while rendering; the open scene is then drawn again at that time.
 - `.refresh(Duration.ofSeconds(5))` on the builder redraws the open scene every 5 seconds (at least
   half a second), for content that changes by itself: players online, balances, countdowns. Clicks
   on the previous drawing still work; it stops when the player closes the scene (also with ESC),

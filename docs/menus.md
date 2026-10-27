@@ -33,6 +33,7 @@ exit-label: "Close"           # optional: label of the dialog's exit button
 templates: {...}              # optional: templates only for this menu, see below
 variables: { tab: shop }      # optional: menu variables and their defaults, see below
 refresh: 5                    # optional: redraw every 5 seconds while open (at least 1), see below
+persist: [nick]               # optional: variables kept in the player's data (true = all), see Variables
 forms: {...}                  # optional: forms with several input fields, see below
 open-on: {...}                # optional: open by itself on joining or with a menu item, see below
 on-open: [...]                # optional: actions when the menu opens (before it is drawn)
@@ -170,6 +171,18 @@ choice button steps through its options, back with a click on its left half, for
 half. After a change the variable is set, the element's `actions` run, and the menu is redrawn.
 Text fields need the keyboard, so they stay in [forms](#forms) and `input:`.
 
+**Cooldowns:** `cooldown: 1h` on a button, hitbox, icon, panel, picture or head lets each player
+use it once per hour (`30s`, `5m`, `2h`, `1d`, `1d 12h`; a plain number is seconds). A button on
+cooldown is grayed out and its tooltip says when it is back; other elements answer a click with a
+chat message. While a cooldown runs, the open menu redraws by itself: every second in the last
+minute (the tooltip counts down), at each new minute before, and when it runs out (the button comes
+back). The time is kept in the player's data, so logging out does not reset it.
+`cooldown-key: daily` lets several elements (also in different menus) share one cooldown; without
+it every element has its own. If a `require` action stops the click, the cooldown is not used up.
+The texts come from the language files (`cooldown.tooltip`, `cooldown.wait`, with `<time>`); one
+element can have its own: `cooldown-tooltip` (buttons) and `cooldown-message`, MiniMessage with
+placeholders and `%cooldown%` for the time left.
+
 `y` of a text is the top of the letters; in a 16 px button the text starts 4 px below the top.
 Items with a `permission` are only shown to players who have it. Every element and every list or
 grid item can have `show-if`; buttons also `enabled-if` and `disabled-tooltip`, see
@@ -260,6 +273,12 @@ elements:
   opened again).
 - To highlight the active tab, add the button twice with opposite `show-if` and different `tint`
   (see `example-players.yml`).
+
+**Saved variables:** normally variables keep their value until the player logs out. `persist: true`
+keeps all variables of the menu in the player's data (they survive logouts and restarts), or list
+some: `persist: [nick, range]`. `set: nick` without a value goes back to the default and removes
+the saved value. Forms, sliders, checkboxes and choices save like `set:`. The data stays on the
+server the player plays on (no database, no sync between servers of a network).
 
 ## Dynamic lists
 

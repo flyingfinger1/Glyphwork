@@ -209,8 +209,16 @@ public final class GlyphworkService implements Glyphwork {
             return;
         }
         int generation = redraw ? s.generation : ++s.generation;
-        scheduleRefresh(player, s, scene, generation);
         ViewImpl view = new ViewImpl(player, s, scene);
+        try {
+            showNow(player, s, scene, generation, view);
+        } finally {
+            view.drawing = false;
+            scheduleRefresh(player, s, scene, generation, view.redrawAfterMs);
+        }
+    }
+
+    private void showNow(Player player, Session s, Scene scene, int generation, ViewImpl view) {
         DisplayMode mode = displayMode(player);
         if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player))) {
             showFallback(player, s, generation, scene, view);
@@ -232,12 +240,18 @@ public final class GlyphworkService implements Glyphwork {
             DialogFactory.callbackOptions(lifetime(scene))));
     }
 
-    /** Redraws the scene after its refresh interval, if it is still the one the player sees. */
-    private void scheduleRefresh(Player player, Session s, Scene scene, int generation) {
-        if (scene.refresh() == null) {
+    /**
+     * Redraws the scene after its refresh interval, or earlier if the drawing asked for it
+     * (View.redrawAfter, e.g. a cooldown running out), if it is still the one the player sees.
+     */
+    private void scheduleRefresh(Player player, Session s, Scene scene, int generation, long askedMs) {
+        long ticks = scene.refresh() == null ? Long.MAX_VALUE : Math.max(10, scene.refresh().toMillis() / 50);
+        if (askedMs >= 0) {
+            ticks = Math.min(ticks, Math.max(2, (askedMs + 49) / 50));
+        }
+        if (ticks == Long.MAX_VALUE) {
             return;
         }
-        long ticks = Math.max(10, scene.refresh().toMillis() / 50);
         s.refresh = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             s.refresh = null;
             if (!player.isOnline() || s.generation != generation || s.stack.peek() != scene) {
@@ -321,6 +335,17 @@ public final class GlyphworkService implements Glyphwork {
         final Player player;
         final Session session;
         final Scene scene;
+        /** Shortest redraw asked for while drawing (ms), or -1. */
+        long redrawAfterMs = -1;
+        boolean drawing = true;
+
+        @Override
+        public void redrawAfter(java.time.Duration delay) {
+            if (drawing) {
+                long ms = Math.max(0, delay.toMillis());
+                redrawAfterMs = redrawAfterMs < 0 ? ms : Math.min(redrawAfterMs, ms);
+            }
+        }
 
         ViewImpl(Player player, Session session, Scene scene) {
             this.player = player;

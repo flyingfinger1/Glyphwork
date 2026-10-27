@@ -17,6 +17,14 @@ public interface View {
 
     void set(String key, Object value);
 
+    /**
+     * Asks for the scene to be drawn again after {@code delay} while it stays open, because what a
+     * binding shows will change by itself then (a countdown, a cooldown running out). Called while
+     * rendering; the shortest delay of a drawing wins. Does nothing outside a drawing.
+     */
+    default void redrawAfter(java.time.Duration delay) {
+    }
+
     /** Current page (0-based) of a {@link ListView} or {@link Grid} with this id. */
     default int page(String listId) {
         return get("glyphwork:page:" + listId, 0);

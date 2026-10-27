@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Saved variables:** `persist: true` (or a list of names) keeps menu variables in the player's
+  data, so they survive logouts and restarts; `set: name` without a value removes the saved value.
+- **Cooldowns:** `cooldown: 1h` (`30s`, `5m`, `1d 12h` …) on buttons, hitboxes, icons, panels,
+  pictures and heads: each player can use the element once per period, kept in the player's data.
+  A button on cooldown is grayed out with the remaining time as tooltip; `cooldown-key` shares one
+  cooldown between elements; a failed `require` does not use it up. While a cooldown runs, the
+  open menu redraws itself when the shown time changes and when it ends (API: `View.redrawAfter`).
+  Texts: `cooldown.tooltip` / `cooldown.wait` in the language files, or per element
+  `cooldown-tooltip` / `cooldown-message` with `%cooldown%`.
 - **Menus that open by themselves:** `open-on: { join: true }` (or `first`) opens a menu when a
   player joins, once the Glyphwork pack is loaded; `open-on: { item: compass }` (or with name,
   lore, slot) hands out a menu item that opens it on right-click, cannot be dropped and comes back

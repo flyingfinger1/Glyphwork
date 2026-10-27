@@ -36,7 +36,8 @@ final class Actions {
     /** A parsed action list; {@code item} is the entry of a dynamic list (or null). */
     @FunctionalInterface
     interface Chain {
-        void run(Click c, @Nullable Map<String, String> item);
+        /** @return false if a "require" stopped the actions */
+        boolean run(Click c, @Nullable Map<String, String> item);
     }
 
     /** What happened during one click. */
@@ -84,14 +85,17 @@ final class Actions {
         }
         return (click, item) -> {
             Run r = new Run(item);
+            boolean all = true;
             for (Step step : steps) {
                 if (!step.run(click, null, r)) {
+                    all = false;
                     break;
                 }
             }
             if (r.changed && !r.navigated) {
                 click.reopen();
             }
+            return all;
         };
     }
 
@@ -170,14 +174,14 @@ final class Actions {
                 String name = variable(p[0], at, key);
                 String value = p.length > 1 ? p[1] : null;
                 yield go((c, in, r) -> {
-                    Vars.set(c, name, value == null ? null : vars.fill(c, value, r.item, in));
+                    vars.set(c, name, value == null ? null : vars.fill(c, value, r.item, in));
                     r.changed = true;
                 });
             }
             case "toggle" -> {
                 String name = variable(require(arg, at, key, "a variable name"), at, key);
                 yield go((c, in, r) -> {
-                    Vars.set(c, name, "true".equalsIgnoreCase(vars.get(c, name)) ? "false" : "true");
+                    vars.set(c, name, "true".equalsIgnoreCase(vars.get(c, name)) ? "false" : "true");
                     r.changed = true;
                 });
             }
@@ -203,7 +207,7 @@ final class Actions {
                     r.navigated = true;
                     Map<String, String> item = r.item;
                     c.form(Forms.build(def, c, vars, item), values -> {
-                        Forms.store(def, c, values);
+                        Forms.store(def, c, values, vars);
                         def.actions().run(c, item);
                     });
                 });

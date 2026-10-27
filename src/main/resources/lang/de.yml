@@ -14,6 +14,8 @@ pack.failed: "<gray>Das Glyphwork-Pack konnte nicht geladen werden (<status>). M
 
 menu.unknown: "<red>Menü '<id>' gibt es nicht."
 menu.usage: "<gray>/glyphwork menu \\<id> [spieler] – Menüs: <menus>"
+cooldown.wait: "<red>Noch nicht: wieder verfügbar in <time>."
+cooldown.tooltip: "<gray>Wieder verfügbar in <time>"
 item.usage: "<gray>/glyphwork item \\<menü> [spieler] – Menüs mit Item: <menus>"
 item.none: "<red>Menü '<id>' hat kein Item (open-on.item)."
 item.given: "<green>Item von Menü '<id>' an <player> gegeben."

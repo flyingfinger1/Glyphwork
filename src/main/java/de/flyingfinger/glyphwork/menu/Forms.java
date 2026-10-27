@@ -197,7 +197,7 @@ final class Forms {
     }
 
     /** Writes the entered values into the menu variables. */
-    static void store(Def d, Click c, Form.Values v) {
+    static void store(Def d, Click c, Form.Values v, Vars vars) {
         for (int i = 0; i < d.fields().size(); i++) {
             FieldDef f = d.fields().get(i);
             String key = "f" + i;
@@ -207,7 +207,7 @@ final class Forms {
                 case "slider" -> FormValues.format(v.number(key));
                 default -> v.choice(key);
             };
-            Vars.set(c, f.var(), value);
+            vars.set(c, f.var(), value);
         }
     }
 }

@@ -13,7 +13,7 @@ import java.util.function.Consumer;
  * (reopen, open, back, close, prompt, form). Used by sliders, checkboxes and choices, whose change
  * should always be visible.
  */
-final class Redraw implements Click {
+public final class Redraw implements Click {
 
     private final Click click;
     private boolean shown;
@@ -22,7 +22,7 @@ final class Redraw implements Click {
         this.click = click;
     }
 
-    static Consumer<Click> after(Consumer<Click> handler) {
+    public static Consumer<Click> after(Consumer<Click> handler) {
         return c -> {
             Redraw r = new Redraw(c);
             handler.accept(r);

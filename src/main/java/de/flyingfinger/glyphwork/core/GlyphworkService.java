@@ -282,6 +282,9 @@ public final class GlyphworkService implements Glyphwork {
                 s.stack.clear();
                 s.generation++;
                 s.stopRefresh();
+                if (Bedrock.is(player) && player.isOnline()) {
+                    player.closeDialog();       // a Bedrock form would otherwise wait for an answer
+                }
                 closedHook(player, s, top);
             }
         });
@@ -294,12 +297,15 @@ public final class GlyphworkService implements Glyphwork {
             lines.add(Messages.active().get(player, "fallback.notice"));
         }
         lines.addAll(model.lines());
+        boolean bedrock = Bedrock.is(player);
         List<DialogFactory.FallbackButton> buttons = model.actions().stream()
-            .map(a -> new DialogFactory.FallbackButton(a.label(), a.tooltip(),
-                () -> run(player, s, generation, "fallback " + scene.id(), a.onClick())))
+            // Bedrock forms show no tooltips: the first tooltip line goes into the button
+            .map(a -> new DialogFactory.FallbackButton(bedrock ? FallbackRenderer.withTooltipLine(a.label(), a.tooltip()) : a.label(),
+                a.tooltip(),
+                () -> run(player, s, generation, "fallback " + scene.id(), a.onClick(), bedrock)))
             .toList();
         DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, exitLabel(player, scene),
-            () -> exited(player, s, generation)));
+            () -> exited(player, s, generation), bedrock));
     }
 
     private static Component exitLabel(Player player, Scene scene) {
@@ -319,6 +325,14 @@ public final class GlyphworkService implements Glyphwork {
 
     /** Runs a click action on the main thread, unless the screen has been replaced meanwhile. */
     private void run(Player player, Session s, int generation, String name, Consumer<Click> action) {
+        run(player, s, generation, name, action, false);
+    }
+
+    /**
+     * @param answer a Bedrock form waits for a reply after every click: when the action showed
+     *               nothing new (a chat message only), the same screen is shown again
+     */
+    private void run(Player player, Session s, int generation, String name, Consumer<Click> action, boolean answer) {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!player.isOnline() || s.generation != generation || s.stack.isEmpty()) {
                 return;
@@ -327,6 +341,9 @@ public final class GlyphworkService implements Glyphwork {
                 action.accept(new ClickImpl(player, s, s.stack.peek()));
             } catch (RuntimeException e) {
                 plugin.getLogger().log(Level.WARNING, "Click handler " + name + " failed", e);
+            }
+            if (answer && player.isOnline() && s.generation == generation && !s.stack.isEmpty()) {
+                show(player, s);
             }
         });
     }

@@ -4,7 +4,9 @@
 
 - **Bedrock players** (Geyser, optionally Floodgate; found without a hard dependency) always get the
   plain dialog, which Geyser turns into a Bedrock form, and no Java pack request; join menus open
-  at once for them.
+  at once for them. Their buttons show the first tooltip line below the text (forms have no
+  tooltips), and their forms wait for the server's answer after a click, so a quick second click
+  can no longer hit a button of the previous screen.
 - **Text formatting:** labels, buttons and list entries understand MiniMessage for parts of their
   text (`<b>`, `<i>`, `<u>`, `<st>`, colors); labels also have `bold`, `italic`, `underline` and
   `strikethrough` for the whole text. Bold counts 1 px per character when cutting, centering and

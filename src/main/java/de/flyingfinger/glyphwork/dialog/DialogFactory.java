@@ -55,6 +55,16 @@ public final class DialogFactory {
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
                                   @Nullable Component exitLabel, Runnable onExit) {
+        return fallback(title, lines, buttons, exitLabel, onExit, false);
+    }
+
+    /**
+     * @param waitForResponse Bedrock (Geyser): after a click the form waits for the server's next
+     *                        dialog instead of showing the old one again; otherwise a click on the
+     *                        reopened old form would be matched to the buttons of the new one
+     */
+    public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
+                                  @Nullable Component exitLabel, Runnable onExit, boolean waitForResponse) {
         ActionButton exit = exitButton(exitLabel, onExit, callbackOptions());
         Component body = Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), lines);
         List<ActionButton> actions = buttons.stream()
@@ -71,7 +81,7 @@ public final class DialogFactory {
             .base(DialogBase.builder(title)
                 .canCloseWithEscape(true)
                 .pause(false)
-                .afterAction(DialogBase.DialogAfterAction.NONE)
+                .afterAction(waitForResponse ? DialogBase.DialogAfterAction.WAIT_FOR_RESPONSE : DialogBase.DialogAfterAction.NONE)
                 .body(lines.isEmpty() ? List.of() : List.of(DialogBody.plainMessage(body, 300)))
                 .build())
             .type(actions.isEmpty() ? DialogType.notice(exit)

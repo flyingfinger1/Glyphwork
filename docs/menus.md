@@ -589,4 +589,5 @@ hitbox, list or grid.
 **Bedrock players** (through [Geyser](https://geysermc.org/), optionally with Floodgate) cannot load
 the Java pack, and Bedrock forms have no clickable text. Glyphwork recognizes them and always sends
 them the plain dialog, which Geyser shows as a Bedrock form; they get no pack request and a join
-menu opens at once. `url:` cannot open links on Bedrock: the dialog shows the address as text.
+menu opens at once. Forms have no tooltips, so a button shows the first line of its tooltip below
+its text. `url:` cannot open links on Bedrock: the dialog shows the address as text.

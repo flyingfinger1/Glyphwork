@@ -166,6 +166,30 @@ public final class FallbackRenderer {
         return new Model(scene.title().apply(view), lines, actions);
     }
 
+    /**
+     * The button text with the first line of its tooltip below it, gray (for Bedrock forms, which
+     * have no tooltips). Nothing is added when the tooltip only repeats the text.
+     */
+    public static Component withTooltipLine(Component label, @Nullable Component tooltip) {
+        if (tooltip == null) {
+            return label;
+        }
+        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer plain =
+            net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();
+        String tip = plain.serialize(tooltip).strip();
+        int nl = tip.indexOf('\n');
+        if (nl >= 0) {
+            tip = tip.substring(0, nl).strip();
+        }
+        if (tip.isEmpty() || tip.equalsIgnoreCase(plain.serialize(label).strip())) {
+            return label;
+        }
+        if (tip.length() > 48) {
+            tip = tip.substring(0, 47).strip() + "…";
+        }
+        return label.append(Component.newline()).append(Component.text(tip, net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY));
+    }
+
     /** A label line as a component: formatting and the label's switches, in a readable color. */
     private static Component styled(Label l, String part, View view) {
         Component c = l.markup() ? net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(part)

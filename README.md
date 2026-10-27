@@ -94,7 +94,8 @@ attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
 Frames (panel, button, slot ...) are autotiled from tiny A2 sheets, so any shape of cells joins
 seamlessly. Three skins are built in and exported to `plugins/Glyphwork/themes/` on start:
 `vanilla` (default), `dark` (light text) and `parchment`; pick one with `theme:`
-in `config.yml`. Own skins go next to them. Format: [docs/skin-format.md](docs/skin-format.md).
+in `config.yml`. Own skins go next to them. Format: [docs/skin-format.md](docs/skin-format.md), which
+also shows how to give the warning button next to dialog titles your own picture and text.
 
 ![Built-in skins](docs/img/skins.png)
 

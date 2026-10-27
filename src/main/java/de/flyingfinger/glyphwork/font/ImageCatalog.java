@@ -41,6 +41,7 @@ public final class ImageCatalog {
     }
 
     private final Map<String, Picture> pictures = new LinkedHashMap<>();
+    private final Map<String, BufferedImage> sources = new LinkedHashMap<>();
     private final Map<String, byte[]> textures = new LinkedHashMap<>();
 
     /** No pictures. */
@@ -104,6 +105,7 @@ public final class ImageCatalog {
             }
         }
         pictures.put(id, new Picture(id, img.getWidth(), img.getHeight(), List.copyOf(tiles)));
+        sources.put(id, img);
     }
 
     public @Nullable Picture get(String id) {
@@ -112,6 +114,12 @@ public final class ImageCatalog {
             key = key.substring(0, key.length() - 4);
         }
         return pictures.get(key);
+    }
+
+    /** The whole picture as PNG (for uses outside fonts, e.g. GUI sprites), or null if unknown. */
+    public byte @Nullable [] png(String id) {
+        Picture p = get(id);
+        return p == null ? null : png(sources.get(p.id()));
     }
 
     public int size() {

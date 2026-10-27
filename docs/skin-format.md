@@ -65,3 +65,21 @@ Rules for drawing:
 - A tile whose rightmost column is fully transparent has a smaller advance; Glyphwork positions
   every tile absolutely, so this is fine.
 - Glyphs cannot scale; draw at 1:1 GUI pixels.
+
+## The dialog warning button
+
+Minecraft puts a small warning button next to the title of every dialog a server shows ("This is a
+custom screen. Click here to learn more."). Glyphwork's pack can give it your own look:
+
+```yaml
+# config.yml
+dialog-warning:
+  icon: "warning"          # a picture from plugins/Glyphwork/images/ (20 x 20 px), empty = vanilla
+  icon-hover: "warning-lit" # under the mouse; empty = the same picture
+```
+
+The tooltip text is `dialog.warning-tooltip` in `plugins/Glyphwork/lang/<language>.yml` (empty =
+Minecraft's own text; formatting is dropped, lang files are plain text). Add the key to language
+files exported by an older version. This changes the button in every dialog on the server, also
+those of other plugins, for players who have the Glyphwork pack. The button itself stays: it tells
+players that the screen comes from the server, which a logo with your text still does.

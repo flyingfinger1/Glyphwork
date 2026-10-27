@@ -47,6 +47,15 @@ icons: true
 # (resource-pack=), or a zip path (relative to plugins/Glyphwork/), an http(s) URL, or none.
 icon-source-pack: auto
 
+# The warning button that Minecraft puts next to the title of every server dialog ("This is a custom
+# screen ..."). Replace its picture with one of yours from plugins/Glyphwork/images/ (20 x 20 px,
+# name without .png); empty = the vanilla sign. Its tooltip text is dialog.warning-tooltip in the
+# language files. Applies to every dialog on the server (also other plugins'), for players with the
+# Glyphwork pack.
+dialog-warning:
+  icon: ""
+  icon-hover: ""        # shown under the mouse; empty = same as icon
+
 players:
   # /glyphwork pack and /glyphwork darstellung for everyone. false hides /glyphwork from players
   # (admins keep it); use the API (Glyphwork#displayMode, #sendPack) to offer these in your own system.

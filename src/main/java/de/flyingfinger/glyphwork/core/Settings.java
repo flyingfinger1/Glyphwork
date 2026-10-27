@@ -18,7 +18,9 @@ public record Settings(
     String iconSourcePack,
     boolean playerCommands,
     String language,
-    String fallbackLanguage) {
+    String fallbackLanguage,
+    String warningIcon,
+    String warningIconHover) {
 
     /** The prompt that config.yml had before 0.7; treated as "use the language files". */
     private static final String OLD_PROMPT = "Glyphwork braucht dieses Resource-Pack für die Menüs.";
@@ -45,7 +47,9 @@ public record Settings(
             c.getString("icon-source-pack", "auto"),
             c.getBoolean("players.commands", true),
             c.getString("language", "auto"),
-            c.getString("fallback-language", "en"));
+            c.getString("fallback-language", "en"),
+            c.getString("dialog-warning.icon", "").trim(),
+            c.getString("dialog-warning.icon-hover", "").trim());
     }
 
     /** Download URL for a pack hash; without a {sha1} placeholder the hash is appended. */

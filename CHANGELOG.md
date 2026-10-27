@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Own dialog warning button:** `dialog-warning.icon` / `icon-hover` in `config.yml` replace the
+  warning sign next to every dialog title with one of your pictures, and
+  `dialog.warning-tooltip` in the language files replaces its tooltip text (written into the pack
+  for every locale of that language). See docs/skin-format.md.
 - **Big heads:** `type: head` / `Head.of(x, y, player).size(32)` paints a player's face pixel by
   pixel from the skin, 8 to 32 px, at any position, for any player without changing the pack;
   `head-size` on lists and grids does the same for their `head:` icons. Skins load in the

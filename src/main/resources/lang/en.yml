@@ -44,6 +44,8 @@ display.info-simple: "<gray>Simple: plain dialogs, if your pack breaks the menus
 dialog.close: "Close"
 dialog.ok: "OK"
 dialog.cancel: "Cancel"
+# Tooltip of the warning button next to dialog titles (empty = Minecraft's own text).
+dialog.warning-tooltip: ""
 
 fallback.notice: "<gray>Simple view – resource pack not loaded"
 fallback.previous: "◀ back"

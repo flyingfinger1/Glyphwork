@@ -163,6 +163,12 @@ public final class Messages {
         return fallback;
     }
 
+    /** The text of {@code key} in exactly this language, without falling back, or null. */
+    public @Nullable String ownRaw(String lang, String key) {
+        Map<String, String> m = langs.get(lang);
+        return m == null ? null : m.get(key);
+    }
+
     /** The raw text (MiniMessage) of {@code key} in {@code lang}, falling back to the fallback language. */
     public String raw(String lang, String key) {
         Map<String, String> m = langs.get(lang);

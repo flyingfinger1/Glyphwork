@@ -44,6 +44,8 @@ display.info-simple: "<gray>Einfach: normale Dialoge, falls dein Pack die Menüs
 dialog.close: "Schließen"
 dialog.ok: "OK"
 dialog.cancel: "Abbrechen"
+# Tooltip des Warn-Buttons neben Dialog-Titeln (leer = Minecrafts eigener Text).
+dialog.warning-tooltip: ""
 
 fallback.notice: "<gray>Vereinfachte Ansicht – Resource-Pack nicht geladen"
 fallback.previous: "◀ zurück"

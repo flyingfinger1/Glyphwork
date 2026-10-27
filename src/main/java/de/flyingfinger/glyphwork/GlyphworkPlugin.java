@@ -176,6 +176,14 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
         de.flyingfinger.glyphwork.font.ImageCatalog images = de.flyingfinger.glyphwork.font.ImageCatalog.load(imageDir, alloc, getLogger());
         images.write(pack);
+        Path langDir = getDataFolder().toPath().resolve("lang");
+        try {
+            Messages.export(langDir);
+        } catch (IOException e) {
+            getLogger().warning("Could not export the language files: " + e);
+        }
+        de.flyingfinger.glyphwork.pack.DialogWarning.write(pack, s.warningIcon(), s.warningIconHover(), images,
+            Messages.load(langDir, s.language(), s.fallbackLanguage(), getLogger()), getLogger());
         if (images.size() > 0) {
             getLogger().info(images.size() + " picture(s) from images/: " + String.join(", ", images.ids()));
         }

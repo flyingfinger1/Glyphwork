@@ -422,6 +422,14 @@ public final class GlyphworkService implements Glyphwork {
         }
 
         @Override
+        public void openUrl(String url) {
+            if (!closed) {
+                navigated = true;
+                super.openUrl(url);
+            }
+        }
+
+        @Override
         public void form(de.flyingfinger.glyphwork.api.Form form, Consumer<de.flyingfinger.glyphwork.api.Form.Values> onSubmit) {
             if (!closed) {
                 navigated = true;
@@ -458,6 +466,20 @@ public final class GlyphworkService implements Glyphwork {
         @Override
         public void close() {
             GlyphworkService.this.close(player);
+        }
+
+        @Override
+        public void openUrl(String url) {
+            int generation = ++session.generation;
+            session.stopRefresh();
+            Runnable back = () -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player.isOnline() && session.generation == generation) {
+                    show(player, session);
+                }
+            });
+            Messages m = Messages.active();
+            DialogFactory.show(player, DialogFactory.link(m.get(player, "url.title"), url,
+                m.get(player, "url.open"), m.get(player, "url.back"), back));
         }
 
         @Override

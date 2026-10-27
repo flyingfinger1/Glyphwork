@@ -61,3 +61,9 @@ players:
   # /glyphwork pack and /glyphwork darstellung for everyone. false hides /glyphwork from players
   # (admins keep it); use the API (Glyphwork#displayMode, #sendPack) to offer these in your own system.
   commands: true
+
+# RSS and Atom feeds in menus (items-from: "rss:https://..."). They are loaded in the background
+# and kept for the cache time; /glyphwork reload forgets them.
+feeds:
+  cache: 10m            # 30s, 5m, 1h ...
+  date-format: "dd.MM.yyyy HH:mm"   # %item_date% (Java DateTimeFormatter pattern, server time zone)

@@ -504,6 +504,7 @@ const ACTION_EXAMPLES = () => [
   'message: <green>' + (de() ? 'Hallo!' : 'Hello!'), 'player: spawn', 'console: say %player%', 'open: menu-id', 'back', 'close',
   'refresh', 'set: tab shop', 'toggle: sound', (de() ? 'input: Wie heißt du? | message: Hallo %input%' : 'input: Your name? | message: Hi %input%'),
   'require: %menu_tab% == shop | message: <red>' + (de() ? 'Nicht hier' : 'Not here'), 'form: name', 'sound: ui.button.click',
+  'url: https://example.org',
 ];
 
 function labelFor(key) {
@@ -656,7 +657,22 @@ function refreshProps() {
   let pairOpen = null;
   for (const [key, kind, extra] of fields) {
     if (kind === 'items') { box.append(itemsEditor(k)); continue; }
-    if (kind === 'from') { box.append(field('items-from', 'select', Object.keys(SAMPLES), get('items-from'), put('items-from'), 'el' + selected)); continue; }
+    if (kind === 'from') {
+      // a known source or rss:<address>; suggestions as a datalist
+      const f = field('items-from', 'text', null, get('items-from'), put('items-from'), 'el' + selected);
+      const inp = f.querySelector('input');
+      const dl = document.createElement('datalist');
+      dl.id = 'fromList';
+      for (const o of ['online-players', 'worlds', 'rss:https://example.org/feed.xml']) {
+        const op = document.createElement('option');
+        op.value = o;
+        dl.append(op);
+      }
+      inp.setAttribute('list', 'fromList');
+      f.append(dl);
+      box.append(f);
+      continue;
+    }
     if (kind === 'item') { box.append(itemTemplateEditor(k)); continue; }
     if (kind === 'use') { box.append(field('use', 'select', templateNames(), get('use'), put('use'), 'el' + selected)); continue; }
     if (kind === 'values') { box.append(valuesEditor()); continue; }
@@ -1142,6 +1158,7 @@ async function runOne(action, item, input) {
     case 'console': log('[console] ' + f(arg).replace(/^\//, '')); break;
     case 'sound': log('♪ ' + arg); break;
     case 'open': log('→ open ' + f(arg)); break;
+    case 'url': log('🔗 ' + f(arg)); break;
     case 'back': case 'close': case 'refresh': log('→ ' + type); break;
     case 'set': {
       const [name, ...rest] = arg.split(/\s+/);

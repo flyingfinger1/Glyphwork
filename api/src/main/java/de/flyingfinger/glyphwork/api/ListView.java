@@ -31,6 +31,7 @@ public final class ListView<T> implements Element {
     private @Nullable Function<T, @Nullable Component> tooltip;
     private @Nullable BiConsumer<Click, T> onSelect;
     private @Nullable Function<View, @Nullable T> selected;
+    private java.util.function.@Nullable BiPredicate<View, T> selectedIf;
     private TextColor selectedTint = TextColor.color(0xFFD25A);
     private String frame = "slot";
     private @Nullable Function<T, @Nullable String> icon;
@@ -83,6 +84,20 @@ public final class ListView<T> implements Element {
     public ListView<T> selected(Function<View, @Nullable T> selected) {
         this.selected = selected;
         return this;
+    }
+
+    /** Highlights every entry this holds for (instead of {@link #selected}: one entry by equality). */
+    public ListView<T> selectedIf(java.util.function.BiPredicate<View, T> selectedIf) {
+        this.selectedIf = selectedIf;
+        return this;
+    }
+
+    /** Whether {@code item} is shown as selected for this viewer. */
+    public boolean isSelected(View view, T item) {
+        if (selectedIf != null) {
+            return selectedIf.test(view, item);
+        }
+        return selected != null && item.equals(selected.apply(view));
     }
 
     public ListView<T> selectedTint(TextColor tint) {

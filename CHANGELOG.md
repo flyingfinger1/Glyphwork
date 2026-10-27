@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Feeds:** `items-from: "rss:https://..."` fills lists and grids from an RSS or Atom feed (title,
+  text, date, link, author), loaded in the background, cached (`feeds.cache`, `feeds.date-format`
+  in `config.yml`), safe against external entities and limited to 1 MB / 50 entries. The menu
+  draws itself again when a feed arrives for the first time.
+- **Detail views:** `%item_text%` of a feed is the whole text with paragraphs (up to 4000
+  characters), `%item_summary%` the short one-line version; `selected-if` on list and grid entries
+  highlights e.g. the clicked one (API `ListView/Grid.selectedIf`); a scroll pane `id` with
+  placeholders keeps one position per content. Together: list on the left, article on the right.
+- **Action `url:`** shows a web address in a small native dialog with *Open* and *Back*
+  (`url: %item_link%` for feed entries); API `Click.openUrl`.
 - **Scroll panes:** `type: scroll` / `Scroll.of(...)` shows part of its elements in a window with a
   scroll bar (▲ / ▼ by `step` px, a click on the track jumps there) while the rest of the menu stays
   in place. Only what fits completely is drawn and clickable; any element works inside. The plain

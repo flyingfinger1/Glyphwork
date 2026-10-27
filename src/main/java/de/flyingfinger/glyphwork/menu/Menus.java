@@ -96,6 +96,13 @@ public final class Menus {
         this.sources = sources;
     }
 
+    /** Feeds of items-from: rss:...; replaced in tests. */
+    private Function<String, Feeds.Result> feeds = Feeds::get;
+
+    public void feeds(Function<String, Feeds.Result> feeds) {
+        this.feeds = feeds;
+    }
+
     public Collection<Menu> all() {
         return menus.values();
     }
@@ -591,6 +598,7 @@ public final class Menus {
                     .count(e -> e.count)
                     .itemTooltip(n.optBool("item-tooltip", false))
                     .headSize(n.optInt("head-size", 8))
+                    .selectedIf((v, e) -> e.selected)
                     .onSelect((c, e) -> e.onClick.accept(c));
                 b.accept(l);
             }
@@ -609,6 +617,7 @@ public final class Menus {
                     .itemTooltip(n.optBool("item-tooltip", false))
                     .headSize(n.optInt("head-size", 8))
                     .frame(n.optString("frame", "slot"))
+                    .selectedIf((v, e) -> e.selected)
                     .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(g);
             }
@@ -741,9 +750,16 @@ public final class Menus {
                 if (step < 1) {
                     throw n.error("step", "at least 1 px expected");
                 }
-                b.accept(de.flyingfinger.glyphwork.api.Scroll.of(n.optString("id", "scroll" + index), x, y,
+                String id = n.optString("id", "scroll" + index);
+                de.flyingfinger.glyphwork.api.Scroll sc = de.flyingfinger.glyphwork.api.Scroll.of(id, x, y,
                         n.optInt("width", 120), n.optInt("height", 80), inner)
-                    .step(step).frame(n.optString("frame", null)));
+                    .step(step).frame(n.optString("frame", null));
+                if (id.indexOf('%') >= 0) {
+                    // e.g. "detail-%menu_link%": every article keeps its own position and starts at the top
+                    Vars mv = vars;
+                    sc.position(v -> mv.fill(v, id, null, null));
+                }
+                b.accept(sc);
             }
             case "tabs" -> {
                 n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "tint", "tabs"));
@@ -869,23 +885,23 @@ public final class Menus {
     /** One configured entry of a list or grid: fixed (items:) or the template of a dynamic list (item:). */
     private record ItemDef(String text, TextColor color, @Nullable TextColor tint, @Nullable String tooltip,
                            Actions.Chain actions, @Nullable String permission, @Nullable String icon,
-                           @Nullable String count, List<Condition> showIf) {
+                           @Nullable String count, List<Condition> showIf, List<Condition> selectedIf) {
     }
 
     /** One row or cell as one viewer sees it. */
     private record Row(String text, TextColor color, @Nullable TextColor tint, @Nullable Component tooltip,
-                       @Nullable String icon, @Nullable String count, Consumer<Click> onClick) {
+                       @Nullable String icon, @Nullable String count, Consumer<Click> onClick, boolean selected) {
     }
 
     private static final java.util.regex.Pattern ITEM_KEY = java.util.regex.Pattern.compile("%item(?:_([a-z0-9_-]+))?%");
 
     private ItemDef itemDef(Node e, String defaultText) throws MenuException {
-        e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "count", "show-if"));
+        e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "count", "show-if", "selected-if"));
         return new ItemDef(e.optString("text", defaultText), e.optColor("color", TextColor.color(0xFFFFFF)),
             e.optColor("tint", null), e.optString("tooltip", null),
             Actions.parse(e.strings("actions"), e, "actions", this::get, vars, forms),
             e.optString("permission", null), e.optString("icon", null), e.optString("count", null),
-            Condition.all(e, "show-if"));
+            Condition.all(e, "show-if"), Condition.all(e, "selected-if"));
     }
 
     /** Fixed items, then the entries of items-from, filtered and filled in for the viewer. */
@@ -897,11 +913,16 @@ public final class Menus {
         String from = n.optString("items-from", null);
         ItemDef dynamic = null;
         if (from != null) {
-            from = from.trim().toLowerCase();
-            Set<String> keys = Sources.KEYS.get(from);
+            from = from.trim();
+            boolean feed = from.regionMatches(true, 0, "rss:", 0, 4);
+            from = feed ? "rss:" + from.substring(4).trim() : from.toLowerCase();
+            if (feed && Feeds.problem(from.substring(4)) != null) {
+                throw n.error("items-from", "feed " + from.substring(4) + ": " + Feeds.problem(from.substring(4)));
+            }
+            Set<String> keys = feed ? Feeds.KEYS : Sources.KEYS.get(from);
             if (keys == null) {
                 throw n.error("items-from", "unknown source '" + from + "' (" + String.join(", ",
-                    new java.util.TreeSet<>(Sources.KEYS.keySet())) + ")");
+                    new java.util.TreeSet<>(Sources.KEYS.keySet())) + ", rss:<address>)");
             }
             Object raw = Templates.plain(n.raw().get("item"));
             if (raw != null && !(raw instanceof Map<?, ?>)) {
@@ -915,6 +936,7 @@ public final class Menus {
         }
         Vars mv = vars;
         Function<String, List<Map<String, String>>> src = sources;
+        Function<String, Feeds.Result> fd = feeds;
         String source = from;
         ItemDef d = dynamic;
         return v -> {
@@ -923,7 +945,17 @@ public final class Menus {
                 row(def, null, v, mv, out);
             }
             if (d != null) {
-                for (Map<String, String> item : src.apply(source)) {
+                List<Map<String, String>> entries;
+                if (source.startsWith("rss:")) {
+                    Feeds.Result r = fd.apply(source.substring(4));
+                    if (r.loading()) {
+                        v.redrawAfter(java.time.Duration.ofMillis(500));      // first load: draw again when it is there
+                    }
+                    entries = r.items();
+                } else {
+                    entries = src.apply(source);
+                }
+                for (Map<String, String> item : entries) {
                     row(d, item, v, mv, out);
                 }
             }
@@ -956,6 +988,7 @@ public final class Menus {
             d.tooltip() == null ? null : MM.deserialize(fill.apply(d.tooltip())),
             icon == null || icon.isEmpty() ? null : icon,
             d.count() == null ? null : fill.apply(d.count()),
-            c -> d.actions().run(c, item)));
+            c -> d.actions().run(c, item),
+            !d.selectedIf().isEmpty() && Condition.all(d.selectedIf(), fill)));
     }
 }

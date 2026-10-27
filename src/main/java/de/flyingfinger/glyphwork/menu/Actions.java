@@ -139,6 +139,21 @@ final class Actions {
                     }
                 });
             }
+            case "url" -> {
+                String url = require(arg, at, key, "a web address (http:// or https://)");
+                if (!url.contains("%") && Feeds.problem(url) != null) {
+                    throw at.error(key, "url: " + Feeds.problem(url));
+                }
+                yield go((c, in, r) -> {
+                    String target = vars.fill(c, url, r.item, in).trim();
+                    if (Feeds.problem(target) != null) {
+                        c.player().sendMessage(Messages.active().get(c.player(), "url.invalid", "url", target));
+                        return;
+                    }
+                    r.navigated = true;
+                    c.openUrl(target);
+                });
+            }
             case "back" -> go((c, in, r) -> { r.navigated = true; c.back(); });
             case "close" -> go((c, in, r) -> { r.navigated = true; c.close(); });
             case "refresh" -> go((c, in, r) -> { r.navigated = true; c.reopen(); });

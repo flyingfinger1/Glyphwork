@@ -51,9 +51,9 @@ for (const k of Object.keys(FIELDS)) FIELDS[k].push(['show-if', 'lines']);
 /** Settings of one entry of a list (grids also have tint). */
 export const ITEM_FIELDS = {
   list: [['text', 'text'], ['icon', 'text'], ['count', 'text'], ['color', 'color'], ['tooltip', 'text'],
-    ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines']],
+    ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines'], ['selected-if', 'lines']],
   grid: [['text', 'text'], ['icon', 'text'], ['count', 'text'], ['color', 'color'], ['tint', 'color'], ['tooltip', 'text'],
-    ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines']],
+    ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines'], ['selected-if', 'lines']],
 };
 
 export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice', 'bar', 'image', 'head', 'tabs', 'scroll'];
@@ -68,7 +68,7 @@ export const FIELD_KEY = {
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
   'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
   value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize', cooldown: 'f_cooldown',
-  'cooldown-key': 'f_cooldownKey', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
+  'cooldown-key': 'f_cooldownKey', 'selected-if': 'f_selectedIf', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
 };
 
 /** A new element of this type at (x, y). */

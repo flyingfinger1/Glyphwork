@@ -558,7 +558,7 @@ public final class SceneRenderer {
             return;
         }
         int bx = s.x() + s.width() - Scroll.BAR;
-        String key = s.key();
+        String key = s.key(view);
         Frame button = frame("button");
         Frame slot = frame("slot");
         boolean up = off > 0;
@@ -754,7 +754,6 @@ public final class SceneRenderer {
             frameHeight = tilesUp(height, bg.tileSize());
             line.frame(bg, l.x(), ly, l.width(), frameHeight, null, null, null);
         }
-        T selected = l.selected() == null ? null : l.selected().apply(view);
         Frame highlight = theme.find("button");
         for (int r = 0; r < l.rows(); r++) {
             int index = page * perPage + r;
@@ -763,7 +762,7 @@ public final class SceneRenderer {
             }
             T item = items.get(index);
             int top = ly + r * l.rowHeight();
-            if (selected != null && selected.equals(item) && highlight != null) {
+            if (highlight != null && l.isSelected(view, item)) {
                 line.frame(highlight, l.x(), top, l.width(), l.rowHeight(), l.selectedTint(), null, null);
             }
             int textX = l.x() + 4;
@@ -805,7 +804,6 @@ public final class SceneRenderer {
         int page = pageOf(view, g.id(), items.size(), perPage);
         boolean noFrame = "none".equalsIgnoreCase(g.frame());
         Frame cell = noFrame ? null : frame(g.frame());
-        T selected = g.selected() == null ? null : g.selected().apply(view);
         boolean heads = false;
         for (int i = page * perPage; i < Math.min(items.size(), (page + 1) * perPage) && g.icon() != null; i++) {
             heads |= headOf(g.icon().apply(items.get(i))) != null;
@@ -829,7 +827,7 @@ public final class SceneRenderer {
                 HoverEventSource<?> tip = cellItem != null ? cellItem
                     : item == null || g.tooltip() == null ? null : g.tooltip().apply(item);
                 if (cell != null) {
-                    TextColor tint = item == null ? null : item.equals(selected) ? g.selectedTint() : g.tint().apply(item);
+                    TextColor tint = item == null ? null : g.isSelected(view, item) ? g.selectedTint() : g.tint().apply(item);
                     line.frame(cell, cx, cy, g.cellSize(), g.cellSize(), tint, click, tip);
                 } else if (noFrame && item != null) {
                     hitbox(line, cx, cy, g.cellSize(), g.cellSize(), click, tip);

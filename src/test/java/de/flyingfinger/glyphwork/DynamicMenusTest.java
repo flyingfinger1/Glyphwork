@@ -189,7 +189,7 @@ class DynamicMenusTest {
     void errorsNameTheProblem() {
         Menus m = new Menus();
         assertError(m, "elements:\n  - { type: list, x: 0, y: 0, items-from: mobs }\n",
-            "t.yml.elements[0].items-from: unknown source 'mobs' (online-players, worlds)");
+            "t.yml.elements[0].items-from: unknown source 'mobs' (online-players, worlds, rss:<address>)");
         assertError(m, "elements:\n  - { type: list, x: 0, y: 0, items-from: worlds, item: { text: \"%item_wrold%\" } }\n",
             "t.yml.elements[0].item: %item_wrold% does not exist for worlds");
         assertError(m, "elements:\n  - { type: list, x: 0, y: 0, item: { text: a } }\n",

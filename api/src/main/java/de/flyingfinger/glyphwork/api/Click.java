@@ -33,4 +33,12 @@ public interface Click extends View {
     default void form(Form form, Consumer<Form.Values> onSubmit) {
         throw new UnsupportedOperationException("forms are not supported by this Click");
     }
+
+    /**
+     * Offers a web address: a small native dialog shows it with "Open" (the client then asks as for
+     * chat links) and "Back" to the current scene. Only http and https addresses.
+     */
+    default void openUrl(String url) {
+        player().sendMessage(Component.text(url).clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl(url)));
+    }
 }

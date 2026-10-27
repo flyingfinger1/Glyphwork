@@ -34,6 +34,7 @@ public final class Grid<T> implements Element {
     private @Nullable BiConsumer<Click, T> onClick;
     private String frame = "slot";
     private @Nullable Function<View, @Nullable T> selected;
+    private java.util.function.@Nullable BiPredicate<View, T> selectedIf;
     private TextColor selectedTint = TextColor.color(0xFFE070);
     private @Nullable Function<T, @Nullable String> icon;
     private @Nullable Function<T, @Nullable String> count;
@@ -160,6 +161,20 @@ public final class Grid<T> implements Element {
     public Grid<T> selected(Function<View, @Nullable T> selected) {
         this.selected = selected;
         return this;
+    }
+
+    /** Highlights every entry this holds for (instead of {@link #selected}: one entry by equality). */
+    public Grid<T> selectedIf(java.util.function.BiPredicate<View, T> selectedIf) {
+        this.selectedIf = selectedIf;
+        return this;
+    }
+
+    /** Whether {@code item} is shown as selected for this viewer. */
+    public boolean isSelected(View view, T item) {
+        if (selectedIf != null) {
+            return selectedIf.test(view, item);
+        }
+        return selected != null && item.equals(selected.apply(view));
     }
 
     public Grid<T> selectedTint(TextColor tint) {

@@ -105,6 +105,24 @@ public final class DialogFactory {
             .type(DialogType.confirmation(yes, no)));
     }
 
+    /** A web address with "Open" (handled by the client, which asks first) and "Back". */
+    public static Dialog link(Component title, String url, Component open, Component back, Runnable onBack) {
+        ActionButton yes = ActionButton.builder(open)
+            .action(DialogAction.staticAction(net.kyori.adventure.text.event.ClickEvent.openUrl(url)))
+            .build();
+        ActionButton no = ActionButton.builder(back)
+            .action(DialogAction.customClick((view, audience) -> onBack.run(), callbackOptions()))
+            .build();
+        return Dialog.create(factory -> factory.empty()
+            .base(DialogBase.builder(title)
+                .canCloseWithEscape(true)
+                .pause(false)
+                .afterAction(DialogBase.DialogAfterAction.NONE)
+                .body(List.of(DialogBody.plainMessage(Component.text(url, net.kyori.adventure.text.format.NamedTextColor.GRAY), 300)))
+                .build())
+            .type(DialogType.confirmation(yes, no)));
+    }
+
     /**
      * A form: its fields as native inputs, OK and Cancel. ESC runs Cancel (the client's onCancel of
      * a confirmation dialog is its "no" button).

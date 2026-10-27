@@ -240,6 +240,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     private void apply(Build b) {
         settings = b.settings();
+        de.flyingfinger.glyphwork.menu.Feeds.configure(settings.feedCache(), settings.feedDateFormat(), getLogger());
+        de.flyingfinger.glyphwork.menu.Feeds.clear();
         themeName = b.themeName();
         Path lang = getDataFolder().toPath().resolve("lang");
         try {

@@ -50,6 +50,10 @@ display.info-simple: "<gray>Einfach: normale Dialoge, falls dein Pack die Menüs
 dialog.close: "Schließen"
 dialog.ok: "OK"
 dialog.cancel: "Abbrechen"
+url.title: "Link öffnen?"
+url.open: "Öffnen"
+url.back: "Zurück"
+url.invalid: "<red>Kein gültiger Link: <url>"
 # Tooltip des Warn-Buttons neben Dialog-Titeln (leer = Minecrafts eigener Text).
 dialog.warning-tooltip: ""
 

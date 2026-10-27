@@ -53,11 +53,11 @@ Glyphwork.get().open(player, settings);
 | `Button.of(x, y, w, h)` | frame + centered text; `.text`, `.tint`, `.textColor`, `.tooltip`, `.enabled`, `.onClick` |
 | `Hitbox.of(x, y, w, h)` | invisible clickable area (min. 8 x 8), e.g. over a label |
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
-| `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected`, `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
-| `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
+| `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected` (or `.selectedIf((v, item) -> ...)`), `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
+| `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected` / `.selectedIf`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
 | `Head.of(x, y, "Steve")` | a face painted from the skin, `.size(8/16/24/32)`, also `v -> name`; `.tooltip`, `.onClick`. `Grid` / `ListView`: `.headSize(16)` for their `head:` icons |
 | `Image.of(x, y, "logo")` | a picture from `plugins/Glyphwork/images/` (also `v -> "ranks/" + rank(v)`); `.tint`, `.tooltip`, `.onClick` |
-| `Scroll.of(id, x, y, w, h, elements...)` | a window onto its elements with a scroll bar on the right; `.step(18)`, `.frame("slot")`; the elements use scene coordinates as if unscrolled, only what fits completely into the window is drawn |
+| `Scroll.of(id, x, y, w, h, elements...)` | a window onto its elements with a scroll bar on the right; `.step(18)`, `.frame("slot")`, `.position(v -> "article-" + id(v))` (own position per content); the elements use scene coordinates as if unscrolled, only what fits completely into the window is drawn |
 | `Tabs.of(id, x, y, w, h)` | tabs on a panel, the active one joined with it; `.tab(id, title, elements...)` (or with an icon), `.selected(v -> id)` + `.onSelect((click, id) -> ...)` to keep the active tab yourself (otherwise it is in the scene state), `.frame`, `.tint` (inactive tabs); the elements of a tab use scene coordinates, the panel starts `Tabs.HEADER` (16) px below `y` |
 | `Bar.of(x, y, w)` | progress bar, 8 or 16 px high; `.value(v -> ...)`, `.max(...)`, `.color`, `.text`, `.tooltip`: fills pixel exact |
 | `Slider.of(x, y, w, min, max, step)` | track + knob, 16 px high; `.value`, `.onChange((click, value) -> ...)`, `.tint`, `.tooltip(value -> ...)`: a click on the track picks the value under the cursor (no dragging) |
@@ -134,6 +134,9 @@ cells come from the items function, so filter those there.
 `Integer`. Read a value with the type you stored (`v.get("number", (Object) "-")` when it may be
 missing and you only print it). If a binding throws while rendering, only that element is hidden and
 a warning is logged.
+
+**Links:** `click.openUrl("https://...")` shows the address in a small dialog with *Open* (the
+client asks once more, like for chat links) and *Back* to the current scene.
 
 ## Forms
 

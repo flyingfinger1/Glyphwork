@@ -19,7 +19,7 @@ stack count at the bottom right, like in the inventory. Your own pictures (PNG f
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus, ask for input or show forms, PlaceholderAPI support, a
 command per menu, conditions (show, gray out or check before an action), reusable templates,
-variables (tabs, search, switches), lists that fill themselves (online players, worlds) and menus
+variables (tabs, search, switches), lists that fill themselves (online players, worlds, RSS/Atom feeds) and menus
 that redraw themselves every few seconds:
 [docs/menus.md](docs/menus.md).
 

@@ -209,7 +209,9 @@ the content is longer than the window: ▲ and ▼ move it by `step` px, a click
 there, the knob shows which part is visible. Every click is a redraw by the server, there is no
 mouse wheel. Only what fits completely into the window is drawn and clickable: frames are cut by
 whole tiles (8 px), text and icons appear only in full. Keep the content 8 px narrower than the pane
-for the bar. `step: 18` (default) or another multiple of 9 keeps player heads in place. A pane cannot
+for the bar. `step: 18` (default) or another multiple of 9 keeps player heads in place. An `id`
+with placeholders (`id: "article-%menu_link%"`) gives every value its own position, so new content
+starts at the top. A pane cannot
 hold another pane; tabs, lists and everything else work inside. The position is kept while the menu
 is open. The plain dialog shows all elements of the pane in order.
 
@@ -273,6 +275,7 @@ A list of strings, run in order:
 | `add: points 1` | adds a number to the variable (negative subtracts, decimals work, a missing or non-number value counts as 0); optional limits: `add: amount -1 min 1`, `add: points %menu_step% max 100` |
 | `form: settings` | opens the [form](#forms) `settings` of this menu |
 | `give-item: hub` | gives the player the menu item of menu `hub` (`open-on.item`), unless they carry it already |
+| `url: https://example.org` | shows the address in a small dialog with *Open* (the game asks once more, as for chat links) and *Back* to the menu; `http`/`https` only, placeholders allowed (`url: %item_link%`) |
 
 After `set` or `toggle` the menu is drawn again by itself, unless an action already opened, closed,
 or redrew it. `open:` takes placeholders too (`open: shop-%menu_tab%`).
@@ -369,10 +372,67 @@ every entry, with the entry's values as `%item...%` placeholders. Fixed `items` 
 |---|---|
 | `online-players` | `%item%` / `%item_name%` (name), `%item_world%`, `%item_uuid%`, `%item_head%` / `%item_icon%` (the head, `head:<uuid>`) (sorted by name) |
 | `worlds` | `%item%` / `%item_name%`, `%item_players%` (count), `%item_environment%` (`normal`, `nether`, `the_end`), `%item_icon%` (grass_block, netherrack, end_stone) |
+| `"rss:https://..."` | an RSS or Atom feed: `%item%` / `%item_title%`, `%item_summary%` (one line without HTML, at most 300 characters), `%item_text%` (the whole text with its paragraphs, at most 4000 characters, for a detail view), `%item_date%`, `%item_link%`, `%item_author%`, `%item_feed%` (title of the feed); at most 50 entries |
 
 `item` takes the settings of `items` entries (`text`, `color`, `tint`, `tooltip`, `actions`,
-`permission`, `icon`, `show-if`). A misspelled `%item_...%` is reported when the menu is loaded.
+`permission`, `icon`, `show-if`, `selected-if`). `selected-if` highlights the entries it holds for,
+e.g. the one that was clicked last: `selected-if: "%menu_pick% == %item%"` together with
+`actions: ["set: pick %item%"]`. A misspelled `%item_...%` is reported when the menu is loaded.
 `icon: "%item_head%"` puts each player's head in front of the name.
+
+**Feeds** (news of your website, a forum, a changelog) are loaded in the background and kept for
+`feeds.cache` (`config.yml`, default 10 minutes); the first time a menu shows a feed, its list is
+empty for a moment and fills itself when the feed arrives. `feeds.date-format` sets how
+`%item_date%` looks (default `dd.MM.yyyy HH:mm`, server time zone). Feeds larger than 1 MB, or
+that do not answer within 10 seconds, are skipped with a warning in the log; on errors the last
+entries stay. `/glyphwork reload` loads them again.
+
+```yaml
+- type: list
+  x: 8
+  y: 20
+  width: 184
+  rows: 5
+  items-from: "rss:https://example.org/news.rss"
+  item:
+    text: "%item_title%"
+    tooltip: "%item_date%<newline><gray>%item_summary%"
+    actions: ["url: %item_link%"]
+```
+
+**A news page** with the list on the left and the chosen article on the right: a click copies the
+entry's values into menu variables, a scroll pane shows them. Its `id` contains the link, so every
+article has its own scroll position and starts at the top.
+
+```yaml
+width: 400
+height: 220
+elements:
+  - type: list
+    x: 8
+    y: 8
+    width: 150
+    rows: 10
+    items-from: "rss:https://example.org/news.rss"
+    item:
+      text: "%item_title%"
+      selected-if: "%menu_link% == %item_link%"
+      actions: ["set: title %item_title%", "set: date %item_date%", "set: text %item_text%", "set: link %item_link%"]
+  - type: scroll
+    id: "article-%menu_link%"
+    x: 166
+    y: 8
+    width: 226
+    height: 180
+    step: 36
+    frame: slot
+    elements:
+      - { type: label, x: 5, y: 5, width: 204, wrap: true, text: "%menu_title%
+%menu_date%
+
+%menu_text%" }
+  - { type: button, x: 8, y: 196, width: 120, text: "Open in browser", actions: ["url: %menu_link%"], show-if: "%menu_link% contains http" }
+```
 
 ## Forms
 

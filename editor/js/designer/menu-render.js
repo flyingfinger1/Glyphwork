@@ -56,7 +56,18 @@ export const SAMPLES = {
     { '': 'world_nether', name: 'world_nether', players: '1', environment: 'nether', icon: 'netherrack' },
     { '': 'world_the_end', name: 'world_the_end', players: '0', environment: 'the_end', icon: 'end_stone' },
   ],
+  // stands in for every rss:<address> (the designer does not load feeds)
+  rss: [1, 2, 3, 4, 5].map((i) => ({
+    '': `News ${i}`, title: `News ${i}`, summary: `Text of entry ${i}`, text: `Text of entry ${i}.
+
+A second paragraph with more words, so that the detail view has something to wrap and scroll.`,
+    date: `2${i}.10.2026 18:00`,
+    link: `https://example.org/news/${i}`, author: 'Admin', feed: 'Server News',
+  })),
 };
+
+/** Sample key of an items-from value ("rss:..." → "rss"). */
+export const sampleKey = (from) => (/^rss:/i.test(String(from ?? '').trim()) ? 'rss' : String(from ?? '').trim().toLowerCase());
 
 // ---------------------------------------------------------------- placeholders and conditions
 
@@ -627,7 +638,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           // the content is drawn as a menu of its own, then the visible rows are copied in
           // (the game leaves out what does not fit completely; the preview cuts by pixel)
           const w = int(el.width, 120), h = Math.max(48, int(el.height, 80));
-          const key = String(el.id ?? 'scroll' + top);
+          const key = f(String(el.id ?? 'scroll' + top));   // placeholders: one position per content
           const step = Math.max(1, int(el.step, 18));
           if (el.frame != null && !c.rect(String(el.frame), x, y, w, h, null)) errors.push({ top, text: `frame '${el.frame}'` });
           const kids = Array.isArray(el.elements) ? el.elements : [];
@@ -732,10 +743,11 @@ function rows(el, ctx) {
       icon: def.icon != null ? f(def.icon).trim() || null : null,
       count: def.count != null ? f(def.count) : null,
       act: def.actions == null ? null : { type: 'actions', list: list(def.actions), item },
+      selected: def['selected-if'] != null && allHold(def['selected-if'], f),
     });
   };
   for (const def of el.items || []) if (def && typeof def === 'object') add(def, null);
-  const from = el['items-from'] != null ? String(el['items-from']).trim().toLowerCase() : null;
+  const from = el['items-from'] != null ? sampleKey(el['items-from']) : null;
   if (from && SAMPLES[from]) for (const item of SAMPLES[from]) add(el.item || {}, item);
   return out;
 }
@@ -779,6 +791,7 @@ function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
   c.rect(String(el.frame ?? 'slot'), x, ly, w, frameH, null, true);
   shown.forEach((r, i) => {
     const rt = ly + i * rh;
+    if (r.selected) c.rect('button', x, rt, w, rh, 0xFFD25A);
     let tx = x + 4;
     const ty = rt + Math.floor((rh - 7) / 2);
     if (isHead(r.icon) && hsize > 8) {
@@ -824,7 +837,7 @@ function gridEl(c, el, top, ctx, boxes, regions, hints) {
     for (let col = 0; col < cols; col++) {
       const cell = shown[r * cols + col];
       const cx = x + col * pitch, cy = gy + r * pitch;
-      if (!noFrame) c.rect(String(el.frame ?? 'slot'), cx, cy, size, size, cell ? cell.tint : null);
+      if (!noFrame) c.rect(String(el.frame ?? 'slot'), cx, cy, size, size, cell ? (cell.selected ? 0xFFE070 : cell.tint) : null);
       if (!cell) continue;
       let drew = false;
       if (isHead(cell.icon) && hsize > 8) {

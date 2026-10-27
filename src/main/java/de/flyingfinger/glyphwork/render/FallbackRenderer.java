@@ -187,14 +187,13 @@ public final class FallbackRenderer {
         int per = Math.max(1, l.rows());
         int pages = Math.max(1, (items.size() + per - 1) / per);
         int page = Math.max(0, Math.min(view.page(l.id()), pages - 1));
-        T selected = l.selected() == null ? null : l.selected().apply(view);
         for (int i = page * per; i < Math.min(items.size(), (page + 1) * per); i++) {
             T item = items.get(i);
             if (l.onSelect() == null) {
                 continue;
             }
             String text = String.valueOf(l.text().apply(item));
-            Component label = withHead(withCount(Component.text(item.equals(selected) ? "▶ " + text : text),
+            Component label = withHead(withCount(Component.text(l.isSelected(view, item) ? "▶ " + text : text),
                 l.count() == null ? null : l.count().apply(item)), l.icon() == null ? null : l.icon().apply(item));
             actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onSelect().accept(c, item)));
         }
@@ -206,7 +205,6 @@ public final class FallbackRenderer {
         int per = Math.max(1, g.cols() * g.rows());
         int pages = Math.max(1, (items.size() + per - 1) / per);
         int page = Math.max(0, Math.min(view.page(g.id()), pages - 1));
-        T selected = g.selected() == null ? null : g.selected().apply(view);
         for (int i = page * per; i < Math.min(items.size(), (page + 1) * per); i++) {
             T item = items.get(i);
             if (g.onClick() == null) {
@@ -218,7 +216,7 @@ public final class FallbackRenderer {
             String iconName = g.icon() == null ? null : humanize(g.icon().apply(item));
             String text = tip != null ? PlainTextComponentSerializer.plainText().serialize(tip)
                 : label != null && !label.isBlank() ? label : iconName != null ? iconName : "•";
-            actions.add(new Action(withHead(withCount(Component.text(item.equals(selected) ? "▶ " + text : text),
+            actions.add(new Action(withHead(withCount(Component.text(g.isSelected(view, item) ? "▶ " + text : text),
                     g.count() == null ? null : g.count().apply(item)), g.icon() == null ? null : g.icon().apply(item)), tip,
                 c -> g.onClick().accept(c, item)));
         }

@@ -20,7 +20,9 @@ public record Settings(
     String language,
     String fallbackLanguage,
     String warningIcon,
-    String warningIconHover) {
+    String warningIconHover,
+    java.time.Duration feedCache,
+    String feedDateFormat) {
 
     /** The prompt that config.yml had before 0.7; treated as "use the language files". */
     private static final String OLD_PROMPT = "Glyphwork braucht dieses Resource-Pack für die Menüs.";
@@ -49,7 +51,28 @@ public record Settings(
             c.getString("language", "auto"),
             c.getString("fallback-language", "en"),
             c.getString("dialog-warning.icon", "").trim(),
-            c.getString("dialog-warning.icon-hover", "").trim());
+            c.getString("dialog-warning.icon-hover", "").trim(),
+            duration(c.getString("feeds.cache", "10m"), java.time.Duration.ofMinutes(10)),
+            c.getString("feeds.date-format", "dd.MM.yyyy HH:mm"));
+    }
+
+    /** "30s", "5m", "1h", "1d" or seconds; the fallback for anything else (at least 10 s). */
+    static java.time.Duration duration(@org.jspecify.annotations.Nullable String s, java.time.Duration fallback) {
+        if (s == null) {
+            return fallback;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\s*(\\d+)\\s*([smhd]?)\\s*").matcher(s.toLowerCase());
+        if (!m.matches()) {
+            return fallback;
+        }
+        long n = Long.parseLong(m.group(1));
+        long sec = switch (m.group(2)) {
+            case "m" -> n * 60;
+            case "h" -> n * 3600;
+            case "d" -> n * 86400;
+            default -> n;
+        };
+        return java.time.Duration.ofSeconds(Math.max(10, sec));
     }
 
     /** Download URL for a pack hash; without a {sha1} placeholder the hash is appended. */

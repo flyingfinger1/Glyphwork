@@ -27,6 +27,7 @@ public final class Scroll implements Element {
     private final List<Element> elements;
     private int step = 18;
     private @Nullable String frame;
+    private @Nullable Function<View, String> position;
 
     private Scroll(String id, int x, int y, int width, int height, List<Element> elements) {
         this.id = id;
@@ -52,6 +53,15 @@ public final class Scroll implements Element {
     /** Pixels per click on ▲ / ▼ (default 18: two text lines; multiples of 9 keep player heads in place). */
     public Scroll step(int step) {
         this.step = Math.max(1, step);
+        return this;
+    }
+
+    /**
+     * Which position this viewer sees, e.g. one per shown article ({@code v -> "news-" + link(v)}),
+     * so that new content starts at the top. Default: the id.
+     */
+    public Scroll position(Function<View, String> position) {
+        this.position = position;
         return this;
     }
 
@@ -106,14 +116,14 @@ public final class Scroll implements Element {
         return frame;
     }
 
-    /** State key of the scroll position. */
-    public String key() {
-        return "glyphwork:scroll:" + id;
+    /** State key of the scroll position for this viewer. */
+    public String key(View view) {
+        return "glyphwork:scroll:" + (position == null ? id : position.apply(view));
     }
 
     /** The stored position (not yet limited to the content). */
     public int offset(View view) {
-        Object o = view.get(key(), (Object) 0);
+        Object o = view.get(key(view), (Object) 0);
         return o instanceof Number n ? Math.max(0, n.intValue()) : 0;
     }
 }

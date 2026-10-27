@@ -204,6 +204,7 @@ A list of strings, run in order:
 | `require: %vault_eco_balance% >= 100 \| message: <red>Too poor` | checks a [condition](#conditions); if it does not hold, runs the action after `\|` (optional) and **skips the remaining actions** |
 | `set: tab shop` | sets the [menu variable](#variables) `tab` to `shop` (placeholders allowed: `set: filter %input%`); `set: tab` resets it to its default |
 | `toggle: sound` | switches the variable between `true` and `false` |
+| `add: points 1` | adds a number to the variable (negative subtracts, decimals work, a missing or non-number value counts as 0); optional limits: `add: amount -1 min 1`, `add: points %menu_step% max 100` |
 | `form: settings` | opens the [form](#forms) `settings` of this menu |
 | `give-item: hub` | gives the player the menu item of menu `hub` (`open-on.item`), unless they carry it already |
 

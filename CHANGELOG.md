@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Action `add:`** counts: `add: points 1`, `add: amount -1 min 1 max 64` (amounts and limits may
+  be placeholders, decimals work) and redraws the menu like `set:`.
 - **Saved variables:** `persist: true` (or a list of names) keeps menu variables in the player's
   data, so they survive logouts and restarts; `set: name` without a value removes the saved value.
 - **Cooldowns:** `cooldown: 1h` (`30s`, `5m`, `1d 12h` …) on buttons, hitboxes, icons, panels,

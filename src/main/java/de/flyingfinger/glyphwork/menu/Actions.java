@@ -24,6 +24,7 @@ import java.util.function.Function;
  * require: %vault_eco_balance% >= 100 | message: Too poor   stop here unless the condition holds
  * set: tab shop                 menu variable %menu_tab% = shop ("set: tab" = back to the default)
  * toggle: sound                 %menu_sound% switches between true and false
+ * add: points 5 [min 0] [max 100]  adds a number (negative subtracts) to a variable, within limits
  * form: settings                open the form "settings" of this menu (fields = menu variables)
  * give-item: hub                hand out the menu item of menu "hub" (open-on.item)
  * </pre>
@@ -178,6 +179,51 @@ final class Actions {
                     r.changed = true;
                 });
             }
+            case "add" -> {
+                // add: name amount [min X] [max Y]; amount and limits may be placeholders
+                String[] p = require(arg, at, key, "a variable and a number, e.g. 'add: points 1'").trim().split("\\s+");
+                if (p.length != 2 && p.length != 4 && p.length != 6) {
+                    throw at.error(key, "add needs 'name amount', optionally with 'min X' and/or 'max Y'; got '" + arg + "'");
+                }
+                String name = variable(p[0], at, key);
+                String amount = p[1];
+                String min = null;
+                String max = null;
+                for (int i = 2; i + 1 < p.length; i += 2) {
+                    switch (p[i].toLowerCase()) {
+                        case "min" -> min = p[i + 1];
+                        case "max" -> max = p[i + 1];
+                        default -> throw at.error(key, "'min' or 'max' expected, got '" + p[i] + "'");
+                    }
+                }
+                checkNumber(amount, at, key);
+                if (min != null) {
+                    checkNumber(min, at, key);
+                }
+                if (max != null) {
+                    checkNumber(max, at, key);
+                }
+                String lo = min;
+                String hi = max;
+                yield go((c, in, r) -> {
+                    Double now = Condition.number(vars.get(c, name).trim());
+                    Double add = Condition.number(vars.fill(c, amount, r.item, in).trim());
+                    if (add == null) {
+                        return;     // the placeholder was no number: change nothing
+                    }
+                    double v = (now == null ? 0 : now) + add;
+                    Double l = lo == null ? null : Condition.number(vars.fill(c, lo, r.item, in).trim());
+                    Double h = hi == null ? null : Condition.number(vars.fill(c, hi, r.item, in).trim());
+                    if (l != null) {
+                        v = Math.max(l, v);
+                    }
+                    if (h != null) {
+                        v = Math.min(h, v);
+                    }
+                    vars.set(c, name, formatNumber(v));
+                    r.changed = true;
+                });
+            }
             case "toggle" -> {
                 String name = variable(require(arg, at, key, "a variable name"), at, key);
                 yield go((c, in, r) -> {
@@ -213,8 +259,24 @@ final class Actions {
                 });
             }
             default -> throw at.error(key, "unknown action '" + type
-                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, toggle, form, give-item)");
+                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, add, toggle, form, give-item)");
         };
+    }
+
+    /** A number or a placeholder that becomes one when the action runs. */
+    private static void checkNumber(String s, Node at, String key) throws MenuException {
+        if (s.indexOf('%') < 0 && Condition.number(s) == null) {
+            throw at.error(key, "number expected, got '" + s + "'");
+        }
+    }
+
+    /** 3 -> "3", 2.5 -> "2.5", 0.1 + 0.2 -> "0.3" (rounded to 6 places). */
+    static String formatNumber(double v) {
+        double r = Math.round(v * 1_000_000d) / 1_000_000d;
+        if (r == Math.rint(r) && Math.abs(r) < 1e15) {
+            return String.valueOf((long) r);
+        }
+        return java.math.BigDecimal.valueOf(r).stripTrailingZeros().toPlainString();
     }
 
     private static String variable(String name, Node at, String key) throws MenuException {

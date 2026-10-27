@@ -210,6 +210,44 @@ class PersistCooldownTest {
     }
 
     @Test
+    void addCounts() throws MenuException {
+        Scene s = new Menus().parse("z", """
+            background: none
+            variables: { n: "0", schritt: "5", preis: "2.5" }
+            persist: [n]
+            elements:
+              - { type: label, x: 0, y: 0, text: "%menu_n% %menu_preis%" }
+              - { type: button, x: 0, y: 10, actions: ["add: n 1"] }
+              - { type: button, x: 0, y: 30, actions: ["add: n -1 min 0"] }
+              - { type: button, x: 0, y: 50, actions: ["add: n %menu_schritt% max 12"] }
+              - { type: button, x: 0, y: 70, actions: ["add: preis 0.1"] }
+            """).scene();
+        FakePlayer p = new FakePlayer();
+        TestClick c = new TestClick(s, p);
+        Label l = (Label) s.elements().get(0);
+        Consumer<Integer> press = i -> ((Button) s.elements().get(i)).onClick().accept(c);
+        press.accept(1);
+        press.accept(1);
+        assertEquals("2 2.5", l.text().apply(c));
+        press.accept(2);
+        press.accept(2);
+        press.accept(2);
+        assertEquals("0 2.5", l.text().apply(c));            // 2 - 3, but not below 0
+        press.accept(3);
+        press.accept(3);
+        press.accept(3);
+        assertEquals("12 2.5", l.text().apply(c));           // 0 + 5 + 5 + 5, capped at 12
+        press.accept(4);
+        assertEquals("12 2.6", l.text().apply(c));           // no 2.6000000000000001
+        assertEquals("12", l.text().apply(new TestClick(s, p)).split(" ")[0]);   // saved
+        assertEquals(9, c.reopened);                          // every add redraws (9 clicks)
+        assertThrows(MenuException.class, () -> new Menus().parse("a",
+            "elements: [{ type: button, x: 0, y: 0, actions: ['add: n viel'] }]\n"));
+        assertThrows(MenuException.class, () -> new Menus().parse("a",
+            "elements: [{ type: button, x: 0, y: 0, actions: ['add: n 1 bis 5'] }]\n"));
+    }
+
+    @Test
     void durations() {
         assertThrows(MenuException.class, () -> new Menus().parse("a",
             "elements: [{ type: button, x: 0, y: 0, cooldown: bald }]\n"));

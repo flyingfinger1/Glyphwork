@@ -10,6 +10,9 @@
   `online-players` default to 18 px rows. Online players send their skin along. Heads also appear in
   the plain dialog, in front of the label.
 - Placeholders work in the `icon` of `icon` elements and buttons (`icon: "head:%player%"`).
+- Buttons whose height is no multiple of the tile size center their text and icon on the height
+  that is actually drawn (a 20 px button is drawn 16 px high); before, the text sat too low.
+- Lists that mix heads and item icons put both in one 16 px column, so all texts start at the same x.
 - Dynamic lists of `online-players` have `%item_head%` (and `%item_icon%`) for the player's head;
   `beispiel-spieler.yml` uses it.
 

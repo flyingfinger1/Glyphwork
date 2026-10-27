@@ -113,6 +113,20 @@ class HeadsTest {
     }
 
     @Test
+    void mixedListsShareOneIconColumnAndButtonsCenterOnTheDrawnHeight() {
+        Scene s = Scene.builder("t", 176, 120)
+            .add(ListView.of("p", 8, 12, 120, 2, v -> List.of("head:Steve", "diamond")).icon(i -> i).text(i -> "x")
+                .rowHeight(18))
+            .add(Button.of(140, 4, 30, 20).text("ab"))                      // drawn 16 px high (two tiles)
+            .build();
+        Layout l = layout(s);
+        assertEquals(8 + 3 + 4, l.heads.getFirst()[0]);                     // head centered in the 16 px column
+        long nameX = l.textRuns.stream().filter(t -> t[1] < 60 && t[0] < 120).map(t -> t[0]).distinct().count();
+        assertEquals(1, nameX, "both names start at the same x");
+        assertTrue(l.textRuns.stream().anyMatch(t -> t[0] >= 140 && t[1] == 4 + 4), "button text centered on 16 px");
+    }
+
+    @Test
     void namesAndUuidsAndNonsense() {
         assertNotNull(headOf("head:Steve"));
         Component byId = headOf("head:" + new UUID(1, 2));

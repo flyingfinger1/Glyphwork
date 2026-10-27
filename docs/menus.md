@@ -59,12 +59,12 @@ moves:
 | element with a head | `y` that needs no move |
 |---|---|
 | `icon`, button 16 px high, grid cell `size: 16` | 4, 13, 22, 31, 40, 49, 58, 67, 76, 85 ... (`y` = 9n + 4) |
-| button 20 px high | 2, 11, 20, 29, 38, 47, 56, 65 ... (9n + 2) |
 | button 24 px high, grid cell `size: 24` | 0, 9, 18, 27, 36, 45, 54, 63 ... (9n) |
 | list with `row-height: 18` | 3, 12, 21, 30, 39, 48, 57, 66 ... (9n + 3) |
 | list with `row-height: 9` (compact, like the tab list) | 8, 17, 26, 35, 44, 53 ... (9n + 8) |
 
-Lists need a row height of 9 or 18 and grids a cell pitch of 18 or 27, otherwise later rows sit
+Button heights count as drawn: frames are whole tiles, so a 20 px button is drawn (and centered) as
+16 px. Lists need a row height of 9 or 18 and grids a cell pitch of 18 or 27, otherwise later rows sit
 differently from the first (Glyphwork logs a hint). Lists with `items-from: online-players` use 18 px
 rows by default. Heads show in every display mode and in the plain dialog (in front of the button
 text).

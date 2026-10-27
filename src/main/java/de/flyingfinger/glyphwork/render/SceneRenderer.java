@@ -268,19 +268,21 @@ public final class SceneRenderer {
         ClickEvent<?> click = enabled && b.onClick() != null ? binder.bind(name, b.onClick()) : null;
         String bIcon = b.icon() == null ? null : b.icon().apply(view);
         Component bHead = headOf(bIcon);
-        int y = b.y() + (bHead != null ? headShift("Button", name, b.y(), b.y() + (b.height() - LineBuilder.HEAD) / 2) : 0);
+        // frames are whole tiles: a 20 px button is drawn 16 px high, so center on what is drawn
+        int h = f == null ? b.height() : Math.max(f.tileSize(), b.height() / f.tileSize() * f.tileSize());
+        int y = b.y() + (bHead != null ? headShift("Button", name, b.y(), b.y() + (h - LineBuilder.HEAD) / 2) : 0);
         if (f != null) {
             line.frame(f, b.x(), y, b.width(), b.height(), enabled ? b.tint().apply(view) : Button.DISABLED,
                 click, tooltip(b.tooltip(), view));
         }
         int textX = b.x();
         int textW = b.width();
-        int textY = y + (b.height() - 7) / 2;
+        int textY = y + (h - 7) / 2;
         if (bHead != null) {
-            line.head(bHead, b.x() + 4, y + (b.height() - LineBuilder.HEAD) / 2);
+            line.head(bHead, b.x() + 4, y + (h - LineBuilder.HEAD) / 2);
             textX += LineBuilder.HEAD + 4;
             textW -= LineBuilder.HEAD + 4;
-        } else if (bIcon != null && icon(line, bIcon, b.x() + 3, y + (b.height() - IconCatalog.SIZE) / 2, null)) {
+        } else if (bIcon != null && icon(line, bIcon, b.x() + 3, y + (h - IconCatalog.SIZE) / 2, null)) {
             textX += IconCatalog.SIZE + 4;
             textW -= IconCatalog.SIZE + 4;
         }
@@ -312,9 +314,17 @@ public final class SceneRenderer {
         int page = pageOf(view, l.id(), items.size(), perPage);
         int height = l.rows() * l.rowHeight();
         boolean heads = false;
+        boolean itemIcons = false;
         for (int r = 0; r < l.rows() && page * perPage + r < items.size() && l.icon() != null; r++) {
-            heads |= headOf(l.icon().apply(items.get(page * perPage + r))) != null;
+            String ic = l.icon().apply(items.get(page * perPage + r));
+            if (headOf(ic) != null) {
+                heads = true;
+            } else if (ic != null && !ic.isBlank()) {
+                itemIcons = true;
+            }
         }
+        // heads and item icons in one list share a 16 px column, so all texts start at the same x
+        boolean wideColumn = heads && itemIcons;
         if (heads && l.rowHeight() % ShiftFonts.LINE != 0) {
             warnOnce("headrows:" + name, "List " + name + " shows player heads with row height " + l.rowHeight()
                 + "; heads sit on the 9 px text grid, so rows only look even with a row height of 9 or 18");
@@ -341,8 +351,9 @@ public final class SceneRenderer {
             String rowIcon = l.icon() == null ? null : l.icon().apply(item);
             Component rowHead = headOf(rowIcon);
             if (rowHead != null) {
-                line.head(rowHead, l.x() + 4, top + (l.rowHeight() - LineBuilder.HEAD) / 2);
-                textX += LineBuilder.HEAD + 3;
+                int hx = wideColumn ? l.x() + 3 + (IconCatalog.SIZE - LineBuilder.HEAD) / 2 : l.x() + 4;
+                line.head(rowHead, hx, top + (l.rowHeight() - LineBuilder.HEAD) / 2);
+                textX += wideColumn ? IconCatalog.SIZE + 2 : LineBuilder.HEAD + 3;
             } else if (rowIcon != null && icon(line, rowIcon, l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2, null)) {
                 textX += IconCatalog.SIZE + 2;
             }

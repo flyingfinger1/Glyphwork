@@ -27,8 +27,14 @@ description: "Warp menu"      # optional: shown in /help
 exit-label: "Close"           # optional: label of the dialog's exit button
 templates: {...}              # optional: templates only for this menu, see below
 variables: { tab: shop }      # optional: menu variables and their defaults, see below
+refresh: 5                    # optional: redraw every 5 seconds while open (at least 1), see below
 elements: [...]
 ```
+
+**`refresh`** redraws the open menu every few seconds, so placeholders and dynamic lists stay
+current (players online, balances, a countdown). Clicks on the previous drawing still work. It stops
+when the player closes the menu (also with ESC), opens another one or an inventory. Every redraw
+sends the whole menu again, so a few seconds are better than one.
 
 ## Elements
 
@@ -40,15 +46,20 @@ Drawn in order (later ones on top). Text is always drawn above frames.
 | `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `text-color`, `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24) |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
-| `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `tint`, `tooltip`, `actions` |
-| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`), `items-from` + `item` ([dynamic lists](#dynamic-lists)); page buttons appear below when needed (+20 px) |
-| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`), `items-from` + `item`; page buttons below when needed |
+| `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `tint`, `tooltip`, `actions` |
+| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)); page buttons appear below when needed (+20 px) |
+| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`; page buttons below when needed |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
 beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `cell: 26`, `size: 24`.
 Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icon-source-pack` in
 `config.yml`.
+
+**Counts:** `count: 64` writes a number at the bottom right of the icon, white with a shadow like in
+the inventory. Any short text works, also placeholders (`count: "%item_players%"`); `1` and empty
+show nothing, like in the inventory. The count is drawn only together with an icon (not in the
+display mode "no icons"); the plain dialog writes it after the name ("Diamond ×64").
 
 **Player heads:** `icon: "head:Steve"` (name or UUID; `%player%` and `%item_head%` work too). The
 client draws heads as 8 x 8 px, they cannot be scaled, and only on its 9 px text grid. So that a head
@@ -99,7 +110,8 @@ text typed by the player: do not put it into `console:` commands that could do h
 
 ## Placeholders
 
-In texts, tooltips, titles and actions: `%player%`, `%world%`, `%online%`, and every
+In texts, tooltips, titles and actions: `%player%`, `%world%`, `%online%`, `%time%` (server clock,
+HH:MM:SS), and every
 [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) placeholder if that plugin is
 installed. Values are filled in each time the menu is drawn; use `refresh` to update after an
 action.

@@ -3,6 +3,7 @@ package de.flyingfinger.glyphwork.api;
 import net.kyori.adventure.text.Component;
 import org.jspecify.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -20,8 +21,10 @@ public final class Scene {
     private final Function<View, Component> title;
     private final @Nullable Component exitLabel;
     private final List<Element> elements;
+    private final @Nullable Duration refresh;
 
     private Scene(Builder b) {
+        this.refresh = b.refresh;
         this.id = b.id;
         this.width = b.width;
         this.height = b.height;
@@ -64,6 +67,11 @@ public final class Scene {
         return elements;
     }
 
+    /** How often the open scene redraws itself, or null if only after clicks. */
+    public @Nullable Duration refresh() {
+        return refresh;
+    }
+
     public static final class Builder {
         private final String id;
         private final int width;
@@ -71,6 +79,7 @@ public final class Scene {
         private Function<View, Component> title = v -> Component.empty();
         private @Nullable Component exitLabel;
         private final List<Element> elements = new ArrayList<>();
+        private @Nullable Duration refresh;
 
         private Builder(String id, int width, int height) {
             this.id = id;
@@ -96,6 +105,20 @@ public final class Scene {
 
         public Builder add(Element... elements) {
             this.elements.addAll(List.of(elements));
+            return this;
+        }
+
+        /**
+         * Redraws the scene every {@code every} while a player has it open (at least half a second),
+         * so bindings show fresh values: online lists, countdowns, balances. Clicks on the previous
+         * drawing still work. Stops when the player closes the scene, opens another one or an
+         * inventory. Each redraw sends the whole dialog again, so keep it at a few seconds.
+         */
+        public Builder refresh(Duration every) {
+            if (every.toMillis() < 500) {
+                throw new IllegalArgumentException("refresh must be at least 500 ms, got " + every);
+            }
+            this.refresh = every;
             return this;
         }
 

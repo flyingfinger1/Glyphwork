@@ -32,6 +32,10 @@ Glyphwork.get().open(player, settings);
 - Elements are drawn in the order they are added; later ones are on top and win clicks.
   **Text is always drawn above frames.**
 - Frame sizes are rounded down to whole tiles of the active skin (8 px for the built-in one).
+- `.refresh(Duration.ofSeconds(5))` on the builder redraws the open scene every 5 seconds (at least
+  half a second), for content that changes by itself: players online, balances, countdowns. Clicks
+  on the previous drawing still work; it stops when the player closes the scene (also with ESC),
+  opens another one or an inventory. Every redraw sends the whole dialog, so keep it at a few seconds.
 
 ## Elements
 
@@ -41,7 +45,7 @@ Glyphwork.get().open(player, settings);
 | `Label.of(x, y, text)` | one line of text; `.color`, `.width` (clips with "..."), `.align` / `.center(width)` |
 | `Button.of(x, y, w, h)` | frame + centered text; `.text`, `.tint`, `.textColor`, `.tooltip`, `.enabled`, `.onClick` |
 | `Hitbox.of(x, y, w, h)` | invisible clickable area (min. 8 x 8), e.g. over a label |
-| `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.tint`, `.tooltip`, `.onClick` |
+| `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected`, `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
 
@@ -51,6 +55,11 @@ text, best with height 24) and `ListView.icon(...)`. Icons use the textures the 
 has: flat items look like in the inventory, block items show one face (no 3D), and items drawn by
 special renderers (heads, chests, beds, banners, shields, shulker boxes) have no icon. Like text,
 icons are drawn above frames.
+
+**Counts:** `Icon.count(64)`, `Grid.count(item -> String.valueOf(item.amount()))` and
+`ListView.count(...)` write a stack size at the bottom right of the icon, white with a shadow like in
+the inventory. Any short text works; null, empty and "1" show nothing. Counts are drawn only with an
+icon (not in `NO_ICONS`); the plain dialog writes them after the name ("Diamond ×64").
 
 **Player heads:** `Icon.head(x, y, "Steve")` or `"head:<name or uuid>"` wherever an item id goes
 (`Grid.icon(p -> "head:" + p.getUniqueId())`, `Button.icon(...)`, `ListView.icon(...)`). The

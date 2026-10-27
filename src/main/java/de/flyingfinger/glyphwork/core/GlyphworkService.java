@@ -72,6 +72,15 @@ public final class GlyphworkService implements Glyphwork {
         int generation;
         /** Show the plain fallback even with the pack (admin preview). */
         boolean forceFallback;
+        /** The pending redraw of a scene with refresh, or null. */
+        org.bukkit.scheduler.@org.jspecify.annotations.Nullable BukkitTask refresh;
+
+        void stopRefresh() {
+            if (refresh != null) {
+                refresh.cancel();
+                refresh = null;
+            }
+        }
 
         Session(UUID id) {
             this.id = id;
@@ -83,7 +92,10 @@ public final class GlyphworkService implements Glyphwork {
     }
 
     public void forget(Player player) {
-        sessions.remove(player.getUniqueId());
+        Session s = sessions.remove(player.getUniqueId());
+        if (s != null) {
+            s.stopRefresh();
+        }
     }
 
     @Override
@@ -106,6 +118,7 @@ public final class GlyphworkService implements Glyphwork {
         if (s != null) {
             s.stack.clear();
             s.generation++;
+            s.stopRefresh();
         }
         player.closeDialog();
     }
@@ -148,22 +161,63 @@ public final class GlyphworkService implements Glyphwork {
     }
 
     private void show(Player player, Session s) {
+        show(player, s, false);
+    }
+
+    /**
+     * Draws the top scene. A {@code redraw} (refresh) keeps the generation, so clicks on the
+     * previous drawing of the same scene still count.
+     */
+    private void show(Player player, Session s, boolean redraw) {
+        s.stopRefresh();
         Scene scene = s.stack.peek();
         if (scene == null) {
             player.closeDialog();
             return;
         }
-        int generation = ++s.generation;
+        int generation = redraw ? s.generation : ++s.generation;
+        scheduleRefresh(player, s, scene, generation);
         ViewImpl view = new ViewImpl(player, s, scene);
         DisplayMode mode = displayMode(player);
         if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player))) {
             showFallback(player, s, generation, scene, view);
             return;
         }
-        LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, name, action),
+        LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, scene, name, action),
             mode != DisplayMode.NO_ICONS, hasServerPack.test(player));
         DialogFactory.show(player, DialogFactory.gui(scene.title().apply(view), line.build(scene.height()),
-            Math.max(scene.width(), line.width()), exitLabel(player, scene)));
+            Math.max(scene.width(), line.width()), exitLabel(player, scene), () -> exited(player, s, generation),
+            DialogFactory.callbackOptions(lifetime(scene))));
+    }
+
+    /** Redraws the scene after its refresh interval, if it is still the one the player sees. */
+    private void scheduleRefresh(Player player, Session s, Scene scene, int generation) {
+        if (scene.refresh() == null) {
+            return;
+        }
+        long ticks = Math.max(10, scene.refresh().toMillis() / 50);
+        s.refresh = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            s.refresh = null;
+            if (!player.isOnline() || s.generation != generation || s.stack.peek() != scene) {
+                return;
+            }
+            // another plugin opened an inventory over the menu: leave it alone
+            if (player.getOpenInventory().getType() != org.bukkit.event.inventory.InventoryType.CRAFTING) {
+                return;
+            }
+            show(player, s, true);
+        }, ticks);
+    }
+
+    /** The player closed the dialog (exit button or ESC): forget the screen, stop redrawing. */
+    private void exited(Player player, Session s, int generation) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (s.generation == generation) {
+                s.stack.clear();
+                s.generation++;
+                s.stopRefresh();
+            }
+        });
     }
 
     private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view) {
@@ -177,15 +231,23 @@ public final class GlyphworkService implements Glyphwork {
             .map(a -> new DialogFactory.FallbackButton(a.label(), a.tooltip(),
                 () -> run(player, s, generation, "fallback " + scene.id(), a.onClick())))
             .toList();
-        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, exitLabel(player, scene)));
+        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, exitLabel(player, scene),
+            () -> exited(player, s, generation)));
     }
 
     private static Component exitLabel(Player player, Scene scene) {
         return scene.exitLabel() != null ? scene.exitLabel() : Messages.active().get(player, "dialog.close");
     }
 
-    private ClickEvent<?> callback(Player player, Session s, int generation, String name, Consumer<Click> action) {
-        return ClickEvent.callback(audience -> run(player, s, generation, name, action), DialogFactory.callbackOptions());
+    private ClickEvent<?> callback(Player player, Session s, int generation, Scene scene, String name, Consumer<Click> action) {
+        return ClickEvent.callback(audience -> run(player, s, generation, name, action),
+            DialogFactory.callbackOptions(lifetime(scene)));
+    }
+
+    /** A scene that redraws itself makes new callbacks every time: let the old ones expire soon. */
+    private static java.time.Duration lifetime(Scene scene) {
+        return scene.refresh() == null ? java.time.Duration.ofMinutes(30)
+            : java.time.Duration.ofMillis(Math.max(60_000, scene.refresh().toMillis() * 3));
     }
 
     /** Runs a click action on the main thread, unless the screen has been replaced meanwhile. */

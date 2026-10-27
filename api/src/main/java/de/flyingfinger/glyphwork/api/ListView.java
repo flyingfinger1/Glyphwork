@@ -33,6 +33,7 @@ public final class ListView<T> implements Element {
     private TextColor selectedTint = TextColor.color(0xFFD25A);
     private String frame = "slot";
     private @Nullable Function<T, @Nullable String> icon;
+    private @Nullable Function<T, @Nullable String> count;
 
     private ListView(String id, int x, int y, int w, int rows, Function<View, List<T>> items) {
         this.id = id;
@@ -93,6 +94,20 @@ public final class ListView<T> implements Element {
 
     public @Nullable Function<T, @Nullable String> icon() {
         return icon;
+    }
+
+    /**
+     * Stack size in the bottom-right corner of the icon, like in the inventory (white with a
+     * shadow). Any short text works ("64", "1k"); null, empty and "1" show nothing. Only drawn
+     * together with an item icon or head.
+     */
+    public ListView<T> count(Function<T, @Nullable String> count) {
+        this.count = count;
+        return this;
+    }
+
+    public @Nullable Function<T, @Nullable String> count() {
+        return count;
     }
 
     /** Frame of the list background (default "slot"). */

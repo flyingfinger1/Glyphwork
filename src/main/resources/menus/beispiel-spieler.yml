@@ -1,10 +1,12 @@
 # Beispiel für Menü-Variablen und dynamische Listen – öffnen mit /glyphwork menu beispiel-spieler
 # Reiter, Suche und Listen, die sich selbst füllen (alle Spieler online, alle Welten).
+# Das Menü zeichnet sich alle 5 Sekunden neu (refresh), so bleiben die Listen aktuell.
 # Anleitung: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#variables
 
 title: "<gold>Spieler & Welten"
 width: 176
 height: 200
+refresh: 5            # alle 5 Sekunden neu zeichnen, solange es offen ist
 variables:
   tab: spieler        # welcher Reiter offen ist
   filter: ""          # Suchtext für die Spielerliste
@@ -67,7 +69,9 @@ elements:
     show-if: "%menu_tab% == welten"
     items-from: worlds
     item:
+      text: ""                     # keine Beschriftung, die Zahl steht am Icon
       icon: "%item_icon%"
+      count: "%item_players%"      # Spieler in der Welt, unten rechts wie im Inventar (1 wird nicht gezeigt)
       tooltip: "%item% – %item_players% Spieler"
       actions: ["message: <gold>%item%: %item_players% Spieler (%item_environment%)"]
 

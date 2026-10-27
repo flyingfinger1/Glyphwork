@@ -30,10 +30,9 @@ public final class DialogFactory {
      * A dialog whose body is the rendered GUI. {@code afterAction NONE}: text clicks keep the
      * screen open, the server answers with a freshly rendered dialog.
      */
-    public static Dialog gui(Component title, Component body, int width, @Nullable Component exitLabel) {
-        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Close"))
-            .action(DialogAction.customClick((view, audience) -> audience.closeDialog(), callbackOptions()))
-            .build();
+    public static Dialog gui(Component title, Component body, int width, @Nullable Component exitLabel, Runnable onExit,
+                             ClickCallback.Options callbacks) {
+        ActionButton exit = exitButton(exitLabel, onExit, callbacks);
         return Dialog.create(factory -> factory.empty()
             .base(DialogBase.builder(title)
                 .canCloseWithEscape(true)
@@ -54,10 +53,8 @@ public final class DialogFactory {
      * (two columns), plus the exit button.
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
-                                  @Nullable Component exitLabel) {
-        ActionButton exit = ActionButton.builder(exitLabel != null ? exitLabel : Component.text("Close"))
-            .action(DialogAction.customClick((view, audience) -> audience.closeDialog(), callbackOptions()))
-            .build();
+                                  @Nullable Component exitLabel, Runnable onExit) {
+        ActionButton exit = exitButton(exitLabel, onExit, callbackOptions());
         Component body = Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), lines);
         List<ActionButton> actions = buttons.stream()
             .map(b -> {
@@ -107,10 +104,28 @@ public final class DialogFactory {
             .type(DialogType.confirmation(yes, no)));
     }
 
+    /**
+     * The exit button. The client also runs its action when the player presses ESC, so
+     * {@code onExit} hears about every way the dialog is closed by the player.
+     */
+    private static ActionButton exitButton(@Nullable Component label, Runnable onExit, ClickCallback.Options callbacks) {
+        return ActionButton.builder(label != null ? label : Component.text("Close"))
+            .action(DialogAction.customClick((view, audience) -> {
+                audience.closeDialog();
+                onExit.run();
+            }, callbacks))
+            .build();
+    }
+
     public static ClickCallback.Options callbackOptions() {
+        return callbackOptions(Duration.ofMinutes(30));
+    }
+
+    /** Callbacks of scenes that redraw themselves live shorter: each redraw makes new ones. */
+    public static ClickCallback.Options callbackOptions(Duration lifetime) {
         return ClickCallback.Options.builder()
             .uses(ClickCallback.UNLIMITED_USES)
-            .lifetime(Duration.ofMinutes(30))
+            .lifetime(lifetime)
             .build();
     }
 

@@ -108,6 +108,7 @@ public final class Trader {
             .add(Grid.of("goods", 10, 20, 6, 2, v -> OFFERS)
                 .cell(26, 24)
                 .icon(Offer::item)
+                .count(o -> String.valueOf(o.count()))     // pack size at the bottom right, like in the inventory
                 .tooltip(o -> Component.text(o.count() + "x " + o.name() + " - " + o.price() + " Smaragde"))
                 .selected(Trader::offer)
                 .onClick((c, o) -> {
@@ -117,7 +118,8 @@ public final class Trader {
                 }))
 
             // the selected offer
-            .add(Icon.of(10, 80, v -> offer(v) == null ? null : offer(v).item()))
+            .add(Icon.of(10, 80, v -> offer(v) == null ? null : offer(v).item())
+                .count(v -> offer(v) == null ? null : String.valueOf(offer(v).count() * amount(v))))
             .add(Label.of(32, 85, v -> offer(v) == null ? "Wähle eine Ware" : offer(v).name()).width(136))
             .add(Label.of(10, 104, v -> offer(v) == null ? "" : "Packung: " + offer(v).count() + " Stück"))
             .add(Label.of(10, 116, v -> offer(v) == null ? "" : "Preis: " + offer(v).price() + " Smaragde"))

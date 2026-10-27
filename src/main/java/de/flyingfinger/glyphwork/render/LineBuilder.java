@@ -107,12 +107,17 @@ public final class LineBuilder {
 
     /** Text with its top-left glyph pixel at (x, y). */
     public LineBuilder text(String s, int x, int y, TextColor color) {
+        return text(s, x, y, color, null);
+    }
+
+    /** Text with a drop shadow (1 px right and down, drawn by the client with the glyphs). */
+    public LineBuilder text(String s, int x, int y, TextColor color, @Nullable ShadowColor shadow) {
         if (s.isEmpty() || y < 0) {
             return this;
         }
         int index = y / ShiftFonts.LINE;
         line(index).draw(s.replace(' ', VanillaText.NB_SPACE), text.width(s), x,
-            ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null);
+            ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null, shadow);
         return this;
     }
 
@@ -224,21 +229,29 @@ public final class LineBuilder {
         private @Nullable TextColor segColor;
         private @Nullable ClickEvent<?> segClick;
         private @Nullable HoverEventSource<?> segHover;
+        private @Nullable ShadowColor segShadow;
         private int cursor;
         private int maxCursor;
         private boolean used;
 
         void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
                   @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
+            draw(chars, advance, x, font, color, click, hover, null);
+        }
+
+        void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
+                  @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow) {
             used = true;
             moveTo(x);
             if (seg.isEmpty() || !font.equals(segFont) || !Objects.equals(color, segColor)
-                || !Objects.equals(click, segClick) || !Objects.equals(hover, segHover)) {
+                || !Objects.equals(click, segClick) || !Objects.equals(hover, segHover)
+                || !Objects.equals(shadow, segShadow)) {
                 flush();
                 segFont = font;
                 segColor = color;
                 segClick = click;
                 segHover = hover;
+                segShadow = shadow;
             }
             seg.append(chars);
             cursor += advance;
@@ -262,7 +275,9 @@ public final class LineBuilder {
             }
             // Spaces exist in every shifted font. A positive space inherits the segment's events
             // and would be clickable on its line, so only negative moves join an interactive segment.
-            if (!seg.isEmpty() && ShiftFonts.isShiftFont(segFont) && (dx < 0 || (segClick == null && segHover == null))) {
+            // a shadowed segment would draw the shadow of a space too (nothing), but keep it simple
+            if (!seg.isEmpty() && ShiftFonts.isShiftFont(segFont) && segShadow == null
+                && (dx < 0 || (segClick == null && segHover == null))) {
                 seg.append(SpaceFont.of(dx));
             } else {
                 flush();
@@ -275,9 +290,11 @@ public final class LineBuilder {
             if (seg.isEmpty()) {
                 return;
             }
-            out.append(Component.text(seg.toString()).font(segFont).color(segColor).clickEvent(segClick).hoverEvent(segHover));
+            Component c = Component.text(seg.toString()).font(segFont).color(segColor).clickEvent(segClick).hoverEvent(segHover);
+            out.append(segShadow == null ? c : c.shadowColor(segShadow));
             seg.setLength(0);
             segFont = null;
+            segShadow = null;
         }
 
         Component build() {

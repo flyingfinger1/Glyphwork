@@ -24,6 +24,10 @@ final class Placeholders {
             return text;
         }
         String s = text;
+        if (s.contains("%time%")) {
+            // server clock, e.g. for menus with refresh
+            s = s.replace("%time%", java.time.LocalTime.now().withNano(0).toString());
+        }
         if (player != null) {
             s = s.replace("%player%", player.getName()).replace("%world%", player.getWorld().getName());
         }

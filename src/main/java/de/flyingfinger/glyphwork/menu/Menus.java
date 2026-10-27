@@ -48,7 +48,7 @@ public final class Menus {
 
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
-        "command", "aliases", "permission", "description", "elements", "templates", "variables");
+        "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -151,6 +151,9 @@ public final class Menus {
         if (root.has("exit-label")) {
             b.exitLabel(MM.deserialize(root.string("exit-label")));
         }
+        if (root.has("refresh")) {
+            b.refresh(refresh(root));
+        }
         String background = root.optString("background", "panel");
         if (!"none".equalsIgnoreCase(background)) {
             b.add(Panel.of(0, 0, width, height).frame(background));
@@ -178,6 +181,21 @@ public final class Menus {
         }
         return new Menu(id, b.build(), command, root.strings("aliases").stream().map(String::toLowerCase).toList(),
             root.optString("permission", null), root.optString("description", null));
+    }
+
+    /** "refresh: 5" or "2.5" seconds, at least 1. */
+    private static java.time.Duration refresh(Node root) throws MenuException {
+        String s = root.string("refresh").trim().toLowerCase().replaceFirst("s$", "").trim();
+        double seconds;
+        try {
+            seconds = Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            throw root.error("refresh", "seconds expected (e.g. 5), got '" + root.string("refresh") + "'");
+        }
+        if (!(seconds >= 1)) {
+            throw root.error("refresh", "at least 1 second (every redraw sends the whole menu again), got " + s);
+        }
+        return java.time.Duration.ofMillis(Math.round(seconds * 1000));
     }
 
     private static String firstLine(@Nullable String s) {
@@ -312,9 +330,12 @@ public final class Menus {
                 b.accept(h);
             }
             case "icon" -> {
-                n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions"));
+                n.only(with("type", "x", "y", "item", "tint", "tooltip", "actions", "count"));
                 TextColor tint = n.optColor("tint", null);
                 Icon ic = Icon.of(n.integer("x"), n.integer("y"), text(n.string("item"))).tint(v -> tint);
+                if (n.has("count")) {
+                    ic.count(text(n.string("count")));
+                }
                 if (tooltip(n) != null) {
                     ic.tooltip(tooltip(n));
                 }
@@ -333,6 +354,7 @@ public final class Menus {
                     .color(e -> e.color)
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
+                    .count(e -> e.count)
                     .onSelect((c, e) -> e.onClick.accept(c));
                 b.accept(l);
             }
@@ -346,6 +368,7 @@ public final class Menus {
                     .tint(e -> e.tint)
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
+                    .count(e -> e.count)
                     .frame(n.optString("frame", "slot"))
                     .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(g);
@@ -357,22 +380,23 @@ public final class Menus {
     /** One configured entry of a list or grid: fixed (items:) or the template of a dynamic list (item:). */
     private record ItemDef(String text, TextColor color, @Nullable TextColor tint, @Nullable String tooltip,
                            Actions.Chain actions, @Nullable String permission, @Nullable String icon,
-                           List<Condition> showIf) {
+                           @Nullable String count, List<Condition> showIf) {
     }
 
     /** One row or cell as one viewer sees it. */
     private record Row(String text, TextColor color, @Nullable TextColor tint, @Nullable Component tooltip,
-                       @Nullable String icon, Consumer<Click> onClick) {
+                       @Nullable String icon, @Nullable String count, Consumer<Click> onClick) {
     }
 
     private static final java.util.regex.Pattern ITEM_KEY = java.util.regex.Pattern.compile("%item(?:_([a-z0-9_-]+))?%");
 
     private ItemDef itemDef(Node e, String defaultText) throws MenuException {
-        e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "show-if"));
+        e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "count", "show-if"));
         return new ItemDef(e.optString("text", defaultText), e.optColor("color", TextColor.color(0xFFFFFF)),
             e.optColor("tint", null), e.optString("tooltip", null),
             Actions.parse(e.strings("actions"), e, "actions", this::get, vars),
-            e.optString("permission", null), e.optString("icon", null), Condition.all(e, "show-if"));
+            e.optString("permission", null), e.optString("icon", null), e.optString("count", null),
+            Condition.all(e, "show-if"));
     }
 
     /** Fixed items, then the entries of items-from, filtered and filled in for the viewer. */
@@ -442,6 +466,7 @@ public final class Menus {
         out.add(new Row(fill.apply(d.text()), d.color(), d.tint(),
             d.tooltip() == null ? null : MM.deserialize(fill.apply(d.tooltip())),
             icon == null || icon.isEmpty() ? null : icon,
+            d.count() == null ? null : fill.apply(d.count()),
             c -> d.actions().run(c, item)));
     }
 }

@@ -402,7 +402,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 })));
         }
         DialogFactory.show(player, DialogFactory.fallback(msg().get(player, "display.title"), lines, buttons,
-            msg().get(player, "dialog.close")));
+            msg().get(player, "dialog.close"), () -> { }));
     }
 
     private static void noPermission(CommandSender sender) {

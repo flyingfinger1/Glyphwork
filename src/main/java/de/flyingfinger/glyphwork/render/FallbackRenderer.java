@@ -67,7 +67,9 @@ public final class FallbackRenderer {
                         if (ic.onClick() != null) {
                             Component tip = ic.tooltip() == null ? null : ic.tooltip().apply(view);
                             String item = ic.item().apply(view);
-                            actions.add(new Action(withHead(tip != null ? tip : Component.text(humanize(item)), item), null, ic.onClick()));
+                            Component label = withCount(tip != null ? tip : Component.text(humanize(item)),
+                                ic.count() == null ? null : ic.count().apply(view));
+                            actions.add(new Action(withHead(label, item), null, ic.onClick()));
                         }
                     }
                     case ListView<?> l -> list(l, view, actions);
@@ -117,8 +119,8 @@ public final class FallbackRenderer {
                 continue;
             }
             String text = String.valueOf(l.text().apply(item));
-            Component label = withHead(Component.text(item.equals(selected) ? "▶ " + text : text),
-                l.icon() == null ? null : l.icon().apply(item));
+            Component label = withHead(withCount(Component.text(item.equals(selected) ? "▶ " + text : text),
+                l.count() == null ? null : l.count().apply(item)), l.icon() == null ? null : l.icon().apply(item));
             actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onSelect().accept(c, item)));
         }
         pager(l.id(), page, pages, actions, view);
@@ -141,11 +143,17 @@ public final class FallbackRenderer {
             String iconName = g.icon() == null ? null : humanize(g.icon().apply(item));
             String text = tip != null ? PlainTextComponentSerializer.plainText().serialize(tip)
                 : label != null && !label.isBlank() ? label : iconName != null ? iconName : "•";
-            actions.add(new Action(withHead(Component.text(item.equals(selected) ? "▶ " + text : text),
-                    g.icon() == null ? null : g.icon().apply(item)), tip,
+            actions.add(new Action(withHead(withCount(Component.text(item.equals(selected) ? "▶ " + text : text),
+                    g.count() == null ? null : g.count().apply(item)), g.icon() == null ? null : g.icon().apply(item)), tip,
                 c -> g.onClick().accept(c, item)));
         }
         pager(g.id(), page, pages, actions, view);
+    }
+
+    /** "Diamond" with count "64" -> "Diamond ×64" (gray); "1" and empty add nothing. */
+    static Component withCount(Component label, @Nullable String count) {
+        String s = count == null ? "" : count.trim();
+        return s.isEmpty() || s.equals("1") ? label : label.append(Component.text(" ×" + s, NamedTextColor.GRAY));
     }
 
     /** A player head ("head:Name" icon) in front of the label; native buttons show it as is. */

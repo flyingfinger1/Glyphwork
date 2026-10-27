@@ -21,6 +21,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.object.ObjectContents;
 import net.kyori.adventure.text.object.PlayerHeadObjectContents;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.ShadowColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.jspecify.annotations.Nullable;
 
@@ -107,7 +108,9 @@ public final class SceneRenderer {
                         String item = ic.item().apply(view);
                         int dy = headOf(item) != null
                             ? headShift("Icon", name, ic.y(), ic.y() + (IconCatalog.SIZE - LineBuilder.HEAD) / 2) : 0;
-                        icon(line, item, ic.x(), ic.y() + dy, ic.tint() == null ? null : ic.tint().apply(view));
+                        if (icon(line, item, ic.x(), ic.y() + dy, ic.tint() == null ? null : ic.tint().apply(view))) {
+                            count(line, ic.count() == null ? null : ic.count().apply(view), ic.x(), ic.y() + dy);
+                        }
                         hitbox(line, ic.x(), ic.y() + dy, IconCatalog.SIZE, IconCatalog.SIZE,
                             ic.onClick() == null ? null : binder.bind(name, ic.onClick()), tooltip(ic.tooltip(), view));
                     }
@@ -210,6 +213,29 @@ public final class SceneRenderer {
         }
         line.icon(layers, x, y, tint);
         return true;
+    }
+
+    /** Inventory count color and its shadow (a quarter of the brightness, like vanilla). */
+    private static final ShadowColor COUNT_SHADOW = ShadowColor.shadowColor(0xFF3F3F3F);
+
+    /**
+     * The stack size at the bottom right of a 16 x 16 icon at (x, y), placed like in the inventory:
+     * right edge at x + 17 (with shadow), top at y + 9. "1" and empty show nothing.
+     */
+    private void count(LineBuilder line, @Nullable String count, int x, int y) {
+        count(line, count, x, y, Integer.MAX_VALUE);
+    }
+
+    /** Same, but the count (7 px + 1 px shadow) ends above {@code bottom}, e.g. the end of a list row. */
+    private void count(LineBuilder line, @Nullable String count, int x, int y, int bottom) {
+        if (count == null) {
+            return;
+        }
+        String s = count.trim();
+        if (s.isEmpty() || s.equals("1")) {
+            return;
+        }
+        line.text(s, x + 17 - line.textWidth(s), Math.min(y + 9, bottom - 8), WHITE, COUNT_SHADOW);
     }
 
     private @Nullable Frame frame(String name) {
@@ -356,6 +382,11 @@ public final class SceneRenderer {
                 textX += wideColumn ? IconCatalog.SIZE + 2 : LineBuilder.HEAD + 3;
             } else if (rowIcon != null && icon(line, rowIcon, l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2, null)) {
                 textX += IconCatalog.SIZE + 2;
+                if (l.count() != null) {
+                    // rows of 16 px leave no room below the icon: keep the count inside the row
+                    count(line, l.count().apply(item), l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2,
+                        top + l.rowHeight());
+                }
             }
             String s = line.fit(String.valueOf(l.text().apply(item)), l.x() + l.width() - 4 - textX);
             line.text(s, textX, textY, l.color().apply(item));
@@ -408,6 +439,10 @@ public final class SceneRenderer {
                     } else {
                         int off = (g.cellSize() - IconCatalog.SIZE) / 2;
                         drewIcon = icon(line, cellIcon, cx + off, cy + off, null);
+                    }
+                    if (drewIcon && g.count() != null) {
+                        int off = (g.cellSize() - IconCatalog.SIZE) / 2;
+                        count(line, g.count().apply(item), cx + off, cy + off);
                     }
                 }
                 if (item != null) {

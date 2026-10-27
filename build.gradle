@@ -4,7 +4,7 @@ plugins {
 
 group = 'de.flyingfinger'
 // release builds pass -PreleaseVersion=x.y.z (from the git tag); local builds are snapshots
-version = findProperty('releaseVersion') ?: '0.8.0-SNAPSHOT'
+version = findProperty('releaseVersion') ?: '0.9.0-SNAPSHOT'
 
 java {
     toolchain {

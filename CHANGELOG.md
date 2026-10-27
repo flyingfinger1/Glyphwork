@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Counts on icons:** `count: 64` (YAML, also for list and grid items, placeholders allowed) and
+  `Icon.count(...)`, `Grid.count(...)`, `ListView.count(...)` write a stack size at the bottom right
+  of the icon, white with a shadow like in the inventory; `1` and empty show nothing. The plain
+  dialog writes it after the name ("Diamond ×64"). The example trader shows its pack sizes.
+- **Auto-refresh:** `refresh: 5` in a menu (or `Scene.Builder.refresh(Duration)`) redraws the open
+  menu every few seconds, so placeholders and dynamic lists stay current. Clicks on the previous
+  drawing still work; it stops when the player closes the menu (also with ESC), opens another one or
+  an inventory. `beispiel-spieler.yml` refreshes every 5 seconds and shows the players per world as
+  counts.
+- New placeholder `%time%`: the server clock (HH:MM:SS).
+- Closing a menu with its exit button or ESC now ends the player's session right away (before, it
+  stayed until the next menu).
+
 ## 0.8.0 – player heads
 
 - **Player heads as icons:** `head:<name or uuid>` wherever an item id goes (YAML `icon:`, API

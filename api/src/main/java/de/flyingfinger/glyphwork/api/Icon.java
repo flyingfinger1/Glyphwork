@@ -24,6 +24,7 @@ public final class Icon implements Element {
     private @Nullable Function<View, @Nullable TextColor> tint;
     private @Nullable Function<View, @Nullable Component> tooltip;
     private @Nullable Consumer<Click> onClick;
+    private @Nullable Function<View, @Nullable String> count;
 
     private Icon(int x, int y, Function<View, @Nullable String> item) {
         this.x = x;
@@ -66,6 +67,31 @@ public final class Icon implements Element {
     public Icon tooltip(Function<View, @Nullable Component> tooltip) {
         this.tooltip = tooltip;
         return this;
+    }
+
+    /**
+     * Stack size in the bottom-right corner of the icon, like in the inventory (white with a
+     * shadow). Any short text works ("64", "1k"); null, empty and "1" show nothing. Only drawn
+     * together with an item icon or head.
+     */
+    public Icon count(int count) {
+        String s = String.valueOf(count);
+        this.count = v -> s;
+        return this;
+    }
+
+    /**
+     * Stack size in the bottom-right corner of the icon, like in the inventory (white with a
+     * shadow). Any short text works ("64", "1k"); null, empty and "1" show nothing. Only drawn
+     * together with an item icon or head.
+     */
+    public Icon count(Function<View, @Nullable String> count) {
+        this.count = count;
+        return this;
+    }
+
+    public @Nullable Function<View, @Nullable String> count() {
+        return count;
     }
 
     public Icon onClick(Consumer<Click> onClick) {

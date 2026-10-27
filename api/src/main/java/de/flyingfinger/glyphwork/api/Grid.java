@@ -35,6 +35,7 @@ public final class Grid<T> implements Element {
     private @Nullable Function<View, @Nullable T> selected;
     private TextColor selectedTint = TextColor.color(0xFFE070);
     private @Nullable Function<T, @Nullable String> icon;
+    private @Nullable Function<T, @Nullable String> count;
 
     private Grid(String id, int x, int y, int cols, int rows, Function<View, List<T>> items) {
         this.id = id;
@@ -94,6 +95,20 @@ public final class Grid<T> implements Element {
 
     public @Nullable Function<T, @Nullable String> icon() {
         return icon;
+    }
+
+    /**
+     * Stack size in the bottom-right corner of the icon, like in the inventory (white with a
+     * shadow). Any short text works ("64", "1k"); null, empty and "1" show nothing. Only drawn
+     * together with an item icon or head.
+     */
+    public Grid<T> count(Function<T, @Nullable String> count) {
+        this.count = count;
+        return this;
+    }
+
+    public @Nullable Function<T, @Nullable String> count() {
+        return count;
     }
 
     /** Tints the cell of the returned item with {@link #selectedTint}. */

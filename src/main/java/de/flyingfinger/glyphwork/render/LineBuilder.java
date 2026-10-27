@@ -135,6 +135,21 @@ public final class LineBuilder {
         return this;
     }
 
+    /** Size of a player head glyph: the client draws it as 8 x 8 px, it cannot be scaled. */
+    public static final int HEAD = 8;
+
+    /**
+     * A player's head (8 x 8 px, face and hat) with its left edge at {@code x}, as close as possible
+     * to {@code top}. The client draws it in its own font, so the Glyphwork fonts cannot move it up
+     * or down: it can only sit on a text line, with its top at 9 * line - 1. Returns the top it got
+     * (at most 4 px from the one asked for).
+     */
+    public int head(Component head, int x, int top) {
+        int index = Math.max(1, Math.round((top + 1) / (float) ShiftFonts.LINE));
+        line(index).drawComponent(head, HEAD, x);
+        return index * ShiftFonts.LINE - 1;
+    }
+
     /** Text horizontally centered in [x, x + w). */
     public LineBuilder centered(String s, int x, int w, int y, TextColor color) {
         return text(s, x + (w - visibleWidth(s)) / 2, y, color);
@@ -226,6 +241,16 @@ public final class LineBuilder {
                 segHover = hover;
             }
             seg.append(chars);
+            cursor += advance;
+            maxCursor = Math.max(maxCursor, cursor);
+        }
+
+        /** A finished component (e.g. a player head) that brings its own font. */
+        void drawComponent(Component c, int advance, int x) {
+            used = true;
+            moveTo(x);
+            flush();
+            out.append(c);
             cursor += advance;
             maxCursor = Math.max(maxCursor, cursor);
         }

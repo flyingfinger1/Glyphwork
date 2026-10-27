@@ -52,6 +52,13 @@ has: flat items look like in the inventory, block items show one face (no 3D), a
 special renderers (heads, chests, beds, banners, shields, shulker boxes) have no icon. Like text,
 icons are drawn above frames.
 
+**Player heads:** `Icon.head(x, y, "Steve")` or `"head:<name or uuid>"` wherever an item id goes
+(`Grid.icon(p -> "head:" + p.getUniqueId())`, `Button.icon(...)`, `ListView.icon(...)`). The
+client draws heads as 8 x 8 px (no scaling) and only on its 9 px text grid, so a head sits up to 4 px
+higher or lower than asked; list and button text follows it. Online players send their skin along,
+others are looked up by the client. Heads are not part of the pack: they show in every display mode
+and in the plain dialog.
+
 If the server sends its own resource pack (`resource-pack=` in server.properties), Glyphwork reads
 it on start (`icon-source-pack: auto`): textures it replaces are measured so icons line up, and the
 pack's own items work as icons, e.g. `Icon.of(x, y, "myserver:ruby")` for

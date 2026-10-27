@@ -48,6 +48,7 @@ elements:
     items-from: online-players
     item:
       text: "%item%"
+      icon: "%item_head%"          # der Kopf des Spielers (8 x 8 px)
       tooltip: "In Welt %item_world% – klicken zum Grüßen"
       show-if: ["%item% != %player%", "%item% contains %menu_filter%"]
       actions:

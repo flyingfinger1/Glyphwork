@@ -50,6 +50,12 @@ beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `c
 Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icon-source-pack` in
 `config.yml`.
 
+**Player heads:** `icon: "head:Steve"` (name or UUID; `%player%` and `%item_head%` work too). The
+client draws heads as 8 x 8 px, they cannot be scaled, and only on its 9 px text line grid: a head
+sits up to 4 px higher or lower than asked. In lists and buttons the text follows the head; in
+grids the head is small in the middle of the cell. Heads show in every display mode and in the plain
+dialog (in front of the button text).
+
 `y` of a text is the top of the letters; in a 16 px button the text starts 4 px below the top.
 Items with a `permission` are only shown to players who have it. Every element and every list or
 grid item can have `show-if`; buttons also `enabled-if` and `disabled-tooltip`, see
@@ -158,12 +164,12 @@ every entry, with the entry's values as `%item...%` placeholders. Fixed `items` 
 
 | `items-from` | values |
 |---|---|
-| `online-players` | `%item%` / `%item_name%` (name), `%item_world%`, `%item_uuid%` (sorted by name) |
+| `online-players` | `%item%` / `%item_name%` (name), `%item_world%`, `%item_uuid%`, `%item_head%` / `%item_icon%` (the head, `head:<uuid>`) (sorted by name) |
 | `worlds` | `%item%` / `%item_name%`, `%item_players%` (count), `%item_environment%` (`normal`, `nether`, `the_end`), `%item_icon%` (grass_block, netherrack, end_stone) |
 
 `item` takes the settings of `items` entries (`text`, `color`, `tint`, `tooltip`, `actions`,
 `permission`, `icon`, `show-if`). A misspelled `%item_...%` is reported when the menu is loaded.
-Player heads cannot be shown as icons yet (Minecraft draws them with a special renderer).
+`icon: "%item_head%"` puts each player's head in front of the name.
 
 ## Templates
 

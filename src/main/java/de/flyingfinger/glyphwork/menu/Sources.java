@@ -19,7 +19,7 @@ public final class Sources {
 
     /** Known sources and the values each entry has (for the docs and error messages). */
     static final Map<String, Set<String>> KEYS = Map.of(
-        "online-players", Set.of("", "name", "world", "uuid", "icon"),
+        "online-players", Set.of("", "name", "world", "uuid", "icon", "head"),
         "worlds", Set.of("", "name", "players", "environment", "icon"));
 
     private Sources() {
@@ -41,7 +41,9 @@ public final class Sources {
                     m.put("name", p.getName());
                     m.put("world", p.getWorld().getName());
                     m.put("uuid", p.getUniqueId().toString());
-                    m.put("icon", ""); // heads are drawn by a special renderer: no icon yet
+                    // the player's head (8 x 8 px, see icon "head:"); the uuid lets the skin come from the server
+                    m.put("icon", "head:" + p.getUniqueId());
+                    m.put("head", "head:" + p.getUniqueId());
                     out.add(m);
                 }
             }

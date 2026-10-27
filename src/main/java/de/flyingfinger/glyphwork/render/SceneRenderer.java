@@ -17,6 +17,8 @@ import de.flyingfinger.glyphwork.font.VanillaText;
 import de.flyingfinger.glyphwork.theme.Frame;
 import de.flyingfinger.glyphwork.theme.Theme;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.object.ObjectContents;
+import net.kyori.adventure.text.object.PlayerHeadObjectContents;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.TextColor;
 import org.jspecify.annotations.Nullable;
@@ -121,8 +123,52 @@ public final class SceneRenderer {
         return Label.DARK.equals(color) ? TextColor.color(theme.text()) : color;
     }
 
-    /** Draws an item icon; unknown items (or icons disabled) draw nothing. Returns whether it drew. */
+    /**
+     * "head:Name" or "head:&lt;uuid&gt;": the player's head as a component, or null if {@code item} is
+     * no head. Online players send their skin along (no lookup by the client).
+     */
+    static @Nullable Component headOf(@Nullable String item) {
+        if (item == null || !item.regionMatches(true, 0, "head:", 0, 5)) {
+            return null;
+        }
+        String who = item.substring(5).trim();
+        if (who.isEmpty()) {
+            return null;
+        }
+        try {
+            java.util.UUID id = java.util.UUID.fromString(who);
+            org.bukkit.entity.Player online = org.bukkit.Bukkit.getServer() == null ? null : org.bukkit.Bukkit.getPlayer(id);
+            return online instanceof PlayerHeadObjectContents.SkinSource src
+                ? Component.object(ObjectContents.playerHead(src)) : Component.object(ObjectContents.playerHead(id));
+        } catch (IllegalArgumentException notUuid) {
+            if (!PlayerHeadObjectContents.isValidName(who)) {
+                return null;
+            }
+            org.bukkit.entity.Player online = org.bukkit.Bukkit.getServer() == null ? null : org.bukkit.Bukkit.getPlayerExact(who);
+            return online instanceof PlayerHeadObjectContents.SkinSource src
+                ? Component.object(ObjectContents.playerHead(src)) : Component.object(ObjectContents.playerHead(who));
+        }
+    }
+
+    static boolean isHead(@Nullable String item) {
+        return item != null && item.regionMatches(true, 0, "head:", 0, 5);
+    }
+
+    /** Draws a head with its left edge at x, centered on {@code middle}; returns its top, or null. */
+    private static @Nullable Integer head(LineBuilder line, @Nullable String item, int x, int middle) {
+        Component head = headOf(item);
+        return head == null ? null : line.head(head, x, middle - LineBuilder.HEAD / 2);
+    }
+
+    /**
+     * Draws an item icon (16 x 16) or a player head ("head:Name", 8 x 8 in the middle of the icon's
+     * place); unknown items (or icons disabled) draw nothing. Returns whether it drew.
+     */
     private boolean icon(LineBuilder line, @Nullable String item, int x, int y, @Nullable TextColor tint) {
+        if (isHead(item)) {
+            // heads come from the client, not from the pack: shown in every display mode
+            return head(line, item, x + (IconCatalog.SIZE - LineBuilder.HEAD) / 2, y + IconCatalog.SIZE / 2) != null;
+        }
         if (item == null || item.isBlank() || !iconsThisPass) {
             return false;
         }
@@ -203,14 +249,23 @@ public final class SceneRenderer {
         }
         int textX = b.x();
         int textW = b.width();
-        if (b.icon() != null && icon(line, b.icon().apply(view), b.x() + 3, b.y() + (b.height() - IconCatalog.SIZE) / 2, null)) {
+        int textY = b.y() + (b.height() - 7) / 2;
+        String bIcon = b.icon() == null ? null : b.icon().apply(view);
+        if (isHead(bIcon)) {
+            Integer headTop = head(line, bIcon, b.x() + 4, b.y() + b.height() / 2);
+            if (headTop != null) {
+                textX += LineBuilder.HEAD + 4;
+                textW -= LineBuilder.HEAD + 4;
+                textY = headTop + 1;                       // the text follows the head on the line grid
+            }
+        } else if (bIcon != null && icon(line, bIcon, b.x() + 3, b.y() + (b.height() - IconCatalog.SIZE) / 2, null)) {
             textX += IconCatalog.SIZE + 4;
             textW -= IconCatalog.SIZE + 4;
         }
         String s = b.text().apply(view);
         if (s != null && !s.isEmpty()) {
             s = line.fit(s, textW - 6);
-            line.centered(s, textX, textW, b.y() + (b.height() - 7) / 2,
+            line.centered(s, textX, textW, textY,
                 enabled ? b.textColor().apply(view) : TextColor.color(0xA0A0A0));
         }
     }
@@ -251,11 +306,18 @@ public final class SceneRenderer {
                 line.frame(highlight, l.x(), top, l.width(), l.rowHeight(), l.selectedTint(), null, null);
             }
             int textX = l.x() + 4;
-            if (l.icon() != null && icon(line, l.icon().apply(item), l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2, null)) {
+            int textY = top + (l.rowHeight() - 7) / 2;
+            String rowIcon = l.icon() == null ? null : l.icon().apply(item);
+            Integer headTop = isHead(rowIcon) ? head(line, rowIcon, l.x() + 4, top + l.rowHeight() / 2) : null;
+            if (headTop != null) {
+                // the head snaps to the 9 px line grid; the name follows it
+                textX += LineBuilder.HEAD + 3;
+                textY = headTop + 1;
+            } else if (rowIcon != null && icon(line, rowIcon, l.x() + 3, top + (l.rowHeight() - IconCatalog.SIZE) / 2, null)) {
                 textX += IconCatalog.SIZE + 2;
             }
             String s = line.fit(String.valueOf(l.text().apply(item)), l.x() + l.width() - 4 - textX);
-            line.text(s, textX, top + (l.rowHeight() - 7) / 2, l.color().apply(item));
+            line.text(s, textX, textY, l.color().apply(item));
             ClickEvent<?> click = l.onSelect() == null ? null
                 : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
             hitbox(line, l.x(), top, l.width(), l.rowHeight(), click, l.tooltip() == null ? null : l.tooltip().apply(item));

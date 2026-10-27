@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Player heads as icons:** `head:<name or uuid>` wherever an item id goes (YAML `icon:`, API
+  `Icon.head(...)`, grids, lists, buttons). The client draws heads as 8 x 8 px and only on its 9 px
+  text grid, so a head sits up to 4 px from where it is asked for; list and button text follows it.
+  Online players send their skin along. Heads also appear in the plain dialog, in front of the label.
+- Dynamic lists of `online-players` have `%item_head%` (and `%item_icon%`) for the player's head;
+  `beispiel-spieler.yml` uses it.
+
 ## 0.7.0 – languages, menu variables and dynamic lists
 
 - **Languages:** all messages, Glyphwork's own dialogs (display mode, plain view, text prompt) and

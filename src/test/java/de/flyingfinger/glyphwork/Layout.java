@@ -38,6 +38,10 @@ final class Layout {
     final List<int[]> textRuns = new ArrayList<>(); // x, y, width, rgb
     final List<Integer> lineWidths = new ArrayList<>();
 
+    /** Player heads drawn: x, top. */
+    final List<int[]> heads = new ArrayList<>();
+    final List<net.kyori.adventure.text.object.ObjectContents> headContents = new ArrayList<>();
+
     /** Icons drawn: x, y, codepoint, tint rgb. */
     final List<int[]> icons = new ArrayList<>();
 
@@ -66,6 +70,13 @@ final class Layout {
                 continue;
             }
             for (Component child : part.children()) {
+                if (child instanceof net.kyori.adventure.text.ObjectComponent head) {
+                    // player head: 8 x 8, own font, top at 9 * line - 1 (PlainTextRenderable)
+                    heads.add(new int[]{(int) x, 9 * line - 1});
+                    headContents.add(head.contents());
+                    x += 8;
+                    continue;
+                }
                 String s = ((TextComponent) child).content();
                 String font = child.font() == null ? "" : child.font().value();
                 int shift = font.length() > 1 && "ytic".indexOf(font.charAt(0)) >= 0 ? Integer.parseInt(font.substring(1)) : 0;

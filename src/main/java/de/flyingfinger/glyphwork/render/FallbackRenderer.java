@@ -66,7 +66,8 @@ public final class FallbackRenderer {
                     case Icon ic -> {
                         if (ic.onClick() != null) {
                             Component tip = ic.tooltip() == null ? null : ic.tooltip().apply(view);
-                            actions.add(new Action(tip != null ? tip : Component.text(humanize(ic.item().apply(view))), null, ic.onClick()));
+                            String item = ic.item().apply(view);
+                            actions.add(new Action(withHead(tip != null ? tip : Component.text(humanize(item)), item), null, ic.onClick()));
                         }
                     }
                     case ListView<?> l -> list(l, view, actions);
@@ -101,7 +102,7 @@ public final class FallbackRenderer {
         String text = b.text().apply(view);
         Component tip = b.tooltip() == null ? null : b.tooltip().apply(view);
         Component label = text != null && !text.isBlank() ? Component.text(text) : tip != null ? tip : Component.text("•");
-        actions.add(new Action(label, tip, b.onClick()));
+        actions.add(new Action(withHead(label, b.icon() == null ? null : b.icon().apply(view)), tip, b.onClick()));
     }
 
     private static <T> void list(ListView<T> l, View view, List<Action> actions) {
@@ -116,7 +117,8 @@ public final class FallbackRenderer {
                 continue;
             }
             String text = String.valueOf(l.text().apply(item));
-            Component label = Component.text(item.equals(selected) ? "▶ " + text : text);
+            Component label = withHead(Component.text(item.equals(selected) ? "▶ " + text : text),
+                l.icon() == null ? null : l.icon().apply(item));
             actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onSelect().accept(c, item)));
         }
         pager(l.id(), page, pages, actions, view);
@@ -139,16 +141,26 @@ public final class FallbackRenderer {
             String iconName = g.icon() == null ? null : humanize(g.icon().apply(item));
             String text = tip != null ? PlainTextComponentSerializer.plainText().serialize(tip)
                 : label != null && !label.isBlank() ? label : iconName != null ? iconName : "•";
-            actions.add(new Action(Component.text(item.equals(selected) ? "▶ " + text : text), tip,
+            actions.add(new Action(withHead(Component.text(item.equals(selected) ? "▶ " + text : text),
+                    g.icon() == null ? null : g.icon().apply(item)), tip,
                 c -> g.onClick().accept(c, item)));
         }
         pager(g.id(), page, pages, actions, view);
     }
 
-    /** "minecraft:diamond_sword" -> "Diamond Sword" (for icons without text). */
+    /** A player head ("head:Name" icon) in front of the label; native buttons show it as is. */
+    private static Component withHead(Component label, @Nullable String icon) {
+        Component head = SceneRenderer.headOf(icon);
+        return head == null ? label : Component.text().append(head).append(Component.text(" ")).append(label).build();
+    }
+
+    /** "minecraft:diamond_sword" -> "Diamond Sword" (for icons without text), "head:Steve" -> "Steve". */
     static String humanize(@Nullable String item) {
         if (item == null || item.isBlank()) {
             return "•";
+        }
+        if (SceneRenderer.isHead(item)) {
+            return item.substring(5).trim();
         }
         String id = item.contains(":") ? item.substring(item.indexOf(':') + 1) : item;
         StringBuilder sb = new StringBuilder();

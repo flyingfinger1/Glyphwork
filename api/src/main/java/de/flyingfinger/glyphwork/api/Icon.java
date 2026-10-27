@@ -31,6 +31,15 @@ public final class Icon implements Element {
         this.item = item;
     }
 
+    /**
+     * A player's head ({@code player} = name or UUID). The client draws heads as 8 x 8 px in the
+     * middle of the icon's 16 x 16 place, and only on its 9 px text grid: up to 4 px higher or lower.
+     * Same as {@code Icon.of(x, y, "head:" + player)}; "head:..." works wherever an item id does.
+     */
+    public static Icon head(int x, int y, String player) {
+        return of(x, y, "head:" + player);
+    }
+
     public static Icon of(int x, int y, String item) {
         return new Icon(x, y, v -> item);
     }

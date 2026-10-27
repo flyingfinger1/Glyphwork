@@ -584,10 +584,16 @@ elements:
 
 Players without the resource pack get a plain dialog: labels as text, buttons, list rows and grid
 cells as dialog buttons. Panels are decoration and are left out, so put every action on a button,
-hitbox, list or grid.
+hitbox, list or grid. Buttons with an item icon show it in front of their text as a sprite the
+client draws from its own textures (vanilla items and blocks; player heads too), so shops and grids
+stay recognizable without the pack. Short button texts come in two columns, as soon as one does
+not fit a narrow button all of them use one wide column (checked over all tabs, so switching tabs
+keeps the layout). Tabs are a clickable line above the buttons of the active tab. Grayed-out
+buttons (no permission, `enabled-if`, cooldown) are left out: native buttons cannot be grayed out.
 
 **Bedrock players** (through [Geyser](https://geysermc.org/), optionally with Floodgate) cannot load
 the Java pack, and Bedrock forms have no clickable text. Glyphwork recognizes them and always sends
 them the plain dialog, which Geyser shows as a Bedrock form; they get no pack request and a join
 menu opens at once. Forms have no tooltips, so a button shows the first line of its tooltip below
-its text. `url:` cannot open links on Bedrock: the dialog shows the address as text.
+its text; tabs are buttons on top, followed by a divider. Every form replaces the screen, so timed
+redraws (cooldowns, `refresh`) send a new one only when something visible changed. `url:` cannot open links on Bedrock: the dialog shows the address as text.

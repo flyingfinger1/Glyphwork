@@ -70,6 +70,8 @@ public final class GlyphworkService implements Glyphwork {
         final Map<String, Map<String, Object>> state = new HashMap<>();
         /** Increases with every shown screen; clicks from older screens are ignored. */
         int generation;
+        /** Bedrock: what the last form showed, so that timed redraws send a form only on changes. */
+        @org.jspecify.annotations.Nullable String formShown;
         /** Show the plain fallback even with the pack (admin preview). */
         boolean forceFallback;
         /** The pending redraw of a scene with refresh, or null. */
@@ -211,17 +213,17 @@ public final class GlyphworkService implements Glyphwork {
         int generation = redraw ? s.generation : ++s.generation;
         ViewImpl view = new ViewImpl(player, s, scene);
         try {
-            showNow(player, s, scene, generation, view);
+            showNow(player, s, scene, generation, view, redraw);
         } finally {
             view.drawing = false;
             scheduleRefresh(player, s, scene, generation, view.redrawAfterMs);
         }
     }
 
-    private void showNow(Player player, Session s, Scene scene, int generation, ViewImpl view) {
+    private void showNow(Player player, Session s, Scene scene, int generation, ViewImpl view, boolean redraw) {
         DisplayMode mode = displayMode(player);
         if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player)) || Bedrock.is(player)) {
-            showFallback(player, s, generation, scene, view);
+            showFallback(player, s, generation, scene, view, redraw);
             return;
         }
         LineBuilder line = renderer.render(scene, view, (name, action) -> callback(player, s, generation, scene, name, action),
@@ -282,30 +284,84 @@ public final class GlyphworkService implements Glyphwork {
                 s.stack.clear();
                 s.generation++;
                 s.stopRefresh();
-                if (Bedrock.is(player) && player.isOnline()) {
-                    player.closeDialog();       // a Bedrock form would otherwise wait for an answer
-                }
                 closedHook(player, s, top);
             }
         });
     }
 
-    private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view) {
-        FallbackRenderer.Model model = fallbackRenderer.render(scene, view);
+    private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view, boolean redraw) {
+        FallbackRenderer.Model model = fallbackRenderer.render(scene, view, !Bedrock.is(player));
         List<Component> lines = new ArrayList<>();
         if (displayMode(player) != DisplayMode.SIMPLE && !s.forceFallback && !Bedrock.is(player)) {
             lines.add(Messages.active().get(player, "fallback.notice"));
         }
-        lines.addAll(model.lines());
         boolean bedrock = Bedrock.is(player);
-        List<DialogFactory.FallbackButton> buttons = model.actions().stream()
+        String name = "fallback " + scene.id();
+        List<DialogFactory.FallbackButton> buttons = new ArrayList<>();
+        if (!model.tabs().isEmpty() && !bedrock) {
+            // Java: the tabs as a clickable line on top, apart from the buttons of the active tab
+            lines.add(tabLine(player, s, generation, scene, name, model.tabs()));
+            lines.add(Component.empty());
+        } else if (!model.tabs().isEmpty()) {
+            // Bedrock forms have no clickable text: tab buttons, then a divider
+            for (FallbackRenderer.Tab t : model.tabs()) {
+                buttons.add(new DialogFactory.FallbackButton(
+                    Component.text(t.active() ? "▶ " + t.title() : t.title()), null,
+                    () -> run(player, s, generation, name, t.onClick(), true)));
+            }
+            buttons.add(new DialogFactory.FallbackButton(Component.text("─".repeat(10)), null,
+                () -> run(player, s, generation, name, c -> { }, true)));
+        }
+        lines.addAll(model.lines());
+        model.actions().stream()
             // Bedrock forms show no tooltips: the first tooltip line goes into the button
             .map(a -> new DialogFactory.FallbackButton(bedrock ? FallbackRenderer.withTooltipLine(a.label(), a.tooltip()) : a.label(),
                 a.tooltip(),
-                () -> run(player, s, generation, "fallback " + scene.id(), a.onClick(), bedrock)))
-            .toList();
-        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, exitLabel(player, scene),
-            () -> exited(player, s, generation), bedrock));
+                () -> run(player, s, generation, name, a.onClick(), bedrock)))
+            .forEach(buttons::add);
+        if (bedrock) {
+            // every Bedrock form replaces the screen (close and open): timed redraws (cooldowns,
+            // refresh) only send one when something visible changed; a countdown in a tooltip does not count
+            String shown = formText(model, lines);
+            if (redraw && shown.equals(s.formShown)) {
+                return;
+            }
+            s.formShown = shown;
+        }
+        DialogFactory.show(player, DialogFactory.fallback(model.title(), lines, buttons, model.measure(),
+            exitLabel(player, scene), () -> exited(player, s, generation), bedrock));
+    }
+
+    /** What a Bedrock form shows: title, texts, tabs and button texts (without tooltips). */
+    static String formText(FallbackRenderer.Model model, List<Component> lines) {
+        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer plain =
+            net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();
+        StringBuilder b = new StringBuilder(plain.serialize(model.title()));
+        lines.forEach(l -> b.append('\n').append(plain.serialize(l)));
+        model.tabs().forEach(t -> b.append("\n[").append(t.active() ? "*" : "").append(t.title()).append(']'));
+        model.actions().forEach(a -> b.append("\n> ").append(plain.serialize(a.label())));
+        return b.toString();
+    }
+
+    /** "▶ Shop  │  Points  │  Info": the active tab marked, the others clickable. */
+    private Component tabLine(Player player, Session s, int generation, Scene scene, String name,
+                              List<FallbackRenderer.Tab> tabs) {
+        net.kyori.adventure.text.TextComponent.Builder line = Component.text();
+        for (int i = 0; i < tabs.size(); i++) {
+            FallbackRenderer.Tab t = tabs.get(i);
+            if (i > 0) {
+                line.append(Component.text("   │   ", net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY));
+            }
+            if (t.active()) {
+                line.append(Component.text("▶ " + t.title(), net.kyori.adventure.text.format.NamedTextColor.GOLD)
+                    .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD));
+            } else {
+                line.append(Component.text(t.title(), net.kyori.adventure.text.format.NamedTextColor.AQUA)
+                    .decorate(net.kyori.adventure.text.format.TextDecoration.UNDERLINED)
+                    .clickEvent(callback(player, s, generation, scene, name + ":tab", t.onClick())));
+            }
+        }
+        return line.build();
     }
 
     private static Component exitLabel(Player player, Scene scene) {

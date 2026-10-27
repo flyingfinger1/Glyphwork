@@ -2,11 +2,19 @@
 
 ## Unreleased
 
+- **Plain dialog with pictures:** players without the pack see item icons in front of button, list
+  and grid texts (sprite components the client draws from its own textures), and long button texts
+  switch the buttons to one wide column instead of cutting them (measured over all tabs, so the
+  layout stays when switching). Tabs become a clickable line above the buttons of the active tab
+  (on Bedrock: tab buttons and a divider).
 - **Bedrock players** (Geyser, optionally Floodgate; found without a hard dependency) always get the
   plain dialog, which Geyser turns into a Bedrock form, and no Java pack request; join menus open
   at once for them. Their buttons show the first tooltip line below the text (forms have no
-  tooltips), and their forms wait for the server's answer after a click, so a quick second click
-  can no longer hit a button of the previous screen.
+  tooltips), and their forms close after a click until the server sends the next one, so a
+  quick second click can no longer hit a button of the previous screen and closing a menu closes
+  it (Geyser's waiting form could not be removed from the server). Timed redraws (cooldowns,
+  refresh, loading feeds) send a new form only when something visible changed, instead of closing
+  and reopening it every second.
 - **Text formatting:** labels, buttons and list entries understand MiniMessage for parts of their
   text (`<b>`, `<i>`, `<u>`, `<st>`, colors); labels also have `bold`, `italic`, `underline` and
   `strikethrough` for the whole text. Bold counts 1 px per character when cutting, centering and

@@ -55,21 +55,25 @@ public final class DialogFactory {
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
                                   @Nullable Component exitLabel, Runnable onExit) {
-        return fallback(title, lines, buttons, exitLabel, onExit, false);
+        return fallback(title, lines, buttons, List.of(), exitLabel, onExit, false);
     }
 
     /**
-     * @param waitForResponse Bedrock (Geyser): after a click the form waits for the server's next
-     *                        dialog instead of showing the old one again; otherwise a click on the
-     *                        reopened old form would be matched to the buttons of the new one
+     * @param bedrock Bedrock (Geyser): the form closes after a click and the server sends the next
+     *                one. With NONE Geyser reopens the old form at once, and a quick click on it is
+     *                matched to the buttons of the new one; WAIT_FOR_RESPONSE leaves a "waiting" form
+     *                that a closing menu cannot remove.
      */
     public static Dialog fallback(Component title, List<Component> lines, List<FallbackButton> buttons,
-                                  @Nullable Component exitLabel, Runnable onExit, boolean waitForResponse) {
+                                  List<Component> measure, @Nullable Component exitLabel, Runnable onExit, boolean bedrock) {
         ActionButton exit = exitButton(exitLabel, onExit, callbackOptions());
         Component body = Component.join(net.kyori.adventure.text.JoinConfiguration.newlines(), lines);
+        // like hand-made server dialogs: short texts in two columns, long ones in one wide column
+        int columns = columnsFor(buttons, measure);
+        int width = columns == 1 ? 300 : 150;
         List<ActionButton> actions = buttons.stream()
             .map(b -> {
-                ActionButton.Builder ab = ActionButton.builder(b.label()).width(150)
+                ActionButton.Builder ab = ActionButton.builder(b.label()).width(width)
                     .action(DialogAction.customClick((view, audience) -> b.onClick().run(), callbackOptions()));
                 if (b.tooltip() != null) {
                     ab.tooltip(b.tooltip());
@@ -81,11 +85,40 @@ public final class DialogFactory {
             .base(DialogBase.builder(title)
                 .canCloseWithEscape(true)
                 .pause(false)
-                .afterAction(waitForResponse ? DialogBase.DialogAfterAction.WAIT_FOR_RESPONSE : DialogBase.DialogAfterAction.NONE)
+                .afterAction(bedrock ? DialogBase.DialogAfterAction.CLOSE : DialogBase.DialogAfterAction.NONE)
                 .body(lines.isEmpty() ? List.of() : List.of(DialogBody.plainMessage(body, 300)))
                 .build())
             .type(actions.isEmpty() ? DialogType.notice(exit)
-                : DialogType.multiAction(actions).columns(2).exitAction(exit).build()));
+                : DialogType.multiAction(actions).columns(columns).exitAction(exit).build()));
+    }
+
+    /** Longest characters per line that still fit a 150 px button (the client cuts longer ones). */
+    static final int NARROW_TEXT = 22;
+
+    static int columnsFor(List<FallbackButton> buttons) {
+        return columnsFor(buttons, List.of());
+    }
+
+    /**
+     * 1 when a button text would not fit a narrow button (or there is only one button), else 2.
+     * {@code measure}: texts of buttons shown elsewhere (other tabs), so every tab gets the same layout.
+     */
+    static int columnsFor(List<FallbackButton> buttons, List<Component> measure) {
+        if (buttons.size() <= 1 && measure.isEmpty()) {
+            return 1;
+        }
+        List<Component> all = new java.util.ArrayList<>(measure);
+        buttons.forEach(b -> all.add(b.label()));
+        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer plain =
+            net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();
+        for (Component c : all) {
+            for (String line : plain.serialize(c).split("\n")) {
+                if (line.strip().length() > NARROW_TEXT) {
+                    return 1;
+                }
+            }
+        }
+        return 2;
     }
 
     /** A small native dialog with one text field, OK and Cancel. */

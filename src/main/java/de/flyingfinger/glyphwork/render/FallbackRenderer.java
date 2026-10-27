@@ -34,7 +34,21 @@ import java.util.logging.Logger;
  */
 public final class FallbackRenderer {
 
-    public record Model(Component title, List<Component> lines, List<Action> actions) {
+    /**
+     * @param tabs    tab switches, shown apart from the other buttons (the active one included)
+     * @param measure texts of buttons in the other tabs: the column choice covers them too, so the
+     *                layout does not change between tabs
+     */
+    public record Model(Component title, List<Component> lines, List<Action> actions, List<Tab> tabs,
+                        List<Component> measure) {
+
+        public Model(Component title, List<Component> lines, List<Action> actions) {
+            this(title, lines, actions, List.of(), List.of());
+        }
+    }
+
+    /** One tab of a tabs element: its title, whether it is shown, how to switch to it. */
+    public record Tab(String title, boolean active, Consumer<Click> onClick) {
     }
 
     public record Action(Component label, @Nullable Component tooltip, Consumer<Click> onClick) {
@@ -47,11 +61,42 @@ public final class FallbackRenderer {
         this.log = log;
     }
 
+    /** Item icons for the sprite components in front of button texts (null: none). */
+    private static volatile de.flyingfinger.glyphwork.font.@Nullable IconCatalog icons;
+    /** Off while drawing for Bedrock: Geyser cannot show sprites or heads in forms. */
+    private static final ThreadLocal<Boolean> PICTURES = ThreadLocal.withInitial(() -> true);
+
+    public static void icons(de.flyingfinger.glyphwork.font.@Nullable IconCatalog catalog) {
+        icons = catalog;
+    }
+
     public Model render(Scene scene, View view) {
+        return render(scene, view, true);
+    }
+
+    /** @param pictures item sprites and heads in front of texts (Java); false for Bedrock forms */
+    public Model render(Scene scene, View view, boolean pictures) {
+        PICTURES.set(pictures);
+        try {
+            return renderNow(scene, view);
+        } finally {
+            PICTURES.remove();
+        }
+    }
+
+    private Model renderNow(Scene scene, View view) {
         List<Label> labels = new ArrayList<>();
         List<Bar> bars = new ArrayList<>();
         List<Action> actions = new ArrayList<>();
-        java.util.ArrayDeque<Element> todo = new java.util.ArrayDeque<>(scene.elements());
+        List<Tab> tabs = new ArrayList<>();
+        List<Component> measure = new ArrayList<>();
+        collect(new java.util.ArrayDeque<>(scene.elements()), view, scene.id(), labels, bars, actions, tabs, measure);
+        return finish(scene, view, labels, bars, actions, tabs, measure);
+    }
+
+    /** Sorts the elements into texts, bars, buttons and tabs (Scroll and Tabs open up in place). */
+    private void collect(java.util.ArrayDeque<Element> todo, View view, String sceneId, List<Label> labels, List<Bar> bars,
+                         List<Action> actions, List<Tab> tabs, List<Component> measure) {
         while (!todo.isEmpty()) {
             Element e = todo.poll();
             try {
@@ -92,9 +137,14 @@ public final class FallbackRenderer {
                     case de.flyingfinger.glyphwork.api.Tabs t -> {
                         de.flyingfinger.glyphwork.api.Tabs.Tab active = t.active(view);
                         for (de.flyingfinger.glyphwork.api.Tabs.Tab tab : t.tabs()) {
-                            boolean on = tab == active;
-                            actions.add(new Action(Component.text((on ? "\u25b6 " : "") + tab.title()), null,
-                                Redraw.after(c -> t.select(c, tab.id()))));
+                            tabs.add(new Tab(tab.title(), tab == active, Redraw.after(c -> t.select(c, tab.id()))));
+                            if (tab != active) {
+                                // measured only: the same column layout in every tab
+                                List<Action> other = new ArrayList<>();
+                                collect(new java.util.ArrayDeque<>(tab.elements()), view, sceneId, new ArrayList<>(),
+                                    new ArrayList<>(), other, new ArrayList<>(), new ArrayList<>());
+                                other.forEach(a -> measure.add(a.label()));
+                            }
                         }
                         if (active != null) {
                             // the active tab's elements, in order, right after the tabs
@@ -141,9 +191,13 @@ public final class FallbackRenderer {
                     }
                 }
             } catch (RuntimeException ex) {
-                log.warning("Fallback for " + scene.id() + " skipped an element: " + ex);
+                log.warning("Fallback for " + sceneId + " skipped an element: " + ex);
             }
         }
+    }
+
+    private Model finish(Scene scene, View view, List<Label> labels, List<Bar> bars, List<Action> actions, List<Tab> tabs,
+                         List<Component> measure) {
         List<Component> lines = new ArrayList<>();
         List<de.flyingfinger.glyphwork.api.Element> texts = new ArrayList<>(labels);
         texts.addAll(bars);
@@ -163,7 +217,7 @@ public final class FallbackRenderer {
                     lines.add(barLine(b, view));
                 }
             });
-        return new Model(scene.title().apply(view), lines, actions);
+        return new Model(scene.title().apply(view), lines, actions, tabs, measure);
     }
 
     /**
@@ -314,8 +368,47 @@ public final class FallbackRenderer {
 
     /** A player head ("head:Name" icon) in front of the label; native buttons show it as is. */
     private static Component withHead(Component label, @Nullable String icon) {
-        Component head = SceneRenderer.headOf(icon);
-        return head == null ? label : Component.text().append(head).append(Component.text(" ")).append(label).build();
+        if (!PICTURES.get()) {
+            return label;
+        }
+        Component picture = SceneRenderer.headOf(icon);
+        if (picture == null) {
+            picture = sprite(icon);
+        }
+        return picture == null ? label : Component.text().append(picture).append(Component.text(" ")).append(label).build();
+    }
+
+    private static final net.kyori.adventure.text.minimessage.MiniMessage MM = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage();
+
+    /**
+     * The item's texture as a sprite component ({@code <sprite:"minecraft:items":item/diamond>}): the
+     * client draws it from its own atlas, no pack needed. Only vanilla textures (a server pack's
+     * texture would be missing for players without it); the first layer, untinted.
+     */
+    static @Nullable Component sprite(@Nullable String item) {
+        de.flyingfinger.glyphwork.font.IconCatalog catalog = icons;
+        if (catalog == null || item == null || item.isBlank()) {
+            return null;
+        }
+        List<de.flyingfinger.glyphwork.font.IconCatalog.Layer> layers = catalog.icon(item.trim());
+        if (layers == null || layers.isEmpty() || layers.getFirst().texture().fromPack()) {
+            return null;
+        }
+        return spriteOf(layers.getFirst().texture().file());
+    }
+
+    /** "minecraft:item/diamond" -> the items atlas, "minecraft:block/stone" -> the blocks atlas. */
+    static @Nullable Component spriteOf(String texture) {
+        String file = texture.endsWith(".png") ? texture.substring(0, texture.length() - 4) : texture;
+        int colon = file.indexOf(':');
+        String ns = colon < 0 ? "minecraft" : file.substring(0, colon);
+        String path = colon < 0 ? file : file.substring(colon + 1);
+        if (!"minecraft".equals(ns) || !(path.startsWith("item/") || path.startsWith("block/"))
+            || !path.matches("[a-z0-9_./-]+")) {
+            return null;
+        }
+        String atlas = path.startsWith("block/") ? "minecraft:blocks" : "minecraft:items";
+        return MM.deserialize("<sprite:\"" + atlas + "\":" + path + ">");
     }
 
     /** "minecraft:diamond_sword" -> "Diamond Sword" (for icons without text), "head:Steve" -> "Steve". */

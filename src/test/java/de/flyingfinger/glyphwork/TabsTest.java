@@ -149,4 +149,18 @@ class TabsTest {
         assertThrows(MenuException.class, () -> new Menus().parse("a",
             "elements:\n  - { type: tabs, x: 0, y: 0, tabs: [ { id: a, farbe: rot } ] }\n"));
     }
+
+    @Test
+    void plainDialogShowsTabsApartAndMeasuresTheOthers() throws MenuException {
+        Scene s = new Menus().parse("t", MENU).scene();
+        de.flyingfinger.glyphwork.render.FallbackRenderer.Model m =
+            new de.flyingfinger.glyphwork.render.FallbackRenderer(Logger.getLogger("test")).render(s, new TestClick(s));
+        assertEquals(List.of("Shop", "Info"), m.tabs().stream().map(de.flyingfinger.glyphwork.render.FallbackRenderer.Tab::title).toList());
+        assertTrue(m.tabs().getFirst().active());
+        // the tabs are no longer among the buttons; the info tab's "Hilfe" button is measured
+        assertTrue(m.actions().stream().noneMatch(a -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+            .plainText().serialize(a.label()).contains("Info")));
+        assertEquals(List.of("Hilfe"), m.measure().stream().map(c -> net.kyori.adventure.text.serializer.plain
+            .PlainTextComponentSerializer.plainText().serialize(c)).toList());
+    }
 }

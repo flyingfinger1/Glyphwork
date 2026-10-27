@@ -201,6 +201,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             .map(m -> m.scene().height()).toList();
         int height = packHeight(s.maxHeight(), heights, getLogger());
         ShiftFonts.write(pack, sheets, height, text, icons);
+        de.flyingfinger.glyphwork.render.FallbackRenderer.icons(icons);
         Path imageDir = getDataFolder().toPath().resolve("images");
         try {
             Files.createDirectories(imageDir);

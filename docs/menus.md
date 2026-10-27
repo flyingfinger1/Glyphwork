@@ -2,8 +2,8 @@
 
 Every `*.yml` file in `plugins/Glyphwork/menus/` is a menu; the file name is its id. Files whose
 name starts with `_` hold [templates](#templates) instead. On first start Glyphwork puts examples
-there (`beispiel.yml`, `beispiel-regeln.yml`, and `beispiel-warps.yml` with `_beispiel-vorlagen.yml`
-for templates and conditions). After editing,
+there (`beispiel.yml`, `beispiel-regeln.yml`, `beispiel-warps.yml` with `_beispiel-vorlagen.yml`
+for templates and conditions, and `beispiel-spieler.yml` for variables and dynamic lists). After editing,
 `/glyphwork reload` applies the changes; problems are shown in chat and the console with the exact
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
 
@@ -26,6 +26,7 @@ permission: myserver.warps    # optional: who may open it (command and "open:" a
 description: "Warp menu"      # optional: shown in /help
 exit-label: "Close"           # optional: label of the dialog's exit button
 templates: {...}              # optional: templates only for this menu, see below
+variables: { tab: shop }      # optional: menu variables and their defaults, see below
 elements: [...]
 ```
 
@@ -40,8 +41,8 @@ Drawn in order (later ones on top). Text is always drawn above frames.
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `tint`, `tooltip`, `actions` |
-| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`); page buttons appear below when needed (+20 px) |
-| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`); page buttons below when needed |
+| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`), `items-from` + `item` ([dynamic lists](#dynamic-lists)); page buttons appear below when needed (+20 px) |
+| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`), `items-from` + `item`; page buttons below when needed |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
@@ -68,6 +69,11 @@ A list of strings, run in order:
 | `back` / `close` / `refresh` | previous menu / close / redraw |
 | `input: Name? \| player: msg %input% hi` | asks for a text, then runs the action after `\|` with `%input%` |
 | `require: %vault_eco_balance% >= 100 \| message: <red>Too poor` | checks a [condition](#conditions); if it does not hold, runs the action after `\|` (optional) and **skips the remaining actions** |
+| `set: tab shop` | sets the [menu variable](#variables) `tab` to `shop` (placeholders allowed: `set: filter %input%`); `set: tab` resets it to its default |
+| `toggle: sound` | switches the variable between `true` and `false` |
+
+After `set` or `toggle` the menu is drawn again by itself, unless an action already opened, closed,
+or redrew it. `open:` takes placeholders too (`open: shop-%menu_tab%`).
 
 `%input%` is cleaned (one line, no leading `/`, no `%`, at most 100 characters), but it is still
 text typed by the player: do not put it into `console:` commands that could do harm.
@@ -109,6 +115,55 @@ A condition compares two values: `<left> <operator> <right>`, with spaces around
   `enabled-if` and `disabled-tooltip` are for buttons, together with `permission`.
 - `show-if`/`enabled-if` only change what the player sees. When an action costs something, check
   again with `require`: values can change while the menu is open.
+
+## Variables
+
+A menu can keep values per player: which tab is open, a search text, an on/off switch.
+
+```yaml
+variables:            # defaults
+  tab: shop
+  filter: ""
+elements:
+  - { type: button, x: 8, y: 20, text: "Shop", actions: ["set: tab shop"] }
+  - { type: button, x: 92, y: 20, text: "Info", actions: ["set: tab info"] }
+  - { type: label, x: 8, y: 44, text: "Angebote", show-if: "%menu_tab% == shop" }
+  - { type: button, x: 8, y: 60, text: "Suche: %menu_filter%", actions: ["input: Name? | set: filter %input%"] }
+```
+
+- `%menu_<name>%` works in every text, tooltip, condition and action; a variable without a value
+  and without a default is empty.
+- Values are kept per player and menu until the player leaves (also when the menu is closed and
+  opened again).
+- To highlight the active tab, add the button twice with opposite `show-if` and different `tint`
+  (see `beispiel-spieler.yml`).
+
+## Dynamic lists
+
+`items-from` fills a list or grid from the server each time the menu is drawn; `item` describes
+every entry, with the entry's values as `%item...%` placeholders. Fixed `items` come first.
+
+```yaml
+- type: list
+  x: 8
+  y: 40
+  width: 160
+  items-from: online-players
+  item:
+    text: "%item%"                                   # default: %item%
+    tooltip: "World: %item_world%"
+    show-if: ["%item% != %player%", "%item% contains %menu_filter%"]
+    actions: ["player: tpa %item%"]
+```
+
+| `items-from` | values |
+|---|---|
+| `online-players` | `%item%` / `%item_name%` (name), `%item_world%`, `%item_uuid%` (sorted by name) |
+| `worlds` | `%item%` / `%item_name%`, `%item_players%` (count), `%item_environment%` (`normal`, `nether`, `the_end`), `%item_icon%` (grass_block, netherrack, end_stone) |
+
+`item` takes the settings of `items` entries (`text`, `color`, `tint`, `tooltip`, `actions`,
+`permission`, `icon`, `show-if`). A misspelled `%item_...%` is reported when the menu is loaded.
+Player heads cannot be shown as icons yet (Minecraft draws them with a special renderer).
 
 ## Templates
 

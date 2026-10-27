@@ -12,6 +12,14 @@
   prompt in existing configs is treated the same way.
 - `/glyphwork pack` from the console answers instead of doing nothing; `/glyphwork status` shows
   each player's language.
+- **Menu variables:** `variables:` with defaults, the actions `set: name value` and `toggle: name`,
+  and `%menu_name%` in every text, condition and action. The menu redraws itself after `set`/`toggle`.
+  Tabs, search fields and switches without code. `open:` takes placeholders.
+- **Dynamic lists:** `items-from: online-players` or `worlds` fills a list or grid each time it is
+  drawn; `item:` describes the entries with `%item%`, `%item_world%`, `%item_players%` ...
+  (filterable with `show-if`). Misspelled `%item_...%` are reported on load.
+- Conditions accept an empty text as `''` (`%menu_filter% != ''`).
+- New example `beispiel-spieler.yml` (tabs, player search, worlds).
 
 ## 0.6.0 – conditions and templates for menus
 

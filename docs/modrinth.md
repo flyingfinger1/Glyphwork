@@ -9,7 +9,8 @@ sends by itself. Everything is clickable exactly where it is drawn.
 ## For whom
 
 - **Server admins:** describe menus in YAML files (buttons that run commands, open other menus or
-  ask for input, PlaceholderAPI, a command per menu, conditions and reusable templates) - no
+  ask for input, PlaceholderAPI, a command per menu, conditions, templates, variables and lists of
+  online players or worlds) - no
   coding. See the
   [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md).
 - **Plugin developers:** build screens with the Java API.

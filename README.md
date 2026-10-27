@@ -15,7 +15,8 @@ are measured, and the pack's own items (`myserver:ruby`) work as icons.
 
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus or ask for input, PlaceholderAPI support, a
-command per menu, conditions (show, gray out or check before an action) and reusable templates:
+command per menu, conditions (show, gray out or check before an action), reusable templates,
+variables (tabs, search, switches) and lists that fill themselves (online players, worlds):
 [docs/menus.md](docs/menus.md).
 
 Players without the pack get a plain native dialog built from the same scene. The pack is served by

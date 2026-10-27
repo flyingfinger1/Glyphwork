@@ -2,14 +2,13 @@ package de.flyingfinger.glyphwork.menu;
 
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.core.Messages;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -23,11 +22,31 @@ import java.util.function.Function;
  * back | close | refresh
  * input: Name? | player: msg %input% hi   ask for text, then run the action with %input%
  * require: %vault_eco_balance% >= 100 | message: Too poor   stop here unless the condition holds
+ * set: tab shop                 menu variable %menu_tab% = shop ("set: tab" = back to the default)
+ * toggle: sound                 %menu_sound% switches between true and false
  * </pre>
+ * After set/toggle the menu is drawn again, unless an action already opened, closed or redrew it.
  */
 final class Actions {
 
     private static final MiniMessage MM = MiniMessage.miniMessage();
+
+    /** A parsed action list; {@code item} is the entry of a dynamic list (or null). */
+    @FunctionalInterface
+    interface Chain {
+        void run(Click c, @Nullable Map<String, String> item);
+    }
+
+    /** What happened during one click. */
+    private static final class Run {
+        final @Nullable Map<String, String> item;
+        boolean changed;
+        boolean navigated;
+
+        Run(@Nullable Map<String, String> item) {
+            this.item = item;
+        }
+    }
 
     /**
      * One action; {@code input} is the text of an enclosing "input" action, or null.
@@ -35,18 +54,18 @@ final class Actions {
      */
     @FunctionalInterface
     private interface Step {
-        boolean run(Click c, @Nullable String input);
+        boolean run(Click c, @Nullable String input, Run r);
     }
 
     /** An action that never stops the chain. */
     @FunctionalInterface
     private interface Simple {
-        void run(Click c, @Nullable String input);
+        void run(Click c, @Nullable String input, Run r);
     }
 
     private static Step go(Simple s) {
-        return (c, in) -> {
-            s.run(c, in);
+        return (c, in, r) -> {
+            s.run(c, in, r);
             return true;
         };
     }
@@ -55,27 +74,26 @@ final class Actions {
     }
 
     /** @param menus looks up a menu by id when an "open" action runs (menus may be reloaded) */
-    static Consumer<Click> parse(List<String> actions, Node at, String key, Function<String, Menus.@Nullable Menu> menus)
+    static Chain parse(List<String> actions, Node at, String key, Function<String, Menus.@Nullable Menu> menus, Vars vars)
         throws MenuException {
         List<Step> steps = new ArrayList<>();
         for (int i = 0; i < actions.size(); i++) {
-            steps.add(one(actions.get(i).trim(), at, key + "[" + i + "]", menus));
+            steps.add(one(actions.get(i).trim(), at, key + "[" + i + "]", menus, vars));
         }
-        return click -> {
+        return (click, item) -> {
+            Run r = new Run(item);
             for (Step step : steps) {
-                if (!step.run(click, null)) {
-                    return;
+                if (!step.run(click, null, r)) {
+                    break;
                 }
+            }
+            if (r.changed && !r.navigated) {
+                click.reopen();
             }
         };
     }
 
-    private static String text(Click c, String template, @Nullable String input) {
-        String s = input == null ? template : template.replace("%input%", input);
-        return Placeholders.apply(c.player(), s);
-    }
-
-    private static Step one(String action, Node at, String key, Function<String, Menus.@Nullable Menu> menus)
+    private static Step one(String action, Node at, String key, Function<String, Menus.@Nullable Menu> menus, Vars vars)
         throws MenuException {
         int colon = action.indexOf(':');
         String type = (colon < 0 ? action : action.substring(0, colon)).trim().toLowerCase();
@@ -83,28 +101,30 @@ final class Actions {
         return switch (type) {
             case "player" -> {
                 String cmd = stripSlash(require(arg, at, key, "a command"));
-                yield go((c, in) -> c.player().performCommand(text(c, cmd, in)));
+                yield go((c, in, r) -> c.player().performCommand(vars.fill(c, cmd, r.item, in)));
             }
             case "console" -> {
                 String cmd = stripSlash(require(arg, at, key, "a command"));
-                yield go((c, in) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), text(c, cmd, in)));
+                yield go((c, in, r) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), vars.fill(c, cmd, r.item, in)));
             }
             case "message" -> {
                 String msg = require(arg, at, key, "a text");
-                yield go((c, in) -> c.player().sendMessage(MM.deserialize(text(c, msg, in))));
+                yield go((c, in, r) -> c.player().sendMessage(MM.deserialize(vars.fill(c, msg, r.item, in))));
             }
             case "sound" -> {
                 String[] p = require(arg, at, key, "a sound name").split("\\s+");
                 float volume = p.length > 1 ? number(p[1], at, key) : 1f;
                 float pitch = p.length > 2 ? number(p[2], at, key) : 1f;
-                yield go((c, in) -> c.player().playSound(c.player(), p[0], volume, pitch));
+                yield go((c, in, r) -> c.player().playSound(c.player(), p[0], volume, pitch));
             }
             case "open" -> {
                 String id = require(arg, at, key, "a menu id");
-                yield go((c, in) -> {
-                    Menus.Menu next = menus.apply(id);
+                yield go((c, in, r) -> {
+                    r.navigated = true;
+                    String target = vars.fill(c, id, r.item, in).trim().toLowerCase();
+                    Menus.Menu next = menus.apply(target);
                     if (next == null) {
-                        c.player().sendMessage(Messages.active().get(c.player(), "menu.unknown", "id", id));
+                        c.player().sendMessage(Messages.active().get(c.player(), "menu.unknown", "id", target));
                     } else if (!next.allowed(c.player())) {
                         c.player().sendMessage(Messages.active().get(c.player(), "no-permission"));
                     } else {
@@ -112,35 +132,64 @@ final class Actions {
                     }
                 });
             }
-            case "back" -> go((c, in) -> c.back());
-            case "close" -> go((c, in) -> c.close());
-            case "refresh" -> go((c, in) -> c.reopen());
+            case "back" -> go((c, in, r) -> { r.navigated = true; c.back(); });
+            case "close" -> go((c, in, r) -> { r.navigated = true; c.close(); });
+            case "refresh" -> go((c, in, r) -> { r.navigated = true; c.reopen(); });
             case "input" -> {
                 int bar = arg.indexOf('|');
                 if (bar < 0) {
                     throw at.error(key, "input needs 'Title | action', e.g. 'input: Name? | player: msg %input% hi'");
                 }
                 String title = arg.substring(0, bar).trim();
-                Step then = one(arg.substring(bar + 1).trim(), at, key, menus);
-                yield go((c, in) -> c.prompt(MM.deserialize(text(c, title, in)), "", typed -> then.run(c, clean(typed))));
+                Step then = one(arg.substring(bar + 1).trim(), at, key, menus, vars);
+                // the prompt shows the menu again afterwards, so no extra redraw is needed
+                yield go((c, in, r) -> {
+                    r.navigated = true;
+                    c.prompt(MM.deserialize(vars.fill(c, title, r.item, in)), "",
+                        typed -> then.run(c, clean(typed), new Run(r.item)));
+                });
             }
             case "require" -> {
                 int bar = arg.indexOf(" | ");
                 Condition cond = Condition.parse(bar < 0 ? require(arg, at, key, "a condition") : arg.substring(0, bar), at, key);
-                Step otherwise = bar < 0 ? null : one(arg.substring(bar + 3).trim(), at, key, menus);
-                yield (c, in) -> {
-                    if (cond.test(c.player(), in)) {
+                Step otherwise = bar < 0 ? null : one(arg.substring(bar + 3).trim(), at, key, menus, vars);
+                yield (c, in, r) -> {
+                    if (cond.test(s -> vars.fill(c, s, r.item, in))) {
                         return true;
                     }
                     if (otherwise != null) {
-                        otherwise.run(c, in);
+                        otherwise.run(c, in, r);
                     }
                     return false;
                 };
             }
+            case "set" -> {
+                String[] p = require(arg, at, key, "a variable name, e.g. 'set: tab shop'").split("\\s+", 2);
+                String name = variable(p[0], at, key);
+                String value = p.length > 1 ? p[1] : null;
+                yield go((c, in, r) -> {
+                    Vars.set(c, name, value == null ? null : vars.fill(c, value, r.item, in));
+                    r.changed = true;
+                });
+            }
+            case "toggle" -> {
+                String name = variable(require(arg, at, key, "a variable name"), at, key);
+                yield go((c, in, r) -> {
+                    Vars.set(c, name, "true".equalsIgnoreCase(vars.get(c, name)) ? "false" : "true");
+                    r.changed = true;
+                });
+            }
             default -> throw at.error(key, "unknown action '" + type
-                + "' (player, console, message, sound, open, back, close, refresh, input, require)");
+                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, toggle)");
         };
+    }
+
+    private static String variable(String name, Node at, String key) throws MenuException {
+        String n = name.trim().toLowerCase();
+        if (!Vars.NAME.matcher(n).matches()) {
+            throw at.error(key, "variable name expected (a-z, 0-9, '_', '-'), got '" + name + "'");
+        }
+        return n;
     }
 
     private static String require(String arg, Node at, String key, String what) throws MenuException {

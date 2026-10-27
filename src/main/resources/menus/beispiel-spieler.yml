@@ -1,0 +1,78 @@
+# Beispiel für Menü-Variablen und dynamische Listen – öffnen mit /glyphwork menu beispiel-spieler
+# Reiter, Suche und Listen, die sich selbst füllen (alle Spieler online, alle Welten).
+# Anleitung: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#variables
+
+title: "<gold>Spieler & Welten"
+width: 176
+height: 192
+variables:
+  tab: spieler        # welcher Reiter offen ist
+  filter: ""          # Suchtext für die Spielerliste
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "%online% online"
+
+  # Reiter: der aktive ist gold. Jeder Reiter ist zweimal da, show-if zeigt den passenden.
+  - { type: button, x: 8, y: 20, width: 76, text: "Spieler", tint: gold, show-if: "%menu_tab% == spieler" }
+  - { type: button, x: 8, y: 20, width: 76, text: "Spieler", actions: ["set: tab spieler"], show-if: "%menu_tab% != spieler" }
+  - { type: button, x: 92, y: 20, width: 76, text: "Welten", tint: gold, show-if: "%menu_tab% == welten" }
+  - { type: button, x: 92, y: 20, width: 76, text: "Welten", actions: ["set: tab welten"], show-if: "%menu_tab% != welten" }
+
+  # Reiter "Spieler": Suche + Liste aller Spieler online (ohne dich selbst)
+  - type: button
+    x: 8
+    y: 42
+    width: 136
+    text: "Suche: %menu_filter%"
+    tooltip: "Namen eintippen"
+    show-if: "%menu_tab% == spieler"
+    actions: ["input: Wen suchst du? | set: filter %input%"]
+  - type: button
+    x: 148
+    y: 42
+    width: 20
+    text: "x"
+    tooltip: "Suche löschen"
+    show-if: ["%menu_tab% == spieler", "%menu_filter% != ''"]
+    actions: ["set: filter"]
+  - type: list
+    id: spieler
+    x: 8
+    y: 62
+    width: 160
+    rows: 5
+    show-if: "%menu_tab% == spieler"
+    items-from: online-players
+    item:
+      text: "%item%"
+      tooltip: "In Welt %item_world% – klicken zum Grüßen"
+      show-if: ["%item% != %player%", "%item% contains %menu_filter%"]
+      actions:
+        - "player: msg %item% Hallo von %player%!"
+        - "message: <green>Gruß an %item% geschickt."
+
+  # Reiter "Welten": alle Welten mit Icon und Spielerzahl
+  - type: grid
+    id: welten
+    x: 10
+    y: 44
+    cols: 6
+    rows: 3
+    cell: 26
+    size: 24
+    show-if: "%menu_tab% == welten"
+    items-from: worlds
+    item:
+      icon: "%item_icon%"
+      tooltip: "%item% – %item_players% Spieler"
+      actions: ["message: <gold>%item%: %item_players% Spieler (%item_environment%)"]
+
+  - type: button
+    x: 8
+    y: 170
+    width: 56
+    text: "Schließen"
+    actions: ["close"]

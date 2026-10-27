@@ -1,11 +1,11 @@
 package de.flyingfinger.glyphwork.menu;
 
-import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,10 +41,13 @@ final class Condition {
             throw at.error(key, "condition like '%vault_eco_balance% >= 100' expected (operators "
                 + "== != > >= < <= contains !contains, with spaces around them), got '" + s + "'");
         }
-        String left = unquote(s.substring(0, m.start()).trim());
-        String right = unquote(s.substring(m.end()).trim());
-        if (left.isEmpty() || right.isEmpty()) {
-            throw at.error(key, "condition needs a value on both sides of '" + m.group(1) + "', got '" + s + "'");
+        String rawLeft = s.substring(0, m.start()).trim();
+        String rawRight = s.substring(m.end()).trim();
+        String left = unquote(rawLeft);
+        String right = unquote(rawRight);
+        // an empty side must be written as '' or "" (e.g. "%menu_filter% != ''")
+        if (rawLeft.isEmpty() || rawRight.isEmpty()) {
+            throw at.error(key, "condition needs a value on both sides of '" + m.group(1) + "' (write an empty text as ''), got '" + s + "'");
         }
         return new Condition(left, m.group(1), right, s);
     }
@@ -59,19 +62,19 @@ final class Condition {
         return out;
     }
 
-    static boolean all(List<Condition> conditions, @Nullable Player player) {
+    /** @param fill fills placeholders, menu variables and list entries for the viewer */
+    static boolean all(List<Condition> conditions, UnaryOperator<String> fill) {
         for (Condition c : conditions) {
-            if (!c.test(player, null)) {
+            if (!c.test(fill)) {
                 return false;
             }
         }
         return true;
     }
 
-    /** @param input text of an enclosing input action (for %input%), or null */
-    boolean test(@Nullable Player player, @Nullable String input) {
-        String l = fill(left, player, input);
-        String r = fill(right, player, input);
+    boolean test(UnaryOperator<String> fill) {
+        String l = fill.apply(left).trim();
+        String r = fill.apply(right).trim();
         Double a = number(l);
         Double b = number(r);
         boolean numbers = a != null && b != null;
@@ -86,11 +89,6 @@ final class Condition {
             case "!contains" -> !l.toLowerCase(Locale.ROOT).contains(r.toLowerCase(Locale.ROOT));
             default -> false;
         };
-    }
-
-    private static String fill(String s, @Nullable Player player, @Nullable String input) {
-        String t = input == null ? s : s.replace("%input%", input);
-        return Placeholders.apply(player, t).trim();
     }
 
     private static String unquote(String s) {

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /** Menus from plugins/Glyphwork/menus/*.yml, built as scenes of the public API. */
@@ -47,12 +48,21 @@ public final class Menus {
 
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
-        "command", "aliases", "permission", "description", "elements", "templates");
+        "command", "aliases", "permission", "description", "elements", "templates", "variables");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
     /** Templates from menus/_*.yml, available in every menu. */
     private final Templates shared = new Templates();
+    /** Entries of dynamic lists (items-from); replaced in tests. */
+    private Function<String, List<Map<String, String>>> sources = Sources::fetch;
+    /** Variables of the menu being parsed (parsing runs on one thread, one menu at a time). */
+    private Vars vars = Vars.NONE;
+
+    /** Where dynamic lists get their entries (tests use fixed data). */
+    public void sources(Function<String, List<Map<String, String>>> sources) {
+        this.sources = sources;
+    }
 
     public Collection<Menu> all() {
         return menus.values();
@@ -131,11 +141,13 @@ public final class Menus {
         }
         Node root = new Node(c.getValues(false), id + ".yml");
         root.only(MENU_KEYS);
+        vars = Vars.of(root);
+        Vars mv = vars;
         int width = root.optInt("width", 176);
         int height = root.optInt("height", 96);
         String title = root.optString("title", id);
         Scene.Builder b = Scene.builder("menu:" + id, width, height)
-            .title(v -> MM.deserialize(Placeholders.apply(v.player(), title)));
+            .title(v -> MM.deserialize(mv.fill(v, title, null, null)));
         if (root.has("exit-label")) {
             b.exitLabel(MM.deserialize(root.string("exit-label")));
         }
@@ -173,20 +185,27 @@ public final class Menus {
     }
 
     private Function<View, String> text(String template) {
-        return v -> Placeholders.apply(v.player(), template);
+        Vars mv = vars;
+        return v -> mv.fill(v, template, null, null);
     }
 
     private @Nullable Function<View, @Nullable Component> tooltip(Node n) {
         String t = n.optString("tooltip", null);
-        return t == null ? null : v -> MM.deserialize(Placeholders.apply(v.player(), t));
+        Vars mv = vars;
+        return t == null ? null : v -> MM.deserialize(mv.fill(v, t, null, null));
+    }
+
+    private UnaryOperator<String> fill(View v) {
+        Vars mv = vars;
+        return s -> mv.fill(v, s, null, null);
     }
 
     private Consumer<Click> actions(Node n) throws MenuException {
-        Consumer<Click> run = Actions.parse(n.strings("actions"), n, "actions", this::get);
+        Actions.Chain run = Actions.parse(n.strings("actions"), n, "actions", this::get, vars);
         String perm = n.optString("permission", null);
-        return perm == null ? run : c -> {
-            if (c.player().hasPermission(perm)) {
-                run.accept(c);
+        return c -> {
+            if (perm == null || c.player().hasPermission(perm)) {
+                run.run(c, null);
             }
         };
     }
@@ -203,9 +222,10 @@ public final class Menus {
         List<Condition> showIf = Condition.all(n, "show-if");
         List<Element> added = new ArrayList<>();
         element(added::add, n, index, type);
+        Vars mv = vars;
         for (Element e : added) {
             if (!showIf.isEmpty()) {
-                show(e, v -> Condition.all(showIf, v.player()));
+                show(e, v -> Condition.all(showIf, s -> mv.fill(v, s, null, null)));
             }
             b.add(e);
         }
@@ -251,14 +271,15 @@ public final class Menus {
                     .onClick(actions(n));
                 String perm = n.optString("permission", null);
                 List<Condition> enabledIf = Condition.all(n, "enabled-if");
+                Vars mv = vars;
                 Function<View, Boolean> enabled = v -> (perm == null || v.player().hasPermission(perm))
-                    && Condition.all(enabledIf, v.player());
+                    && Condition.all(enabledIf, s -> mv.fill(v, s, null, null));
                 bt.enabled(enabled);
                 Function<View, @Nullable Component> tip = tooltip(n);
                 String off = n.optString("disabled-tooltip", null);
                 if (off != null) {
                     bt.tooltip(v -> enabled.apply(v) ? (tip == null ? null : tip.apply(v))
-                        : MM.deserialize(Placeholders.apply(v.player(), off)));
+                        : MM.deserialize(mv.fill(v, off, null, null)));
                 } else if (tip != null) {
                     bt.tooltip(tip);
                 }
@@ -304,23 +325,21 @@ public final class Menus {
                 b.accept(ic);
             }
             case "list" -> {
-                n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items"));
-                List<Entry> items = entries(n);
-                ListView<Entry> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
-                        n.optInt("width", 120), n.optInt("rows", 4), v -> visible(items, v))
+                n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item"));
+                ListView<Row> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
+                        n.optInt("width", 120), n.optInt("rows", 4), rows(n))
                     .rowHeight(n.optInt("row-height", 16))
                     .text(e -> e.text)
                     .color(e -> e.color)
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
-                    .onSelect((c, e) -> e.actions.accept(c));
+                    .onSelect((c, e) -> e.onClick.accept(c));
                 b.accept(l);
             }
             case "grid" -> {
-                n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items"));
-                List<Entry> items = entries(n);
-                Grid<Entry> g = Grid.of(n.optString("id", "grid" + index), n.integer("x"), n.integer("y"),
-                        n.optInt("cols", 4), n.optInt("rows", 2), v -> visible(items, v))
+                n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items", "items-from", "item"));
+                Grid<Row> g = Grid.of(n.optString("id", "grid" + index), n.integer("x"), n.integer("y"),
+                        n.optInt("cols", 4), n.optInt("rows", 2), rows(n))
                     .cell(n.optInt("cell", 18), n.optInt("size", 16))
                     .label(e -> e.text)
                     .labelColor(e -> e.color)
@@ -328,46 +347,101 @@ public final class Menus {
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
                     .frame(n.optString("frame", "slot"))
-                    .onClick((c, e) -> e.actions.accept(c));
+                    .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(g);
             }
             default -> throw n.error("type", "unknown type '" + type + "' (label, button, panel, hitbox, icon, list, grid)");
         }
     }
 
-    /** One list row or grid cell. Texts are fixed (placeholders are resolved per viewer in {@link #visible}). */
-    private record Entry(String text, TextColor color, @Nullable TextColor tint, @Nullable Component tooltip,
-                         Consumer<Click> actions, @Nullable String permission, String rawText, @Nullable String rawTooltip,
-                         @Nullable String icon, List<Condition> showIf) {
+    /** One configured entry of a list or grid: fixed (items:) or the template of a dynamic list (item:). */
+    private record ItemDef(String text, TextColor color, @Nullable TextColor tint, @Nullable String tooltip,
+                           Actions.Chain actions, @Nullable String permission, @Nullable String icon,
+                           List<Condition> showIf) {
     }
 
-    private List<Entry> entries(Node n) throws MenuException {
-        List<Entry> out = new ArrayList<>();
+    /** One row or cell as one viewer sees it. */
+    private record Row(String text, TextColor color, @Nullable TextColor tint, @Nullable Component tooltip,
+                       @Nullable String icon, Consumer<Click> onClick) {
+    }
+
+    private static final java.util.regex.Pattern ITEM_KEY = java.util.regex.Pattern.compile("%item(?:_([a-z0-9_-]+))?%");
+
+    private ItemDef itemDef(Node e, String defaultText) throws MenuException {
+        e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "show-if"));
+        return new ItemDef(e.optString("text", defaultText), e.optColor("color", TextColor.color(0xFFFFFF)),
+            e.optColor("tint", null), e.optString("tooltip", null),
+            Actions.parse(e.strings("actions"), e, "actions", this::get, vars),
+            e.optString("permission", null), e.optString("icon", null), Condition.all(e, "show-if"));
+    }
+
+    /** Fixed items, then the entries of items-from, filtered and filled in for the viewer. */
+    private Function<View, List<Row>> rows(Node n) throws MenuException {
+        List<ItemDef> fixed = new ArrayList<>();
         for (Node e : n.nodes("items")) {
-            e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "show-if"));
-            String t = e.optString("text", "");
-            String tip = e.optString("tooltip", null);
-            out.add(new Entry(t, e.optColor("color", TextColor.color(0xFFFFFF)), e.optColor("tint", null),
-                null, actions(e), e.optString("permission", null), t, tip, e.optString("icon", null),
-                Condition.all(e, "show-if")));
+            fixed.add(itemDef(e, ""));
         }
-        return out;
+        String from = n.optString("items-from", null);
+        ItemDef dynamic = null;
+        if (from != null) {
+            from = from.trim().toLowerCase();
+            Set<String> keys = Sources.KEYS.get(from);
+            if (keys == null) {
+                throw n.error("items-from", "unknown source '" + from + "' (" + String.join(", ",
+                    new java.util.TreeSet<>(Sources.KEYS.keySet())) + ")");
+            }
+            Object raw = Templates.plain(n.raw().get("item"));
+            if (raw != null && !(raw instanceof Map<?, ?>)) {
+                throw n.error("item", "settings of each entry expected (text, icon, tooltip, actions, show-if ...)");
+            }
+            Node item = new Node(raw == null ? Map.of() : (Map<?, ?>) raw, n.path + ".item");
+            checkItemKeys(item, from, keys);
+            dynamic = itemDef(item, "%item%");
+        } else if (n.has("item")) {
+            throw n.error("item", "only together with items-from");
+        }
+        Vars mv = vars;
+        Function<String, List<Map<String, String>>> src = sources;
+        String source = from;
+        ItemDef d = dynamic;
+        return v -> {
+            List<Row> out = new ArrayList<>();
+            for (ItemDef def : fixed) {
+                row(def, null, v, mv, out);
+            }
+            if (d != null) {
+                for (Map<String, String> item : src.apply(source)) {
+                    row(d, item, v, mv, out);
+                }
+            }
+            return out;
+        };
     }
 
-    /** Items the viewer may see, with placeholders resolved for them. */
-    private static List<Entry> visible(List<Entry> items, View v) {
-        List<Entry> out = new ArrayList<>();
-        for (Entry e : items) {
-            if (e.permission != null && v.player() != null && !v.player().hasPermission(e.permission)) {
-                continue;
+    /** Catches %item_wrold% and similar typos when the menu is loaded. */
+    private static void checkItemKeys(Node item, String source, Set<String> keys) throws MenuException {
+        java.util.regex.Matcher m = ITEM_KEY.matcher(String.valueOf(item.raw()));
+        while (m.find()) {
+            String k = m.group(1) == null ? "" : m.group(1);
+            if (!keys.contains(k)) {
+                throw item.error("", "%item_" + k + "% does not exist for " + source + " (there are: %item%"
+                    + keys.stream().filter(x -> !x.isEmpty()).sorted().map(x -> ", %item_" + x + "%").reduce("", String::concat) + ")");
             }
-            if (!Condition.all(e.showIf, v.player())) {
-                continue;
-            }
-            Component tip = e.rawTooltip == null ? null : MM.deserialize(Placeholders.apply(v.player(), e.rawTooltip));
-            out.add(new Entry(Placeholders.apply(v.player(), e.rawText), e.color, e.tint, tip, e.actions,
-                e.permission, e.rawText, e.rawTooltip, e.icon, e.showIf));
         }
-        return out;
+    }
+
+    private static void row(ItemDef d, @Nullable Map<String, String> item, View v, Vars mv, List<Row> out) {
+        if (d.permission() != null && v.player() != null && !v.player().hasPermission(d.permission())) {
+            return;
+        }
+        UnaryOperator<String> fill = s -> mv.fill(v, s, item, null);
+        if (!Condition.all(d.showIf(), fill)) {
+            return;
+        }
+        String icon = d.icon() == null ? null : fill.apply(d.icon()).trim();
+        out.add(new Row(fill.apply(d.text()), d.color(), d.tint(),
+            d.tooltip() == null ? null : MM.deserialize(fill.apply(d.tooltip())),
+            icon == null || icon.isEmpty() ? null : icon,
+            c -> d.actions().run(c, item)));
     }
 }

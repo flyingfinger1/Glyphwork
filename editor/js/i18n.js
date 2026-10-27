@@ -2,7 +2,7 @@
 
 const STR = {
   de: {
-    title: 'Glyphwork Skin-Editor',
+    title: 'Glyphwork Skin-Editor', menuDesigner: 'Menü-Designer',
     theme: 'Theme',
     themeName: 'Name',
     tileSize: 'Kachelgröße',
@@ -109,7 +109,7 @@ const STR = {
     language: 'English',
   },
   en: {
-    title: 'Glyphwork Skin Editor',
+    title: 'Glyphwork Skin Editor', menuDesigner: 'Menu designer',
     theme: 'Theme',
     themeName: 'Name',
     tileSize: 'Tile size',

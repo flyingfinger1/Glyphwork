@@ -1,0 +1,655 @@
+// Draws a YAML menu (as parsed into plain objects) like the plugin does (SceneRenderer.java):
+// frames from the skin, text with the editor's stand-in font, icons and heads as placeholders
+// (Minecraft textures cannot be shipped). No DOM: returns pixels plus boxes for selection and
+// click/hover regions for the preview.
+
+import { Pix, tint } from '../pix.js';
+import { tiles, renderShape } from '../autotile.js';
+import { drawText, textWidth, blend } from '../font.js';
+
+export const LINE = 9;
+export const HEAD = 8;
+export const ICON = 16;
+const WHITE = 0xffffff;
+const DARK = 0x404040;
+const BUTTON_GRAY = 0x9c9c9c;
+const DISABLED = 0x5a5a5a;
+const DISABLED_TEXT = 0xa0a0a0;
+
+/** Adventure's named colors (NamedTextColor.NAMES). */
+export const NAMED = {
+  black: 0x000000, dark_blue: 0x0000aa, dark_green: 0x00aa00, dark_aqua: 0x00aaaa, dark_red: 0xaa0000,
+  dark_purple: 0xaa00aa, gold: 0xffaa00, gray: 0xaaaaaa, dark_gray: 0x555555, blue: 0x5555ff,
+  green: 0x55ff55, aqua: 0x55ffff, red: 0xff5555, light_purple: 0xff55ff, yellow: 0xffff55, white: 0xffffff,
+};
+
+/** "#RRGGBB" or a color name -> 0xRRGGBB, or undefined if missing/invalid. */
+export function color(v) {
+  if (v == null) return undefined;
+  const s = String(v).trim();
+  if (/^#[0-9a-f]{6}$/i.test(s)) return parseInt(s.slice(1), 16);
+  return NAMED[s.toLowerCase()];
+}
+
+const int = (v, d) => {
+  if (v == null || v === '') return d;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.trunc(n) : d;
+};
+const num = (v, d) => {
+  if (v == null || v === '') return d;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : d;
+};
+const list = (v) => (v == null ? [] : Array.isArray(v) ? v.map(String) : [String(v)]);
+
+/** Sample entries for dynamic lists (items-from), keys like Sources.java. */
+export const SAMPLES = {
+  'online-players': [
+    { '': 'Steve', name: 'Steve', world: 'world', uuid: '8667ba71-b85a-4004-af54-457a9734eed7', icon: 'head:Steve', head: 'head:Steve' },
+    { '': 'Alex', name: 'Alex', world: 'world_nether', uuid: 'ec561538-f3fd-461d-aff5-086b22154bce', icon: 'head:Alex', head: 'head:Alex' },
+    { '': 'Notch', name: 'Notch', world: 'world', uuid: '069a79f4-44e9-4726-a5be-fca90e38aaf5', icon: 'head:Notch', head: 'head:Notch' },
+  ],
+  worlds: [
+    { '': 'world', name: 'world', players: '2', environment: 'normal', icon: 'grass_block' },
+    { '': 'world_nether', name: 'world_nether', players: '1', environment: 'nether', icon: 'netherrack' },
+    { '': 'world_the_end', name: 'world_the_end', players: '0', environment: 'the_end', icon: 'end_stone' },
+  ],
+};
+
+// ---------------------------------------------------------------- placeholders and conditions
+
+/**
+ * Fills a text for the preview: %item...% from a list entry, %menu_x% from the preview variables
+ * (or the menu's defaults), %player%, %world%, %online%, %time%. Other placeholders stay.
+ */
+export function fill(text, ctx, item) {
+  let s = String(text ?? '');
+  if (!s.includes('%')) return s;
+  if (item) s = s.replace(/%item(?:_([a-z0-9_-]+))?%/g, (m, k) => item[k ?? ''] ?? m);
+  s = s.replace(/%menu_([a-z0-9_-]+)%/g, (m, k) => varValue(ctx, k));
+  const now = new Date();
+  const p2 = (n) => String(n).padStart(2, '0');
+  return s.replace(/%player%/g, ctx.player ?? 'Steve').replace(/%world%/g, 'world')
+    .replace(/%online%/g, String(ctx.online ?? 1))
+    .replace(/%time%/g, `${p2(now.getHours())}:${p2(now.getMinutes())}:${p2(now.getSeconds())}`);
+}
+
+export function varValue(ctx, name) {
+  if (ctx.vars && Object.prototype.hasOwnProperty.call(ctx.vars, name)) return String(ctx.vars[name] ?? '');
+  const d = ctx.menu?.variables?.[name];
+  return d == null ? '' : fill(String(d), { ...ctx, vars: {} });
+}
+
+const OP = /\s(==|!=|>=|<=|>|<|!contains|contains)\s/;
+const unquote = (s) => (s.length >= 2 && ((s[0] === '"' && s.at(-1) === '"') || (s[0] === "'" && s.at(-1) === "'")) ? s.slice(1, -1) : s);
+const number = (s) => {
+  if (s === '') return null;
+  if (/^-?[0-9]+(\.[0-9]+)?$/.test(s) || /^-?\.[0-9]+$/.test(s)) return Number(s);
+  if (/^-?[0-9]{1,3}(,[0-9]{3})+(\.[0-9]+)?$/.test(s)) return Number(s.replace(/,/g, ''));
+  return null;
+};
+
+/** Parses one condition; returns null if it is malformed. */
+export function parseCondition(text) {
+  const s = String(text).trim();
+  const m = OP.exec(s);
+  if (!m) return null;
+  const l = s.slice(0, m.index).trim(), r = s.slice(m.index + m[0].length).trim();
+  if (!l || !r) return null;
+  return { left: unquote(l), op: m[1], right: unquote(r) };
+}
+
+export function test(cond, fillFn) {
+  const l = fillFn(cond.left).trim(), r = fillFn(cond.right).trim();
+  const a = number(l), b = number(r);
+  const nums = a != null && b != null;
+  switch (cond.op) {
+    case '==': return nums ? a === b : l.toLowerCase() === r.toLowerCase();
+    case '!=': return nums ? a !== b : l.toLowerCase() !== r.toLowerCase();
+    case '>': return nums && a > b;
+    case '>=': return nums && a >= b;
+    case '<': return nums && a < b;
+    case '<=': return nums && a <= b;
+    case 'contains': return l.toLowerCase().includes(r.toLowerCase());
+    case '!contains': return !l.toLowerCase().includes(r.toLowerCase());
+    default: return false;
+  }
+}
+
+/** All conditions hold (malformed ones count as false). */
+export function allHold(conds, fillFn) {
+  for (const c of list(conds)) {
+    const p = parseCondition(c);
+    if (!p || !test(p, fillFn)) return false;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------- templates
+
+const TVAR = /\{([a-zA-Z0-9_-]+)(?:\|([^}]*))?}/g;
+
+function fillTemplate(v, values, used) {
+  if (typeof v === 'string') {
+    return v.replace(TVAR, (m, k, d) => {
+      if (values[k] != null) { used.add(k); return String(values[k]); }
+      return d != null ? d : m;
+    });
+  }
+  if (Array.isArray(v)) return v.map((x) => fillTemplate(x, values, used));
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const [k, x] of Object.entries(v)) o[k] = fillTemplate(x, values, used);
+    return o;
+  }
+  return v;
+}
+
+/**
+ * Expands "use:" entries like Templates.java. Returns [{el, top, errors}] where top is the index
+ * of the entry in menu.elements it came from.
+ */
+export function expand(menu, shared = {}) {
+  const templates = {};
+  for (const [k, v] of Object.entries(shared || {})) templates[k.toLowerCase()] = v;
+  for (const [k, v] of Object.entries(menu.templates || {})) templates[k.toLowerCase()] = v;
+  const out = [];
+  const errors = [];
+  const walk = (el, dx, dy, showIf, depth, top) => {
+    if (!el || typeof el !== 'object') return;
+    if (el.use == null) {
+      const m = { ...el };
+      if (dx || dy) { m.x = int(el.x, 0) + dx; m.y = int(el.y, 0) + dy; }
+      if (showIf.length) m['show-if'] = [...showIf, ...list(el['show-if'])];
+      out.push({ el: m, top });
+      return;
+    }
+    const name = String(el.use).toLowerCase();
+    const tpl = templates[name];
+    if (tpl == null || depth >= 8) { errors.push({ top, text: `use: ${name}` }); out.push({ el: { type: '_missing', x: el.x, y: el.y, name }, top }); return; }
+    const values = {};
+    for (const [k, v] of Object.entries(el)) if (!['use', 'x', 'y', 'show-if'].includes(k) && v != null) values[k] = v;
+    const used = new Set();
+    let filled = fillTemplate(tpl, values, used);
+    const unused = Object.keys(values).filter((k) => !used.has(k));
+    if (!Array.isArray(filled) && filled && typeof filled === 'object' && unused.length) {
+      filled = { ...filled };
+      for (const k of unused) filled[k] = el[k];
+    }
+    const cond = [...showIf, ...list(el['show-if'])];
+    const x = dx + int(el.x, 0), y = dy + int(el.y, 0);
+    if (Array.isArray(filled)) filled.forEach((g) => walk(g, x, y, cond, depth + 1, top));
+    else walk(filled, x, y, cond, depth + 1, top);
+  };
+  (menu.elements || []).forEach((el, i) => walk(el, 0, 0, [], 0, i));
+  return { items: out, errors };
+}
+
+// ---------------------------------------------------------------- drawing helpers
+
+class Canvas {
+  constructor(w, h, frames, t, text) {
+    this.pix = new Pix(Math.max(1, w), Math.max(1, h));
+    this.frames = frames;
+    this.t = t;
+    this.text = text;
+    this.cache = new Map();
+  }
+
+  tileList(name) {
+    if (!this.cache.has(name)) {
+      let v = null;
+      try { v = this.frames.has(name) ? tiles(this.frames.get(name), this.t) : null; } catch { v = null; }
+      this.cache.set(name, v);
+    }
+    return this.cache.get(name);
+  }
+
+  tileSize() {
+    return this.t;
+  }
+
+  /** Autotiled shape at (x, y); returns false if the skin has no such frame. */
+  shape(name, x, y, cells, tintRgb) {
+    const tl = this.tileList(name);
+    if (!tl || !cells.length) return false;
+    const img = renderShape(tl, cells, this.t);
+    for (let yy = 0; yy < img.h; yy++) {
+      for (let xx = 0; xx < img.w; xx++) {
+        const v = img.get(xx, yy);
+        if (v >>> 24) blend(this.pix, x + xx, y + yy, tintRgb == null ? v : tint(v, tintRgb));
+      }
+    }
+    return true;
+  }
+
+  /** Rectangle frame, rounded down (or up) to whole tiles, at least one. */
+  rect(name, x, y, w, h, tintRgb, up = false) {
+    const t = this.t;
+    const cols = Math.max(1, up ? Math.ceil(w / t) : Math.floor(w / t));
+    const rows = Math.max(1, up ? Math.ceil(h / t) : Math.floor(h / t));
+    return this.shape(name, x, y, Array.from({ length: rows }, () => new Array(cols).fill(true)), tintRgb);
+  }
+
+  textOut(s, x, y, rgb, shadow = false) {
+    if (!s) return;
+    if (shadow) drawText(this.pix, s, x + 1, y + 1, (0xff000000 | ((rgb & 0xfcfcfc) >> 2)) >>> 0);
+    drawText(this.pix, s, x, y, (0xff000000 | rgb) >>> 0);
+  }
+
+  centered(s, x, w, y, rgb, shadow = false) {
+    this.textOut(s, x + Math.floor((w - visibleWidth(s)) / 2), y, rgb, shadow);
+  }
+
+  fillRect(x, y, w, h, argb) {
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) blend(this.pix, xx, yy, argb);
+  }
+}
+
+export const visibleWidth = (s) => Math.max(0, textWidth(s) - 1);
+
+/** Cuts s to maxWidth pixels with "..." like LineBuilder.fit. */
+export function fit(s, maxWidth) {
+  if (textWidth(s) - 1 <= maxWidth) return s;
+  const budget = maxWidth - textWidth('...');
+  let out = '', w = 0;
+  for (const ch of s) {
+    const cw = textWidth(ch);
+    if (w + cw > budget) break;
+    out += ch;
+    w += cw;
+  }
+  return out.trimEnd() + '...';
+}
+
+/** "diamond" -> "Dia", "gold_ingot" -> "GI" (SceneRenderer.shortName). */
+export function shortName(item) {
+  if (!item) return '';
+  const id = item.includes(':') ? item.slice(item.indexOf(':') + 1) : item;
+  const parts = id.split('_').filter(Boolean);
+  if (parts.length === 1) return parts[0][0].toUpperCase() + parts[0].slice(1, 3);
+  return parts.slice(0, 3).map((p) => p[0].toUpperCase()).join('');
+}
+
+export const isHead = (item) => typeof item === 'string' && /^head:/i.test(item) && item.slice(5).trim() !== '';
+
+/** Pixels the plugin moves an element so that its head (wanted at headTop) sits on the 9 px grid. */
+export function headShift(headTop) {
+  const index = Math.max(1, Math.round((headTop + 1) / LINE));
+  return index * LINE - 1 - headTop;
+}
+
+function drawHead(c, x, top) {
+  // a stand-in face: the client draws the real skin here (8 x 8, face + hat)
+  c.fillRect(x, top, 8, 8, 0xff6b4a2f);
+  c.fillRect(x, top + 2, 8, 6, 0xffc7926b);
+  c.fillRect(x + 1, top + 4, 2, 1, 0xffffffff);
+  c.fillRect(x + 5, top + 4, 2, 1, 0xffffffff);
+  c.fillRect(x + 2, top + 4, 1, 1, 0xff3a3a8a);
+  c.fillRect(x + 5, top + 4, 1, 1, 0xff3a3a8a);
+  c.fillRect(x + 3, top + 6, 2, 1, 0xff7a4a3a);
+}
+
+/** Item icon placeholder (16 x 16): a framed box with the short name. */
+function drawIcon(c, item, x, y) {
+  if (!item) return false;
+  if (isHead(item)) {
+    const top = (Math.max(1, Math.round((y + ICON / 2 - HEAD / 2 + 1) / LINE))) * LINE - 1;
+    drawHead(c, x + (ICON - HEAD) / 2, top);
+    return true;
+  }
+  c.fillRect(x + 1, y + 1, 14, 14, 0x55ffffff);
+  c.fillRect(x + 1, y + 1, 14, 1, 0x88ffffff);
+  c.fillRect(x + 1, y + 14, 14, 1, 0x55000000);
+  const n = shortName(item).slice(0, 2);
+  c.centered(n, x, ICON, y + 4, 0x303030);
+  return true;
+}
+
+function drawCount(c, count, x, y, bottom = Infinity) {
+  const s = count == null ? '' : String(count).trim();
+  if (!s || s === '1') return;
+  c.textOut(s, x + 17 - textWidth(s), Math.min(y + 9, bottom - 8), WHITE, true);
+}
+
+// ---------------------------------------------------------------- the menu
+
+/**
+ * @param menu   parsed YAML menu
+ * @param skin   { frames: Map(name -> A2 Pix), tileSize, text (ARGB) }
+ * @param ctx    { vars: {name: value}, pages: {id: n}, player, online, shared (templates), maxHeight }
+ * @returns {pix, boxes: [{top, x, y, w, h}], regions: [{x, y, w, h, tip, act}], hints: [{top, text}],
+ *           errors: [{top, text}]}
+ *   act: {type:'actions', list, item} | {type:'set', var, value, then} | {type:'page', id, page}
+ */
+export function renderMenu(menu, skin, ctx = {}) {
+  const W = int(menu.width, 176), H = int(menu.height, 96);
+  const c = new Canvas(W, H, skin.frames, skin.tileSize, skin.text);
+  const skinText = (rgb) => (rgb === DARK ? (skin.text & 0xffffff) : rgb);
+  ctx = { ...ctx, menu };
+  const boxes = [], regions = [], hints = [];
+  const { items, errors } = expand(menu, ctx.shared);
+  const bg = menu.background == null ? 'panel' : String(menu.background);
+  if (bg.toLowerCase() !== 'none') {
+    if (!c.rect(bg, 0, 0, W, H, null, true)) errors.push({ top: -1, text: `frame '${bg}'` });
+  }
+  const region = (x, y, w, h, tip, act) => { if (tip || act) regions.push({ x, y, w, h, tip, act }); };
+  const actionsOf = (el, item) => (el.actions == null ? null : { type: 'actions', list: list(el.actions), item });
+
+  for (const { el, top } of items) {
+    const f = (s, item) => fill(s, ctx, item);
+    const type = String(el.type ?? '').toLowerCase();
+    if (type === '_missing') {
+      boxes.push({ top, x: int(el.x, 0), y: int(el.y, 0), w: 32, h: 16, missing: true });
+      continue;
+    }
+    if (el['show-if'] != null && !allHold(el['show-if'], (s) => f(s))) {
+      boxes.push({ top, x: int(el.x, 0), y: int(el.y, 0), w: 0, h: 0, hidden: true });
+      continue;
+    }
+    const x = int(el.x, 0), y = int(el.y, 0);
+    const tip = el.tooltip != null ? f(el.tooltip) : null;
+    try {
+      switch (type) {
+        case 'label': {
+          let s = f(el.text ?? '');
+          let lx = x;
+          const w = int(el.width, -1);
+          if (w > 0) {
+            s = fit(s, w);
+            const vw = visibleWidth(s);
+            const align = String(el.align ?? 'left').toLowerCase();
+            lx += align === 'center' ? Math.floor((w - vw) / 2) : align === 'right' ? w - vw : 0;
+          }
+          const rgb = skinText(color(el.color) ?? DARK);
+          c.textOut(s, lx, y, rgb, el.shadow === true || el.shadow === 'true');
+          boxes.push({ top, x, y, w: w > 0 ? w : Math.max(4, visibleWidth(s)), h: 8 });
+          break;
+        }
+        case 'button': {
+          const bw = int(el.width, 64), bh = int(el.height, 16);
+          const frameName = String(el.frame ?? 'button');
+          const t = c.tileSize();
+          const h = Math.max(t, Math.floor(bh / t) * t);
+          const icon = el.icon != null ? f(el.icon).trim() : null;
+          let by = y;
+          if (isHead(icon)) {
+            const dy = headShift(y + Math.floor((h - HEAD) / 2));
+            if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
+            by += dy;
+          }
+          const enabled = allHold(el['enabled-if'] ?? [], (s) => f(s));
+          c.rect(frameName, x, by, bw, bh, enabled ? (color(el.tint) ?? BUTTON_GRAY) : DISABLED);
+          let tx = x, tw = bw;
+          if (isHead(icon)) {
+            drawHead(c, x + 4, by + Math.floor((h - HEAD) / 2));
+            tx += HEAD + 4; tw -= HEAD + 4;
+          } else if (icon) {
+            drawIcon(c, icon, x + 3, by + Math.floor((h - ICON) / 2));
+            tx += ICON + 4; tw -= ICON + 4;
+          }
+          const s = f(el.text ?? '');
+          if (s) {
+            const rgb = enabled ? (color(el['text-color']) ?? WHITE) : DISABLED_TEXT;
+            c.centered(fit(s, tw - 6), tx, tw, by + Math.floor((h - 7) / 2), rgb, enabled);
+          }
+          const offTip = !enabled && el['disabled-tooltip'] != null ? f(el['disabled-tooltip']) : tip;
+          region(x, by, bw, h, offTip, enabled ? actionsOf(el) : null);
+          boxes.push({ top, x, y: by, w: bw, h: bh });
+          break;
+        }
+        case 'panel': {
+          const tintRgb = color(el.tint);
+          const frameName = String(el.frame ?? 'panel');
+          if (el.shape != null) {
+            const rows = list(el.shape);
+            const cells = rows.map((r) => [...r].map((ch) => ch === '#'));
+            c.shape(frameName, x, y, cells, tintRgb);
+            const t = c.tileSize();
+            const w = Math.max(...rows.map((r) => r.length)) * t, h = rows.length * t;
+            region(x, y, w, h, tip, actionsOf(el));
+            boxes.push({ top, x, y, w, h });
+          } else {
+            const w = int(el.width, 32), h = int(el.height, 32);
+            c.rect(frameName, x, y, w, h, tintRgb);
+            region(x, y, w, h, tip, actionsOf(el));
+            boxes.push({ top, x, y, w, h });
+          }
+          break;
+        }
+        case 'hitbox': {
+          const w = int(el.width, 16), h = int(el.height, 16);
+          region(x, y, w, h, tip, actionsOf(el));
+          boxes.push({ top, x, y, w, h, invisible: true });
+          break;
+        }
+        case 'icon': {
+          const item = f(el.item ?? '').trim();
+          let iy = y;
+          if (isHead(item)) {
+            const dy = headShift(y + (ICON - HEAD) / 2);
+            if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
+            iy += dy;
+          }
+          if (drawIcon(c, item, x, iy)) drawCount(c, el.count != null ? f(el.count) : null, x, iy);
+          region(x, iy, ICON, ICON, tip, actionsOf(el));
+          boxes.push({ top, x, y: iy, w: ICON, h: ICON });
+          break;
+        }
+        case 'list': listEl(c, el, top, ctx, boxes, regions, hints, skinText); break;
+        case 'grid': gridEl(c, el, top, ctx, boxes, regions, hints); break;
+        case 'slider': sliderEl(c, el, top, ctx, boxes, regions); break;
+        case 'checkbox': {
+          const v = varValue(ctx, String(el.var ?? '').toLowerCase()).trim().toLowerCase() === 'true';
+          c.rect('slot', x, y, 16, 16, null);
+          if (v) c.centered('✔', x, 16, y + 4, WHITE, true);
+          const s = f(el.text ?? '');
+          if (s) c.textOut(s, x + 20, y + 4, skinText(color(el.color) ?? DARK));
+          const w = s ? 20 + textWidth(s) : 16;
+          region(x, y, w, 16, tip, { type: 'set', var: String(el.var ?? '').toLowerCase(), value: String(!v), then: list(el.actions) });
+          boxes.push({ top, x, y, w, h: 16 });
+          break;
+        }
+        case 'choice': {
+          const opts = optionsOf(el.options);
+          const ids = Object.keys(opts);
+          const w = int(el.width, 80), bh = int(el.height, 16);
+          const t = c.tileSize();
+          const h = Math.max(t, Math.floor(bh / t) * t);
+          c.rect('button', x, y, w, bh, color(el.tint) ?? BUTTON_GRAY);
+          const cur = Math.max(0, ids.indexOf(varValue(ctx, String(el.var ?? '').toLowerCase()).trim()));
+          const ty = y + Math.floor((h - 7) / 2);
+          if (ids.length > 1) {
+            c.centered('<', x, 12, ty, WHITE, true);
+            c.centered('>', x + w - 12, 12, ty, WHITE, true);
+          }
+          const shown = ids.length ? plain(opts[ids[cur]]) : '';
+          c.centered(fit(shown, w - 26), x + 12, w - 24, ty, WHITE, true);
+          if (ids.length) {
+            const v = String(el.var ?? '').toLowerCase();
+            const half = Math.floor(w / 2);
+            region(x, y, half, h, tip, { type: 'set', var: v, value: ids[(cur - 1 + ids.length) % ids.length], then: list(el.actions) });
+            region(x + half, y, w - half, h, tip, { type: 'set', var: v, value: ids[(cur + 1) % ids.length], then: list(el.actions) });
+          }
+          boxes.push({ top, x, y, w, h: bh });
+          break;
+        }
+        default:
+          errors.push({ top, text: `type '${el.type}'` });
+          boxes.push({ top, x, y, w: 16, h: 16, missing: true });
+      }
+    } catch (e) {
+      errors.push({ top, text: String(e?.message ?? e) });
+    }
+  }
+  return { pix: c.pix, boxes, regions, hints, errors };
+}
+
+/** MiniMessage tags removed (pixel text has no formatting). */
+export const plain = (s) => String(s ?? '').replace(/<[^<>]*>/g, '');
+
+export function optionsOf(o) {
+  const out = {};
+  if (Array.isArray(o)) for (const x of o) out[String(x)] = String(x);
+  else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) out[k] = String(v);
+  return out;
+}
+
+/** Rows of a list or grid: fixed items, then the sample entries of items-from. */
+function rows(el, ctx) {
+  const out = [];
+  const add = (def, item) => {
+    const f = (s) => fill(s, ctx, item);
+    if (def['show-if'] != null && !allHold(def['show-if'], f)) return;
+    out.push({
+      text: f(def.text ?? (item ? '%item%' : '')),
+      color: color(def.color) ?? WHITE,
+      tint: color(def.tint),
+      tip: def.tooltip != null ? f(def.tooltip) : null,
+      icon: def.icon != null ? f(def.icon).trim() || null : null,
+      count: def.count != null ? f(def.count) : null,
+      act: def.actions == null ? null : { type: 'actions', list: list(def.actions), item },
+    });
+  };
+  for (const def of el.items || []) if (def && typeof def === 'object') add(def, null);
+  const from = el['items-from'] != null ? String(el['items-from']).trim().toLowerCase() : null;
+  if (from && SAMPLES[from]) for (const item of SAMPLES[from]) add(el.item || {}, item);
+  return out;
+}
+
+function pager(c, id, page, pages, x, y, w, regions) {
+  if (pages <= 1) return;
+  const prev = page > 0, next = page < pages - 1;
+  c.rect('button', x, y, 16, 16, prev ? BUTTON_GRAY : DISABLED);
+  c.rect('button', x + w - 16, y, 16, 16, next ? BUTTON_GRAY : DISABLED);
+  c.centered('<', x, 16, y + 4, prev ? WHITE : DISABLED_TEXT, prev);
+  c.centered('>', x + w - 16, 16, y + 4, next ? WHITE : DISABLED_TEXT, next);
+  c.centered(`${page + 1}/${pages}`, x, w, y + 4, c.text & 0xffffff);
+  if (prev) regions.push({ x, y, w: 16, h: 16, act: { type: 'page', id, page: page - 1 } });
+  if (next) regions.push({ x: x + w - 16, y, w: 16, h: 16, act: { type: 'page', id, page: page + 1 } });
+}
+
+function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
+  const x = int(el.x, 0), y = int(el.y, 0);
+  const id = String(el.id ?? `list${top}`);
+  const w = int(el.width, 120), nRows = Math.max(1, int(el.rows, 4));
+  const fromPlayers = String(el['items-from'] ?? '').toLowerCase() === 'online-players';
+  const rh = int(el['row-height'], fromPlayers ? 18 : 16);
+  const all = rows(el, ctx);
+  const pages = Math.max(1, Math.ceil(all.length / nRows));
+  const page = Math.max(0, Math.min(ctx.pages?.[id] ?? 0, pages - 1));
+  const shown = all.slice(page * nRows, page * nRows + nRows);
+  const heads = shown.some((r) => isHead(r.icon));
+  const itemIcons = shown.some((r) => r.icon && !isHead(r.icon));
+  const wide = heads && itemIcons;
+  let ly = y;
+  if (heads) {
+    const dy = headShift(y + Math.floor((rh - HEAD) / 2));
+    if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
+    if (rh % LINE) hints.push({ top, text: `row-height ${rh}: 9 / 18` });
+    ly += dy;
+  }
+  const height = nRows * rh;
+  const t = c.tileSize();
+  const frameH = Math.max(t, Math.ceil(height / t) * t);
+  c.rect(String(el.frame ?? 'slot'), x, ly, w, frameH, null, true);
+  shown.forEach((r, i) => {
+    const rt = ly + i * rh;
+    let tx = x + 4;
+    const ty = rt + Math.floor((rh - 7) / 2);
+    if (isHead(r.icon)) {
+      const hx = wide ? x + 3 + (ICON - HEAD) / 2 : x + 4;
+      drawHead(c, hx, rt + Math.floor((rh - HEAD) / 2));
+      tx += wide ? ICON + 2 : HEAD + 3;
+    } else if (r.icon) {
+      const iy = rt + Math.floor((rh - ICON) / 2);
+      drawIcon(c, r.icon, x + 3, iy);
+      drawCount(c, r.count, x + 3, iy, rt + rh);
+      tx += ICON + 2;
+    }
+    c.textOut(fit(r.text, x + w - 4 - tx), tx, ty, r.color, true);
+    regions.push({ x, y: rt, w, h: rh, tip: r.tip, act: r.act });
+  });
+  pager(c, id, page, pages, x, ly + frameH + 4, w, regions);
+  boxes.push({ top, x, y: ly, w, h: frameH + (pages > 1 ? 20 : 0) });
+}
+
+function gridEl(c, el, top, ctx, boxes, regions, hints) {
+  const x = int(el.x, 0), y = int(el.y, 0);
+  const id = String(el.id ?? `grid${top}`);
+  const cols = Math.max(1, int(el.cols, 4)), nRows = Math.max(1, int(el.rows, 2));
+  const pitch = int(el.cell, 18), size = int(el.size, 16);
+  const noFrame = String(el.frame ?? 'slot').toLowerCase() === 'none';
+  const all = rows(el, ctx);
+  const per = cols * nRows;
+  const pages = Math.max(1, Math.ceil(all.length / per));
+  const page = Math.max(0, Math.min(ctx.pages?.[id] ?? 0, pages - 1));
+  const shown = all.slice(page * per, page * per + per);
+  let gy = y;
+  if (shown.some((r) => isHead(r.icon))) {
+    const dy = headShift(y + Math.floor((size - HEAD) / 2));
+    if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
+    gy += dy;
+  }
+  for (let r = 0; r < nRows; r++) {
+    for (let col = 0; col < cols; col++) {
+      const cell = shown[r * cols + col];
+      const cx = x + col * pitch, cy = gy + r * pitch;
+      if (!noFrame) c.rect(String(el.frame ?? 'slot'), cx, cy, size, size, cell ? cell.tint : null);
+      if (!cell) continue;
+      let drew = false;
+      if (isHead(cell.icon)) {
+        const off = Math.floor((size - HEAD) / 2);
+        drawHead(c, cx + off, cy + off);
+        drew = true;
+      } else if (cell.icon) {
+        const off = Math.floor((size - ICON) / 2);
+        drew = drawIcon(c, cell.icon, cx + off, cy + off);
+        if (drew) drawCount(c, cell.count, cx + off, cy + off);
+      }
+      let label = cell.text;
+      if (!label && !drew && cell.icon) label = shortName(cell.icon);
+      if (label) c.centered(fit(label, size - 2), cx, size, cy + Math.floor((size - 7) / 2), cell.color, true);
+      regions.push({ x: cx, y: cy, w: size, h: size, tip: cell.tip, act: cell.act });
+    }
+  }
+  const gw = cols * pitch - (pitch - size);
+  pager(c, id, page, pages, x, gy + nRows * pitch + 2, gw, regions);
+  boxes.push({ top, x, y: gy, w: gw, h: nRows * pitch - (pitch - size) + (pages > 1 ? 18 : 0) });
+}
+
+export function format(n) {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 1000) / 1000);
+}
+
+function sliderEl(c, el, top, ctx, boxes, regions) {
+  const x = int(el.x, 0), y = int(el.y, 0);
+  const min = num(el.min, 0), max = num(el.max, 10), step = num(el.step, 1);
+  const t = c.tileSize();
+  const w = Math.max(2 * t, Math.floor(int(el.width, 100) / t) * t);
+  const knobW = t;
+  c.rect('slot', x, y + Math.floor((16 - t) / 2), w, t, null);
+  if (!(max > min) || !(step > 0)) { boxes.push({ top, x, y, w, h: 16 }); return; }
+  const n = Math.round((max - min) / step) + 1;
+  const span = Math.max(1, w - knobW);
+  const v = Number(varValue(ctx, String(el.var ?? '').toLowerCase()));
+  const clamped = Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min;
+  const pos = Math.round((clamped - min) / step);
+  const kx = x + (n <= 1 ? 0 : Math.round(pos * span / (n - 1)));
+  c.rect('button', kx, y, knobW, 16, color(el.tint) ?? BUTTON_GRAY);
+  const at = (col) => Math.max(0, Math.min(n - 1, Math.round(((col - knobW / 2 + 0.5) / span) * (n - 1))));
+  const valueAt = (p) => Math.min(max, min + p * step);
+  let start = 0, sp = at(0);
+  for (let col = 1; col <= w; col++) {
+    const p = col < w ? at(col) : -1;
+    if (p === sp) continue;
+    const val = format(valueAt(sp));
+    const tip = el.tooltip != null ? fill(String(el.tooltip).replace(/%value%/g, val), ctx) : val;
+    regions.push({ x: x + start, y, w: col - start, h: 16, tip,
+      act: { type: 'set', var: String(el.var ?? '').toLowerCase(), value: val, then: list(el.actions) } });
+    start = col;
+    sp = p;
+  }
+  boxes.push({ top, x, y, w, h: 16 });
+}

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glyphwork Menü-Designer</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="designer.css">
+</head>
+<body>
+<header>
+  <h1 data-i18n="title">Glyphwork Menü-Designer</h1>
+  <span class="saved" data-i18n="saved"></span>
+  <a class="navlink" href="index.html" data-i18n="skinEditor">Skin-Editor</a>
+  <button id="lang" class="ghost"></button>
+</header>
+
+<main class="designer">
+  <aside class="panel">
+    <div class="row wrap">
+      <button id="newMenu" data-i18n="newMenu">Neu</button>
+      <button id="openBtn" data-i18n="open">Öffnen</button>
+      <input id="openFile" type="file" accept=".yml,.yaml" hidden>
+      <button id="pasteBtn" data-i18n="paste">YAML einfügen</button>
+    </div>
+    <div class="row">
+      <button id="downloadBtn" class="primary" data-i18n="download">Herunterladen</button>
+    </div>
+
+    <h2 data-i18n="skin">Skin</h2>
+    <select id="skin"></select>
+
+    <h2 data-i18n="palette">Element hinzufügen</h2>
+    <div id="paletteBtns" class="row wrap palette"></div>
+
+    <h2 data-i18n="layers">Ebenen</h2>
+    <ul id="layers"></ul>
+    <div class="row wrap">
+      <button id="layerUp" class="small" data-i18n="up">↑</button>
+      <button id="layerDown" class="small" data-i18n="down">↓</button>
+      <button id="layerDup" class="small" data-i18n="duplicate">Duplizieren</button>
+      <button id="layerDel" class="small" data-i18n="remove">Löschen</button>
+    </div>
+  </aside>
+
+  <section class="panel">
+    <div class="toolbar">
+      <button id="modeEdit" class="active" data-i18n="edit">Bearbeiten</button>
+      <button id="modePlay" data-i18n="play">Ausprobieren</button>
+      <span class="sep"></span>
+      <button id="undo" title="Ctrl+Z">↶</button>
+      <button id="redo" title="Ctrl+Y">↷</button>
+      <span class="sep"></span>
+      <label class="inline"><span data-i18n="zoom">Zoom</span>
+        <select id="zoom"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
+      <label class="inline"><span data-i18n="snap">Raster</span>
+        <select id="snap"><option>1</option><option>2</option><option>4</option><option>8</option></select></label>
+      <label class="inline"><input id="textGrid" type="checkbox"> <span data-i18n="textGrid">9-px-Raster</span></label>
+      <label class="inline"><input id="outlines" type="checkbox" checked> <span data-i18n="outlines">Umrisse</span></label>
+    </div>
+    <div class="stageWrap"><canvas id="stage" tabindex="0"></canvas><div id="tip" hidden></div></div>
+    <div class="status" id="status"></div>
+    <div id="problems" class="problems"></div>
+    <p class="hint" data-i18n="iconNote"></p>
+    <div id="logBox" hidden>
+      <h3><span data-i18n="log">Protokoll</span> <button id="clearLog" class="small" data-i18n="clearLog">Leeren</button></h3>
+      <ul id="log"></ul>
+    </div>
+  </section>
+
+  <section class="panel side">
+    <div class="tabs">
+      <button data-tab="element" class="active" data-i18n="tabElement">Element</button>
+      <button data-tab="menu" data-i18n="menu">Menü</button>
+      <button data-tab="vars" data-i18n="tabVars">Variablen</button>
+      <button data-tab="forms" data-i18n="tabForms">Formulare</button>
+      <button data-tab="templates" data-i18n="tabTemplates">Vorlagen</button>
+      <button data-tab="yaml" data-i18n="tabYaml">YAML</button>
+    </div>
+    <div class="tab-element"><div id="elementProps" class="props"></div></div>
+    <div class="tab-menu" hidden><div id="menuProps" class="props"></div></div>
+    <div class="tab-vars" hidden>
+      <p class="hint" data-i18n="varsHint"></p>
+      <div id="varsTable"></div>
+      <div class="row">
+        <button id="addVar" data-i18n="addVar">+ Variable</button>
+        <button id="resetPreview" data-i18n="resetPreview">Vorschau zurücksetzen</button>
+      </div>
+    </div>
+    <div class="tab-forms" hidden>
+      <p class="hint" data-i18n="formsHint"></p>
+      <div id="formsEditor"></div>
+    </div>
+    <div class="tab-templates" hidden>
+      <p class="hint" data-i18n="templatesHint"></p>
+      <textarea id="templatesYaml" rows="16" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="applyTemplates" data-i18n="apply">Übernehmen</button>
+        <button id="loadShared" data-i18n="loadShared">Geteilte Vorlagen laden</button>
+        <input id="sharedFile" type="file" accept=".yml,.yaml" multiple hidden>
+      </div>
+      <p class="hint" id="sharedInfo"></p>
+    </div>
+    <div class="tab-yaml" hidden>
+      <p class="hint" data-i18n="yamlHint"></p>
+      <textarea id="yamlText" rows="30" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="applyYaml" data-i18n="apply">Übernehmen</button>
+        <button id="copyYaml" data-i18n="copy">Kopieren</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="formDialog">
+  <form method="dialog">
+    <h3 id="formTitle"></h3>
+    <div id="formFields"></div>
+    <div class="row">
+      <button value="ok" id="formOk" class="primary"></button>
+      <button value="cancel" id="formCancel"></button>
+    </div>
+  </form>
+</dialog>
+
+<footer>
+  <a href="https://github.com/flyingfinger1/Glyphwork">Glyphwork</a> ·
+  <a href="https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md">menus.md</a> ·
+  <a href="https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menu-designer.md">menu-designer.md</a>
+</footer>
+
+<div id="toast" role="status"></div>
+<script type="module" src="js/designer/main.js"></script>
+</body>
+</html>

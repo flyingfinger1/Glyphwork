@@ -7,6 +7,8 @@ for templates and conditions, `beispiel-spieler.yml` for variables and dynamic l
 `/glyphwork reload` applies the changes; problems are shown in chat and the console with the exact
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
 
+Prefer the mouse? The [menu designer](menu-designer.md) builds these files in the browser.
+
 Open a menu with its own command (see `command`) or `/glyphwork menu <id> [player]` (admins).
 
 Positions are GUI pixels from the top-left corner of the menu. Frames snap to the skin's tiles

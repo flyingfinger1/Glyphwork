@@ -1,0 +1,87 @@
+/* Menu designer: layout on top of the skin editor's style.css */
+
+main.designer { grid-template-columns: 260px minmax(360px, 1fr) 360px; }
+@media (max-width: 1100px) { main.designer { grid-template-columns: 1fr; } }
+
+.navlink { color: var(--accent); text-decoration: none; font-size: 13px; }
+.navlink:hover { text-decoration: underline; }
+
+textarea {
+  font: 12px/1.4 ui-monospace, Consolas, monospace;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 8px;
+  width: 100%;
+  resize: vertical;
+}
+
+.props label { margin-bottom: 6px; }
+.props input[type=number] { display: block; width: 100%; margin-top: 3px; }
+.props textarea { display: block; margin-top: 3px; }
+.props .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.props .colorRow { display: flex; gap: 6px; margin-top: 3px; }
+.props .colorRow input[type=text] { flex: 1; margin: 0; }
+.props .colorRow input[type=color] { flex: none; }
+.props .typeHead { font-weight: 600; color: var(--text); margin: 0 0 8px; font-size: 14px; }
+.props details { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; margin: 6px 0; }
+.props details summary { cursor: pointer; color: var(--text); font-size: 13px; padding: 2px 0; }
+.props .hintLine { color: var(--accent); font-size: 12px; margin: 2px 0 8px; }
+
+#skin { width: 100%; }
+.palette button { flex: 1 1 30%; font-size: 12px; padding: 4px 6px; }
+
+#layers { list-style: none; padding: 0; margin: 0 0 8px; max-height: 32vh; overflow: auto; }
+#layers li { padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; display: flex; gap: 6px; }
+#layers li:hover { background: var(--panel-2); }
+#layers li.active { background: var(--panel-2); outline: 1px solid var(--accent); }
+#layers li .muted { color: var(--muted); margin-left: auto; font-size: 11px; white-space: nowrap; }
+#layers li .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.stageWrap { position: relative; overflow: auto; max-height: 75vh; background: #2b2f38; border-radius: 6px; padding: 12px; }
+@media (prefers-color-scheme: light) { .stageWrap { background: #c9ced8; } }
+#stage { margin: 0 auto; outline: none; touch-action: none; }
+#stage.play { cursor: pointer; }
+#tip {
+  position: absolute;
+  pointer-events: none;
+  background: #100010f0;
+  color: #fff;
+  border: 1px solid #5000ff80;
+  padding: 3px 6px;
+  font-size: 12px;
+  border-radius: 3px;
+  white-space: pre;
+  z-index: 2;
+}
+
+.problems { font-size: 12px; margin-top: 6px; }
+.problems div { margin: 2px 0; }
+.problems .err { color: var(--danger); }
+.problems .info { color: var(--accent); }
+
+#log { list-style: none; padding: 0; margin: 0; font-size: 12px; max-height: 20vh; overflow: auto; }
+#log li { padding: 2px 0; border-bottom: 1px solid var(--border); }
+
+.side { max-height: calc(100vh - 80px); overflow: auto; }
+.side .tabs { flex-wrap: wrap; }
+.side .tabs button { padding: 5px 8px; }
+.vars { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 4px; align-items: center; margin-bottom: 8px; }
+.vars input { width: 100%; min-width: 0; padding: 3px 6px; }
+.vars .head { color: var(--muted); font-size: 11px; }
+
+.formCard { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 10px; }
+.fieldRow { border-top: 1px dashed var(--border); padding-top: 6px; margin-top: 6px; }
+
+dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 320px;
+}
+dialog::backdrop { background: #0008; }
+dialog label { color: var(--text); }
+dialog input[type=text], dialog textarea, dialog select { width: 100%; }
+dialog .rangeVal { color: var(--muted); font-size: 12px; margin-left: 6px; }

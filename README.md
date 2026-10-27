@@ -29,6 +29,10 @@ sends it to everyone online; `/glyphwork status` shows who has it. See `config.y
 
 **Skin editor:** https://flyingfinger1.github.io/Glyphwork/ ([guide](docs/skin-editor.md))
 
+**Menu designer:** https://flyingfinger1.github.io/Glyphwork/designer.html ([guide](docs/menu-designer.md)):
+build YAML menus with the mouse, with forms, variables and templates, try them out in the browser
+and download the `.yml` file.
+
 ## Install
 
 1. Download `Glyphwork-<version>.jar` from the [releases](https://github.com/flyingfinger1/Glyphwork/releases)

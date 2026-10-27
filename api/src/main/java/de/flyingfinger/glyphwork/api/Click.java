@@ -24,4 +24,13 @@ public interface Click extends View {
      * shown again.
      */
     void prompt(Component title, String initial, Consumer<String> onSubmit);
+
+    /**
+     * Several inputs at once (text, checkbox, slider, choice): opens the form as a native dialog with
+     * OK and Cancel. On OK the handler gets the values; afterwards (also on Cancel or ESC) the current
+     * scene is shown again.
+     */
+    default void form(Form form, Consumer<Form.Values> onSubmit) {
+        throw new UnsupportedOperationException("forms are not supported by this Click");
+    }
 }

@@ -6,7 +6,7 @@ serves it from an embedded HTTP server and sends it on join. See [SPEC.md](SPEC.
 
 **Status:** all spec milestones (M0–M5) done: primitives proven in a vanilla client, autotiled
 skins with an editor, public scene API, YAML menus, item icons, an example plugin. Other
-plugins build screens with panels, labels, buttons, lists, grids, navigation and text input:
+plugins build screens with panels, labels, buttons, lists, grids, sliders, checkboxes, choice buttons, navigation, text input and forms:
 [docs/api.md](docs/api.md). `/glyphwork test` opens the demo, built with that API.
 
 **Item icons:** 16 x 16 icons for 1595 items (in grids, buttons, lists, menus), drawn from the
@@ -16,7 +16,7 @@ are measured, and the pack's own items (`myserver:ruby`) work as icons. Player h
 stack count at the bottom right, like in the inventory.
 
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
-with buttons that run commands, open other menus or ask for input, PlaceholderAPI support, a
+with buttons that run commands, open other menus, ask for input or show forms, PlaceholderAPI support, a
 command per menu, conditions (show, gray out or check before an action), reusable templates,
 variables (tabs, search, switches), lists that fill themselves (online players, worlds) and menus
 that redraw themselves every few seconds:

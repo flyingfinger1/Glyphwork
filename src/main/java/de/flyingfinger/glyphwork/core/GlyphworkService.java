@@ -201,12 +201,21 @@ public final class GlyphworkService implements Glyphwork {
             if (!player.isOnline() || s.generation != generation || s.stack.peek() != scene) {
                 return;
             }
-            // another plugin opened an inventory over the menu: leave it alone
-            if (player.getOpenInventory().getType() != org.bukkit.event.inventory.InventoryType.CRAFTING) {
-                return;
+            if (inventoryOpen(player)) {
+                return;                             // another plugin opened an inventory over the menu: leave it alone
             }
             show(player, s, true);
         }, ticks);
+    }
+
+    /**
+     * Whether an inventory screen is open. Without one, Paper reports the player's own view:
+     * CRAFTING in survival, CREATIVE in creative mode.
+     */
+    static boolean inventoryOpen(Player player) {
+        org.bukkit.event.inventory.InventoryType type = player.getOpenInventory().getType();
+        return type != org.bukkit.event.inventory.InventoryType.CRAFTING
+            && type != org.bukkit.event.inventory.InventoryType.CREATIVE;
     }
 
     /** The player closed the dialog (exit button or ESC): forget the screen, stop redrawing. */
@@ -344,6 +353,31 @@ public final class GlyphworkService implements Glyphwork {
                         onSubmit.accept(text);
                     } catch (RuntimeException e) {
                         plugin.getLogger().log(Level.WARNING, "Prompt handler failed", e);
+                    }
+                    back.run();
+                }),
+                () -> Bukkit.getScheduler().runTask(plugin, back)));
+        }
+
+        @Override
+        public void form(de.flyingfinger.glyphwork.api.Form form, Consumer<de.flyingfinger.glyphwork.api.Form.Values> onSubmit) {
+            int generation = ++session.generation;
+            session.stopRefresh();
+            Runnable back = () -> {
+                if (player.isOnline() && session.generation == generation) {
+                    show(player, session);
+                }
+            };
+            DialogFactory.show(player, DialogFactory.form(form,
+                Messages.active().get(player, "dialog.ok"), Messages.active().get(player, "dialog.cancel"),
+                values -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (session.generation != generation) {
+                        return;
+                    }
+                    try {
+                        onSubmit.accept(values);
+                    } catch (RuntimeException e) {
+                        plugin.getLogger().log(Level.WARNING, "Form handler failed", e);
                     }
                     back.run();
                 }),

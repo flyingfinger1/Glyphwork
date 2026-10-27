@@ -3,7 +3,7 @@
 Every `*.yml` file in `plugins/Glyphwork/menus/` is a menu; the file name is its id. Files whose
 name starts with `_` hold [templates](#templates) instead. On first start Glyphwork puts examples
 there (`beispiel.yml`, `beispiel-regeln.yml`, `beispiel-warps.yml` with `_beispiel-vorlagen.yml`
-for templates and conditions, and `beispiel-spieler.yml` for variables and dynamic lists). After editing,
+for templates and conditions, `beispiel-spieler.yml` for variables and dynamic lists, `beispiel-formular.yml` for forms). After editing,
 `/glyphwork reload` applies the changes; problems are shown in chat and the console with the exact
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
 
@@ -28,6 +28,7 @@ exit-label: "Close"           # optional: label of the dialog's exit button
 templates: {...}              # optional: templates only for this menu, see below
 variables: { tab: shop }      # optional: menu variables and their defaults, see below
 refresh: 5                    # optional: redraw every 5 seconds while open (at least 1), see below
+forms: {...}                  # optional: forms with several input fields, see below
 elements: [...]
 ```
 
@@ -51,6 +52,9 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `tint`, `tooltip`, `actions` |
 | `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)); page buttons appear below when needed (+20 px) |
 | `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`; page buttons below when needed |
+| `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
+| `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
+| `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
@@ -84,6 +88,15 @@ differently from the first (Glyphwork logs a hint). Lists with `items-from: onli
 rows by default. Heads show in every display mode and in the plain dialog (in front of the button
 text).
 
+**Slider, checkbox, choice** write a [menu variable](#variables) (`var`) and are drawn from the
+skin, so they sit anywhere in the menu like buttons. Native dialog fields cannot be placed inside the
+pixel GUI; these are their counterparts. The server cannot follow the mouse, so a slider has no
+dragging: a click on its track moves the knob there, and the tooltip shows the value at that spot
+before you click. A checkbox (16 x 16 box, text to its right) switches between `true` and `false`; a
+choice button steps through its options, back with a click on its left half, forward on the right
+half. After a change the variable is set, the element's `actions` run, and the menu is redrawn.
+Text fields need the keyboard, so they stay in [forms](#forms) and `input:`.
+
 `y` of a text is the top of the letters; in a 16 px button the text starts 4 px below the top.
 Items with a `permission` are only shown to players who have it. Every element and every list or
 grid item can have `show-if`; buttons also `enabled-if` and `disabled-tooltip`, see
@@ -105,6 +118,7 @@ A list of strings, run in order:
 | `require: %vault_eco_balance% >= 100 \| message: <red>Too poor` | checks a [condition](#conditions); if it does not hold, runs the action after `\|` (optional) and **skips the remaining actions** |
 | `set: tab shop` | sets the [menu variable](#variables) `tab` to `shop` (placeholders allowed: `set: filter %input%`); `set: tab` resets it to its default |
 | `toggle: sound` | switches the variable between `true` and `false` |
+| `form: settings` | opens the [form](#forms) `settings` of this menu |
 
 After `set` or `toggle` the menu is drawn again by itself, unless an action already opened, closed,
 or redrew it. `open:` takes placeholders too (`open: shop-%menu_tab%`).
@@ -199,6 +213,44 @@ every entry, with the entry's values as `%item...%` placeholders. Fixed `items` 
 `item` takes the settings of `items` entries (`text`, `color`, `tint`, `tooltip`, `actions`,
 `permission`, `icon`, `show-if`). A misspelled `%item_...%` is reported when the menu is loaded.
 `icon: "%item_head%"` puts each player's head in front of the name.
+
+## Forms
+
+A form is a native dialog with several fields and OK / Cancel. Dialogs cannot put native fields
+into the pixel GUI, and the client sends their values only with a native button, so a form opens as
+a dialog of its own; afterwards the menu is shown again. Every field belongs to a
+[menu variable](#variables): it starts with the variable's value, and OK writes the new value back.
+Then the form's `actions` run, and the menu is redrawn with the new values.
+
+```yaml
+variables: { nick: "%player%", range: "8", particles: "true", mode: normal }
+forms:
+  profile:
+    title: "Edit profile"          # MiniMessage, placeholders allowed
+    ok: "Save"                     # optional, also cancel: "..."
+    width: 200                     # optional: width of the fields
+    fields:
+      - { type: text, var: nick, label: "Nickname", max-length: 16 }
+      - { type: text, var: motto, label: "Motto", max-length: 80, lines: 3 }
+      - { type: slider, var: range, label: "Range", min: 2, max: 32, step: 1 }
+      - { type: checkbox, var: particles, label: "Particles" }
+      - { type: choice, var: mode, label: "Mode", options: { easy: "<green>Easy", normal: Normal } }
+    actions: ["message: <green>Saved, %menu_nick%!"]
+elements:
+  - { type: button, x: 8, y: 76, width: 96, text: "Edit", actions: ["form: profile"] }
+```
+
+| field | settings | value in the variable |
+|---|---|---|
+| `text` | `max-length` (1 to 100, default 100), `lines` (1 to 10; more than 1 = text box) | the text, cleaned like `%input%` |
+| `slider` | `min` (0), `max` (10), `step` (1) | the number (`12`, or `2.5` with steps of 0.5) |
+| `checkbox` | | `true` or `false` |
+| `choice` | `options`: a list (`[easy, normal]`) or `value: text` pairs | the chosen value |
+
+Values come from the client and are checked: texts are cut and cleaned, numbers stay in range,
+choices must be one of the options. Cancel and ESC change nothing. `form:` works in buttons, list
+and grid items (with `%item%` in the form's texts and actions), but not inside a form's own actions.
+For a single text, `input:` is shorter.
 
 ## Templates
 

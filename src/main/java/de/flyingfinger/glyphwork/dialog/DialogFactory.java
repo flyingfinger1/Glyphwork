@@ -1,5 +1,6 @@
 package de.flyingfinger.glyphwork.dialog;
 
+import de.flyingfinger.glyphwork.api.Form;
 import io.papermc.paper.dialog.Dialog;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
@@ -100,6 +101,49 @@ public final class DialogFactory {
                     .maxLength(256)
                     .width(200)
                     .build()))
+                .build())
+            .type(DialogType.confirmation(yes, no)));
+    }
+
+    /**
+     * A form: its fields as native inputs, OK and Cancel. ESC runs Cancel (the client's onCancel of
+     * a confirmation dialog is its "no" button).
+     */
+    public static Dialog form(Form form, Component ok, Component cancel, Consumer<FormValues> onSubmit, Runnable onCancel) {
+        ActionButton yes = ActionButton.builder(form.ok() != null ? form.ok() : ok)
+            .action(DialogAction.customClick((view, audience) ->
+                onSubmit.accept(FormValues.read(form, view::getText, view::getBoolean, view::getFloat)), callbackOptions()))
+            .build();
+        ActionButton no = ActionButton.builder(form.cancel() != null ? form.cancel() : cancel)
+            .action(DialogAction.customClick((view, audience) -> onCancel.run(), callbackOptions()))
+            .build();
+        List<DialogInput> inputs = new java.util.ArrayList<>();
+        for (Form.Field f : form.fields()) {
+            inputs.add(switch (f) {
+                case Form.Text t -> {
+                    var b = DialogInput.text(t.key(), t.label()).initial(t.initial()).maxLength(t.maxLength()).width(form.width());
+                    if (t.lines() > 1) {
+                        b.multiline(io.papermc.paper.registry.data.dialog.input.TextDialogInput.MultilineOptions
+                            .create(t.lines(), Math.min(512, 9 * t.lines() + 8)));
+                    }
+                    yield b.build();
+                }
+                case Form.Checkbox c -> DialogInput.bool(c.key(), c.label()).initial(c.initial()).build();
+                case Form.Slider s -> DialogInput.numberRange(s.key(), s.label(), s.min(), s.max())
+                    .step(s.step()).initial(s.initial()).width(form.width()).build();
+                case Form.Choice c -> DialogInput.singleOption(c.key(), c.label(), c.options().stream()
+                        .map(o -> io.papermc.paper.registry.data.dialog.input.SingleOptionDialogInput.OptionEntry
+                            .create(o.id(), o.text(), o.id().equals(c.initial())))
+                        .toList())
+                    .width(form.width()).build();
+            });
+        }
+        return Dialog.create(factory -> factory.empty()
+            .base(DialogBase.builder(form.title())
+                .canCloseWithEscape(true)
+                .pause(false)
+                .afterAction(DialogBase.DialogAfterAction.NONE)
+                .inputs(inputs)
                 .build())
             .type(DialogType.confirmation(yes, no)));
     }

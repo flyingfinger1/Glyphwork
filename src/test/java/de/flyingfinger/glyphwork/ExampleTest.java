@@ -91,7 +91,7 @@ class ExampleTest {
         assertNull(l.hit(10 + 4 * 26 + 12, 20 + 26 + 12));   // empty cell (10 offers in 12 cells)
         assertEquals(p + 8, l.hit(80, 140));                 // -
         assertEquals(p + 9, l.hit(100, 140));                // +
-        assertEquals(p + 10, l.hit(140, 140));               // Eingabe
+        assertEquals(p + 10, l.hit(140, 140));               // Wählen (form)
         assertEquals(p + 13, l.hit(40, 184));                // Optionen
         assertNull(l.hit(130, 184));                         // Kaufen: nothing selected, disabled
         assertEquals(11, l.icons.size());                    // one per offer + the emerald on "Kaufen"

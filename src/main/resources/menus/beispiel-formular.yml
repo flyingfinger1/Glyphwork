@@ -1,0 +1,55 @@
+# Beispiel für Eingaben – öffnen mit /glyphwork menu beispiel-formular
+# Zwei Wege, Werte in Menü-Variablen zu schreiben:
+#  - direkt im Menü: Schieberegler, Checkbox und Auswahl (slider, checkbox, choice), aus dem Skin gezeichnet
+#  - ein Formular (forms:): ein eigener nativer Dialog mit mehreren Feldern, auch für Text
+# Anleitung: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#forms
+
+title: "<gold>Profil"
+width: 176
+height: 152
+variables:
+  spitzname: "%player%"
+  motto: ""
+  sichtweite: "8"
+  partikel: "true"
+  stufe: normal
+
+forms:
+  profil:
+    title: "Profil bearbeiten"
+    ok: "Speichern"
+    fields:
+      - { type: text, var: spitzname, label: "Spitzname", max-length: 16 }
+      - { type: text, var: motto, label: "Motto", max-length: 80, lines: 3 }
+      - { type: slider, var: sichtweite, label: "Sichtweite", min: 2, max: 32 }
+      - { type: checkbox, var: partikel, label: "Partikel anzeigen" }
+      - type: choice
+        var: stufe
+        label: "Schwierigkeit"
+        options: { leicht: "<green>Leicht", normal: "Normal", schwer: "<red>Schwer" }
+    # läuft nach "Speichern", die Variablen haben dann schon die neuen Werte
+    actions:
+      - "message: <green>Profil gespeichert, %menu_spitzname%!"
+
+elements:
+  - { type: label, x: 8, y: 8, text: "Spitzname: %menu_spitzname%" }
+  - { type: label, x: 8, y: 20, text: "Motto: %menu_motto%", width: 160 }
+
+  # direkt im Menü: ein Klick auf die Leiste setzt den Wert, der Tooltip zeigt ihn vorher
+  - { type: label, x: 8, y: 40, text: "Sicht: %menu_sichtweite%" }
+  - { type: slider, x: 64, y: 36, width: 104, var: sichtweite, min: 2, max: 32, tooltip: "Sichtweite %value% Chunks" }
+
+  - { type: checkbox, x: 8, y: 58, var: partikel, text: "Partikel anzeigen" }
+
+  # links klicken = vorherige Stufe, rechts = nächste
+  - { type: label, x: 8, y: 84, text: "Stufe:" }
+  - type: choice
+    x: 64
+    y: 80
+    width: 104
+    var: stufe
+    options: { leicht: "Leicht", normal: "Normal", schwer: "Schwer" }
+    actions: ["sound: ui.button.click"]
+
+  - { type: button, x: 8, y: 104, width: 160, text: "Alles im Formular ändern", tooltip: "Auch Spitzname und Motto", actions: ["form: profil"] }
+  - { type: button, x: 8, y: 128, width: 64, text: "Schließen", actions: ["close"] }

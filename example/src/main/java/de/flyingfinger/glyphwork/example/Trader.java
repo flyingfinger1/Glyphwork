@@ -2,6 +2,7 @@ package de.flyingfinger.glyphwork.example;
 
 import de.flyingfinger.glyphwork.api.Button;
 import de.flyingfinger.glyphwork.api.Click;
+import de.flyingfinger.glyphwork.api.Form;
 import de.flyingfinger.glyphwork.api.DisplayMode;
 import de.flyingfinger.glyphwork.api.Glyphwork;
 import de.flyingfinger.glyphwork.api.Grid;
@@ -10,7 +11,6 @@ import de.flyingfinger.glyphwork.api.Label;
 import de.flyingfinger.glyphwork.api.Scene;
 import de.flyingfinger.glyphwork.api.View;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -124,19 +124,16 @@ public final class Trader {
             .add(Label.of(10, 104, v -> offer(v) == null ? "" : "Packung: " + offer(v).count() + " Stück"))
             .add(Label.of(10, 116, v -> offer(v) == null ? "" : "Preis: " + offer(v).price() + " Smaragde"))
 
-            // amount: - / + and a text field (dialogs cannot read typing live, so it is a prompt)
+            // amount: - / + and a slider (native fields cannot sit in the pixel GUI, so it is a form)
             .add(Label.of(10, 136, v -> "Menge: " + amount(v)).width(58))
             .add(Button.of(72, 132, 16, 16).text("-").onClick(c -> { setAmount(c, amount(c) - 1); c.reopen(); }))
             .add(Button.of(92, 132, 16, 16).text("+").onClick(c -> { setAmount(c, amount(c) + 1); c.reopen(); }))
-            .add(Button.of(112, 132, 56, 16).text("Eingabe")
-                .tooltip("Menge eintippen (1-" + MAX_AMOUNT + ")")
-                .onClick(c -> c.prompt(Component.text("Wie viele Packungen?"), String.valueOf(amount(c)), text -> {
-                    try {
-                        setAmount(c, Integer.parseInt(text.trim()));
-                    } catch (NumberFormatException e) {
-                        c.player().sendMessage(Component.text("Bitte eine Zahl eingeben.", NamedTextColor.RED));
-                    }
-                })))                                        // after the prompt this scene is shown again
+            .add(Button.of(112, 132, 56, 16).text("Wählen")
+                .tooltip("Menge mit dem Schieberegler wählen (1-" + MAX_AMOUNT + ")")
+                .onClick(c -> c.form(Form.builder(Component.text("Wie viele Packungen?"))
+                        .slider("amount", Component.text("Packungen"), 1, MAX_AMOUNT, 1, amount(c))
+                        .build(),
+                    values -> setAmount(c, Math.round(values.number("amount"))))))  // afterwards this scene is shown again
 
             // what it costs and what the player has (red when it is not enough)
             .add(Label.of(10, 156, v -> "Gesamt: " + total(v)).width(76))

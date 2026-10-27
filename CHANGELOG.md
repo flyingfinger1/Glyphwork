@@ -11,6 +11,18 @@
   drawing still work; it stops when the player closes the menu (also with ESC), opens another one or
   an inventory. `beispiel-spieler.yml` refreshes every 5 seconds and shows the players per world as
   counts.
+- **Slider, checkbox and choice in the menu:** new elements drawn from the skin (`slider`,
+  `checkbox`, `choice` in YAML with `var:`; `Slider`, `Checkbox`, `Choice` in the API). A click on a
+  slider's track moves the knob there (hovering shows the value first), a checkbox toggles, a choice
+  button steps back (left half) or forward (right half). The variable is set, the element's
+  `actions` run and the menu redraws. The plain dialog offers them as buttons (one step down/up,
+  toggle, next option). `beispiel-formular.yml` shows them next to a form.
+- **Forms:** several native input fields at once (text, multi-line text, slider, checkbox,
+  choice) in a dialog of their own with OK / Cancel; afterwards the menu is shown again. In YAML a
+  menu lists them under `forms:` and opens one with the action `form: name`; every field belongs to
+  a menu variable (starts with its value, OK writes it back), then the form's `actions` run. API:
+  `Click.form(Form, values -> ...)`; values are checked (length, range, step, known options).
+  New example `beispiel-formular.yml`; the example trader picks its amount with a slider.
 - **Text shadows like in vanilla:** the text of buttons, lists, grid cells and the page arrows now
   has a drop shadow (before, all text was flat). Grayed-out buttons stay flat, and so do labels,
   like inventory titles; `shadow: true` (YAML) or `Label.shadow(true)` turns it on for a label.

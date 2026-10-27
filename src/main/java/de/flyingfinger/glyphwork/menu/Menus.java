@@ -1,6 +1,9 @@
 package de.flyingfinger.glyphwork.menu;
 
 import de.flyingfinger.glyphwork.api.Button;
+import de.flyingfinger.glyphwork.api.Checkbox;
+import de.flyingfinger.glyphwork.api.Choice;
+import de.flyingfinger.glyphwork.api.Slider;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
@@ -48,7 +51,7 @@ public final class Menus {
 
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
-        "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh");
+        "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -58,6 +61,8 @@ public final class Menus {
     private Function<String, List<Map<String, String>>> sources = Sources::fetch;
     /** Variables of the menu being parsed (parsing runs on one thread, one menu at a time). */
     private Vars vars = Vars.NONE;
+    /** Forms of the menu being parsed. */
+    private Forms forms = Forms.NONE;
 
     /** Where dynamic lists get their entries (tests use fixed data). */
     public void sources(Function<String, List<Map<String, String>>> sources) {
@@ -142,6 +147,7 @@ public final class Menus {
         Node root = new Node(c.getValues(false), id + ".yml");
         root.only(MENU_KEYS);
         vars = Vars.of(root);
+        forms = Forms.of(root, vars, this::get);
         Vars mv = vars;
         int width = root.optInt("width", 176);
         int height = root.optInt("height", 96);
@@ -219,7 +225,7 @@ public final class Menus {
     }
 
     private Consumer<Click> actions(Node n) throws MenuException {
-        Actions.Chain run = Actions.parse(n.strings("actions"), n, "actions", this::get, vars);
+        Actions.Chain run = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
         String perm = n.optString("permission", null);
         return c -> {
             if (perm == null || c.player().hasPermission(perm)) {
@@ -258,6 +264,9 @@ public final class Menus {
             case Icon x -> x.visible(visible);
             case ListView<?> x -> x.visible(visible);
             case Grid<?> x -> x.visible(visible);
+            case Slider x -> x.visible(visible);
+            case Checkbox x -> x.visible(visible);
+            case Choice x -> x.visible(visible);
         }
     }
 
@@ -374,8 +383,123 @@ public final class Menus {
                     .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(g);
             }
-            default -> throw n.error("type", "unknown type '" + type + "' (label, button, panel, hitbox, icon, list, grid)");
+            case "slider" -> {
+                n.only(with("type", "x", "y", "width", "min", "max", "step", "var", "tint", "tooltip", "actions"));
+                String var = varName(n);
+                float min = floatOf(n, "min", 0);
+                float max = floatOf(n, "max", 10);
+                float step = floatOf(n, "step", 1);
+                if (!(max > min) || !(step > 0)) {
+                    throw n.error("max", "slider needs min < max and step > 0");
+                }
+                Vars mv = vars;
+                Actions.Chain then = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
+                String tip = n.optString("tooltip", null);
+                TextColor tint = n.optColor("tint", Button.GRAY);
+                Slider s = Slider.of(n.integer("x"), n.integer("y"), n.optInt("width", 100), min, max, step)
+                    .value(v -> {
+                        try {
+                            return Float.parseFloat(mv.get(v, var).trim());
+                        } catch (NumberFormatException e) {
+                            return min;
+                        }
+                    })
+                    .tint(v -> tint)
+                    .onChange((c, value) -> {
+                        Vars.set(c, var, de.flyingfinger.glyphwork.dialog.FormValues.format(value));
+                        then.run(c, null);
+                    });
+                if (tip != null) {
+                    s.tooltip((v, value) -> MM.deserialize(mv.fill(v,
+                        tip.replace("%value%", de.flyingfinger.glyphwork.dialog.FormValues.format(value)), null, null)));
+                }
+                b.accept(s);
+            }
+            case "checkbox" -> {
+                n.only(with("type", "x", "y", "var", "text", "color", "tooltip", "actions"));
+                String var = varName(n);
+                Vars mv = vars;
+                Actions.Chain then = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
+                TextColor color = n.optColor("color", Label.DARK);
+                Checkbox cb = Checkbox.of(n.integer("x"), n.integer("y"))
+                    .text(text(n.optString("text", "")))
+                    .textColor(v -> color)
+                    .checked(v -> "true".equalsIgnoreCase(mv.get(v, var).trim()))
+                    .onToggle((c, on) -> {
+                        Vars.set(c, var, String.valueOf(on));
+                        then.run(c, null);
+                    });
+                if (tooltip(n) != null) {
+                    cb.tooltip(tooltip(n));
+                }
+                b.accept(cb);
+            }
+            case "choice" -> {
+                n.only(with("type", "x", "y", "width", "height", "var", "options", "tint", "tooltip", "actions"));
+                String var = varName(n);
+                Map<String, String> options = options(n);
+                Vars mv = vars;
+                Actions.Chain then = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
+                TextColor tint = n.optColor("tint", Button.GRAY);
+                Choice ch = Choice.of(n.integer("x"), n.integer("y"), n.optInt("width", 80), List.copyOf(options.keySet()))
+                    .height(n.optInt("height", 16))
+                    // pixel text has no formatting: "<green>Easy" shows as "Easy"
+                    .text(id -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(MM.deserialize(options.getOrDefault(id, id))))
+                    .selected(v -> mv.get(v, var).trim())
+                    .tint(v -> tint)
+                    .onSelect((c, id) -> {
+                        Vars.set(c, var, id);
+                        then.run(c, null);
+                    });
+                if (tooltip(n) != null) {
+                    ch.tooltip(tooltip(n));
+                }
+                b.accept(ch);
+            }
+            default -> throw n.error("type", "unknown type '" + type
+                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice)");
         }
+    }
+
+    /** The menu variable an input element writes ("var: sichtweite"). */
+    private static String varName(Node n) throws MenuException {
+        String var = n.string("var").trim().toLowerCase();
+        if (!Vars.NAME.matcher(var).matches()) {
+            throw n.error("var", "variable name expected (a-z, 0-9, '_', '-'), got '" + var + "'");
+        }
+        return var;
+    }
+
+    private static float floatOf(Node n, String key, float fallback) throws MenuException {
+        String s = n.optString(key, null);
+        if (s == null) {
+            return fallback;
+        }
+        try {
+            return Float.parseFloat(s.trim());
+        } catch (NumberFormatException e) {
+            throw n.error(key, "number expected, got '" + s + "'");
+        }
+    }
+
+    /** "options: [easy, hard]" or "options: { easy: Easy, hard: <red>Hard }" (value: shown text). */
+    private static Map<String, String> options(Node n) throws MenuException {
+        Map<String, String> options = new LinkedHashMap<>();
+        Object o = Templates.plain(n.raw().get("options"));
+        if (o instanceof List<?> list) {
+            for (Object x : list) {
+                options.put(String.valueOf(x), String.valueOf(x));
+            }
+        } else if (o instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> x : map.entrySet()) {
+                options.put(String.valueOf(x.getKey()), String.valueOf(x.getValue()));
+            }
+        }
+        if (options.isEmpty()) {
+            throw n.error("options", "list of options expected ([easy, normal]) or value: text pairs");
+        }
+        return options;
     }
 
     /** One configured entry of a list or grid: fixed (items:) or the template of a dynamic list (item:). */
@@ -395,7 +519,7 @@ public final class Menus {
         e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "count", "show-if"));
         return new ItemDef(e.optString("text", defaultText), e.optColor("color", TextColor.color(0xFFFFFF)),
             e.optColor("tint", null), e.optString("tooltip", null),
-            Actions.parse(e.strings("actions"), e, "actions", this::get, vars),
+            Actions.parse(e.strings("actions"), e, "actions", this::get, vars, forms),
             e.optString("permission", null), e.optString("icon", null), e.optString("count", null),
             Condition.all(e, "show-if"));
     }

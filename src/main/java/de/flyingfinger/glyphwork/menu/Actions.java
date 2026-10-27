@@ -24,6 +24,7 @@ import java.util.function.Function;
  * require: %vault_eco_balance% >= 100 | message: Too poor   stop here unless the condition holds
  * set: tab shop                 menu variable %menu_tab% = shop ("set: tab" = back to the default)
  * toggle: sound                 %menu_sound% switches between true and false
+ * form: settings                open the form "settings" of this menu (fields = menu variables)
  * </pre>
  * After set/toggle the menu is drawn again, unless an action already opened, closed or redrew it.
  */
@@ -74,11 +75,11 @@ final class Actions {
     }
 
     /** @param menus looks up a menu by id when an "open" action runs (menus may be reloaded) */
-    static Chain parse(List<String> actions, Node at, String key, Function<String, Menus.@Nullable Menu> menus, Vars vars)
-        throws MenuException {
+    static Chain parse(List<String> actions, Node at, String key, Function<String, Menus.@Nullable Menu> menus, Vars vars,
+                       Forms forms) throws MenuException {
         List<Step> steps = new ArrayList<>();
         for (int i = 0; i < actions.size(); i++) {
-            steps.add(one(actions.get(i).trim(), at, key + "[" + i + "]", menus, vars));
+            steps.add(one(actions.get(i).trim(), at, key + "[" + i + "]", menus, vars, forms));
         }
         return (click, item) -> {
             Run r = new Run(item);
@@ -93,8 +94,8 @@ final class Actions {
         };
     }
 
-    private static Step one(String action, Node at, String key, Function<String, Menus.@Nullable Menu> menus, Vars vars)
-        throws MenuException {
+    private static Step one(String action, Node at, String key, Function<String, Menus.@Nullable Menu> menus, Vars vars,
+                            Forms forms) throws MenuException {
         int colon = action.indexOf(':');
         String type = (colon < 0 ? action : action.substring(0, colon)).trim().toLowerCase();
         String arg = colon < 0 ? "" : action.substring(colon + 1).trim();
@@ -141,7 +142,7 @@ final class Actions {
                     throw at.error(key, "input needs 'Title | action', e.g. 'input: Name? | player: msg %input% hi'");
                 }
                 String title = arg.substring(0, bar).trim();
-                Step then = one(arg.substring(bar + 1).trim(), at, key, menus, vars);
+                Step then = one(arg.substring(bar + 1).trim(), at, key, menus, vars, forms);
                 // the prompt shows the menu again afterwards, so no extra redraw is needed
                 yield go((c, in, r) -> {
                     r.navigated = true;
@@ -152,7 +153,7 @@ final class Actions {
             case "require" -> {
                 int bar = arg.indexOf(" | ");
                 Condition cond = Condition.parse(bar < 0 ? require(arg, at, key, "a condition") : arg.substring(0, bar), at, key);
-                Step otherwise = bar < 0 ? null : one(arg.substring(bar + 3).trim(), at, key, menus, vars);
+                Step otherwise = bar < 0 ? null : one(arg.substring(bar + 3).trim(), at, key, menus, vars, forms);
                 yield (c, in, r) -> {
                     if (cond.test(s -> vars.fill(c, s, r.item, in))) {
                         return true;
@@ -179,8 +180,26 @@ final class Actions {
                     r.changed = true;
                 });
             }
+            case "form" -> {
+                String name = require(arg, at, key, "a form name").toLowerCase();
+                Forms.Def def = forms.get(name);
+                if (def == null) {
+                    throw at.error(key, forms == Forms.NONE && !name.isEmpty()
+                        ? "no form '" + name + "' (forms are listed under 'forms:' of the menu; a form cannot open another form)"
+                        : "no form '" + name + "' (there are: " + String.join(", ", forms.names()) + ")");
+                }
+                // the form shows the menu again afterwards, so no extra redraw is needed
+                yield go((c, in, r) -> {
+                    r.navigated = true;
+                    Map<String, String> item = r.item;
+                    c.form(Forms.build(def, c, vars, item), values -> {
+                        Forms.store(def, c, values);
+                        def.actions().run(c, item);
+                    });
+                });
+            }
             default -> throw at.error(key, "unknown action '" + type
-                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, toggle)");
+                + "' (player, console, message, sound, open, back, close, refresh, input, require, set, toggle, form)");
         };
     }
 

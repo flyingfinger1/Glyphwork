@@ -134,7 +134,7 @@ class MenusTest {
         assertError(m, "elements:\n  - type: label\n    x: 1\n    y: 2\n    text: hi\n    color: purpleish\n",
             "t.yml.elements[0].color: color expected");
         assertError(m, "command: \"my menu\"\n", "t.yml.command: only letters");
-        assertError(m, "elements:\n  - type: slider\n", "t.yml.elements[0].type: unknown type 'slider'");
+        assertError(m, "elements:\n  - type: knob\n", "t.yml.elements[0].type: unknown type 'knob'");
         assertError(m, "title: [unclosed\n", "t.yml: not valid YAML");
     }
 

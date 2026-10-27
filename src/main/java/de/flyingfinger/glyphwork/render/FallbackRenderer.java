@@ -2,6 +2,9 @@ package de.flyingfinger.glyphwork.render;
 
 import de.flyingfinger.glyphwork.core.Messages;
 import de.flyingfinger.glyphwork.api.Button;
+import de.flyingfinger.glyphwork.api.Checkbox;
+import de.flyingfinger.glyphwork.api.Choice;
+import de.flyingfinger.glyphwork.api.Slider;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
@@ -74,6 +77,24 @@ public final class FallbackRenderer {
                     }
                     case ListView<?> l -> list(l, view, actions);
                     case Grid<?> g -> grid(g, view, actions);
+                    case Slider s -> slider(s, view, actions);
+                    case Checkbox cb -> {
+                        if (cb.onToggle() != null) {
+                            boolean on = Boolean.TRUE.equals(cb.checked().apply(view));
+                            String text = cb.text().apply(view);
+                            actions.add(new Action(Component.text((on ? "\u2611 " : "\u2610 ") + (text == null ? "" : text)),
+                                cb.tooltip() == null ? null : cb.tooltip().apply(view),
+                                Redraw.after(c -> cb.onToggle().accept(c, !on))));
+                        }
+                    }
+                    case Choice ch -> {
+                        if (ch.onSelect() != null) {
+                            String now = ch.text().apply(ch.options().get(ch.index(view)));
+                            actions.add(new Action(Component.text(now + "  \u25b6"),
+                                ch.tooltip() == null ? null : ch.tooltip().apply(view),
+                                Redraw.after(c -> ch.onSelect().accept(c, ch.step(c, 1)))));
+                        }
+                    }
                 }
             } catch (RuntimeException ex) {
                 log.warning("Fallback for " + scene.id() + " skipped an element: " + ex);
@@ -148,6 +169,30 @@ public final class FallbackRenderer {
                 c -> g.onClick().accept(c, item)));
         }
         pager(g.id(), page, pages, actions, view);
+    }
+
+    /** A slider becomes two buttons: one step down, one step up (labelled with the value they set). */
+    private static void slider(Slider s, View view, List<Action> actions) {
+        if (s.onChange() == null) {
+            return;
+        }
+        Float current = s.value().apply(view);
+        int pos = s.positionOf(current == null ? s.min() : current);
+        if (pos > 0) {
+            float v = s.valueAt(pos - 1);
+            actions.add(new Action(Component.text("\u25c0 ").append(sliderLabel(s, view, v)), null,
+                Redraw.after(c -> s.onChange().accept(c, v))));
+        }
+        if (pos < s.positions() - 1) {
+            float v = s.valueAt(pos + 1);
+            actions.add(new Action(sliderLabel(s, view, v).append(Component.text(" \u25b6")), null,
+                Redraw.after(c -> s.onChange().accept(c, v))));
+        }
+    }
+
+    private static Component sliderLabel(Slider s, View view, float v) {
+        Component tip = s.tooltip() == null ? null : s.tooltip().apply(view, v);
+        return tip != null ? tip : Component.text(de.flyingfinger.glyphwork.dialog.FormValues.format(v));
     }
 
     /** "Diamond" with count "64" -> "Diamond ×64" (gray); "1" and empty add nothing. */

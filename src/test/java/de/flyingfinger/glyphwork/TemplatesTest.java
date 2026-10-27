@@ -156,14 +156,14 @@ class TemplatesTest {
     @Test
     void bundledExamplesLoad(@TempDir Path dir) throws Exception {
         for (String f : List.of("_beispiel-vorlagen.yml", "beispiel-warps.yml", "beispiel.yml", "beispiel-regeln.yml",
-            "beispiel-spieler.yml")) {
+            "beispiel-spieler.yml", "beispiel-formular.yml")) {
             try (var in = getClass().getResourceAsStream("/menus/" + f)) {
                 Files.write(dir.resolve(f), in.readAllBytes());
             }
         }
         Menus menus = Menus.load(dir);
         assertEquals(List.of(), menus.errors());
-        assertEquals(4, menus.all().size());
+        assertEquals(5, menus.all().size());
         Scene warps = menus.get("beispiel-warps").scene();
         assertEquals("Spawn", button(warps, 2).text().apply(NOBODY));
         assertEquals(true, button(warps, 4).enabled().apply(NOBODY));  // Nether: enabled-if via the use entry

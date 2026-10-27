@@ -51,6 +51,12 @@ Glyphwork.get().open(player, settings);
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onSelect`, `.selected`, `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short label; `.label`, `.tint`, `.selected`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
+| `Slider.of(x, y, w, min, max, step)` | track + knob, 16 px high; `.value`, `.onChange((click, value) -> ...)`, `.tint`, `.tooltip(value -> ...)`: a click on the track picks the value under the cursor (no dragging) |
+| `Checkbox.of(x, y)` | 16 x 16 box with a check mark and text; `.text`, `.checked`, `.onToggle((click, on) -> ...)` |
+| `Choice.of(x, y, w, "a", "b", ...)` | button "&lt; option &gt;"; left half = previous, right half = next; `.selected`, `.text(id -> shown)`, `.onSelect((click, id) -> ...)` |
+
+Slider, checkbox and choice redraw the scene after their handler (unless it opened, closed or
+redrew something itself), so the handler only stores the new value.
 
 Item icons: `Grid.icon(item -> "diamond")` (centered in the cell; `cell(26, 24)` keeps the slot
 frame visible around it, `frame("none")` draws no frame), `Button.icon("emerald")` (left of the
@@ -95,6 +101,7 @@ Handlers get a `Click` (runs on the main thread):
 | `back()` | previous scene, or close |
 | `close()` | close the screen |
 | `prompt(title, initial, text -> ...)` | small native dialog with a text field (dialogs cannot read typing live); afterwards the current scene is shown again |
+| `form(form, values -> ...)` | native dialog with several fields (text, checkbox, slider, choice) and OK / Cancel, see below |
 | `get(key, fallback)` / `set(key, value)` | per-player state of this scene; survives `reopen` and `back` until the player quits |
 | `page(listId)` | current page of a list/grid (state key `glyphwork:page:<id>`) |
 
@@ -108,6 +115,29 @@ cells come from the items function, so filter those there.
 `Integer`. Read a value with the type you stored (`v.get("number", (Object) "-")` when it may be
 missing and you only print it). If a binding throws while rendering, only that element is hidden and
 a warning is logged.
+
+## Forms
+
+Native input fields cannot sit inside the pixel GUI, and the client sends their values only with a
+native button. `Click.form` therefore opens them as a dialog of their own, with OK and Cancel;
+afterwards (also on Cancel or ESC) the current scene is shown again.
+
+```java
+.onClick(c -> c.form(Form.builder(Component.text("Settings"))
+        .text("name", Component.text("Name"), name(c), 16, 1)          // key, label, initial, max length, lines
+        .slider("range", Component.text("Range"), 2, 32, 1, range(c))  // min, max, step, initial
+        .checkbox("particles", Component.text("Particles"), particles(c))
+        .choice("mode", Component.text("Mode"), mode(c),
+            Form.option("easy", Component.text("Easy")), Form.option("hard", Component.text("Hard")))
+        .buttons(Component.text("Save"), null)                          // null keeps the default label
+        .build(),
+    values -> save(c, values.text("name"), (int) values.number("range"),
+        values.checked("particles"), values.choice("mode"))))
+```
+
+Keys use `a-z`, `A-Z`, `0-9` and `_`. The values come from the client and are checked before the
+handler sees them: texts are cut to their length, numbers clamped and put on the step, choices are one
+of the option ids (otherwise the initial value). The example trader picks its amount with a slider.
 
 ## Display mode per player
 

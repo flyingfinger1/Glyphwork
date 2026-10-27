@@ -1,6 +1,9 @@
 package de.flyingfinger.glyphwork.render;
 
 import de.flyingfinger.glyphwork.api.Button;
+import de.flyingfinger.glyphwork.api.Checkbox;
+import de.flyingfinger.glyphwork.api.Choice;
+import de.flyingfinger.glyphwork.api.Slider;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
@@ -117,6 +120,9 @@ public final class SceneRenderer {
                     }
                     case ListView<?> l -> list(line, l, view, binder, name);
                     case Grid<?> g -> grid(line, g, view, binder, name);
+                    case Slider s -> slider(line, s, view, binder, name);
+                    case Checkbox cb -> checkbox(line, cb, view, binder, name);
+                    case Choice ch -> choice(line, ch, view, binder, name);
                 }
             } catch (RuntimeException ex) {
                 // a failing binding hides this element instead of breaking the whole screen
@@ -474,6 +480,113 @@ public final class SceneRenderer {
         }
         pager(line, g.id(), page, pages(items.size(), perPage), g.x(), gy + g.rows() * g.cellPitch() + 2,
             g.cols() * g.cellPitch() - (g.cellPitch() - g.cellSize()), binder, name);
+    }
+
+    /**
+     * Track ("slot", one tile high) and knob ("button", one tile wide, 16 px high). Every pixel column
+     * of the track picks the value whose knob would sit under the cursor; neighbouring columns with
+     * the same value share one click zone, with that value as tooltip. Hit glyphs are 8 px wide, and
+     * the last one under the cursor wins, so zones are laid out left to right and each one starts
+     * exactly where the previous one ends.
+     */
+    private void slider(LineBuilder line, Slider s, View view, Binder binder, String name) {
+        Frame track = frame("slot");
+        Frame knob = frame("button");
+        int t = track == null ? 8 : track.tileSize();
+        int w = Math.max(2 * t, s.width() / t * t);
+        int knobW = knob == null ? 8 : knob.tileSize();
+        if (track != null) {
+            line.frame(track, s.x(), s.y() + (Slider.HEIGHT - t) / 2, w, t, null, null, null);
+        }
+        int n = s.positions();
+        int span = Math.max(1, w - knobW);
+        Float current = s.value().apply(view);
+        int pos = s.positionOf(current == null ? s.min() : current);
+        int kx = s.x() + (n <= 1 ? 0 : Math.round(pos * span / (float) (n - 1)));
+        if (knob != null) {
+            line.frame(knob, kx, s.y(), knobW, Slider.HEIGHT, s.tint().apply(view), null, null);
+        }
+        if (s.onChange() == null) {
+            return;
+        }
+        int start = 0;
+        int startPos = sliderPosition(0, knobW, span, n);
+        for (int col = 1; col <= w; col++) {
+            int p = col < w ? sliderPosition(col, knobW, span, n) : -1;
+            if (p == startPos) {
+                continue;
+            }
+            float v = s.valueAt(startPos);
+            ClickEvent<?> click = binder.bind(name + ":v" + startPos, Redraw.after(c -> s.onChange().accept(c, v)));
+            Component tip = s.tooltip() != null ? s.tooltip().apply(view, v)
+                : Component.text(de.flyingfinger.glyphwork.dialog.FormValues.format(v));
+            for (int xx = start; xx < col; xx += hit.width()) {
+                for (int yy = 0; yy < Slider.HEIGHT; yy += hit.height()) {
+                    line.glyph(hit, s.x() + xx, s.y() + yy, null, click, tip);
+                }
+            }
+            start = col;
+            startPos = p;
+        }
+    }
+
+    /** The slider position whose knob covers pixel column {@code col} of the track best. */
+    static int sliderPosition(int col, int knobW, int span, int positions) {
+        if (positions <= 1) {
+            return 0;
+        }
+        float f = (col - knobW / 2f + 0.5f) / span;
+        return Math.max(0, Math.min(positions - 1, Math.round(f * (positions - 1))));
+    }
+
+    /** Box ("slot", 16 x 16) with a check mark, text to the right; box and text toggle. */
+    private void checkbox(LineBuilder line, Checkbox cb, View view, Binder binder, String name) {
+        boolean checked = Boolean.TRUE.equals(cb.checked().apply(view));
+        ClickEvent<?> click = cb.onToggle() == null ? null
+            : binder.bind(name, Redraw.after(c -> cb.onToggle().accept(c, !checked)));
+        Component tip = tooltip(cb.tooltip(), view);
+        Frame box = frame("slot");
+        if (box != null) {
+            line.frame(box, cb.x(), cb.y(), Checkbox.SIZE, Checkbox.SIZE, null, click, tip);
+        } else {
+            hitbox(line, cb.x(), cb.y(), Checkbox.SIZE, Checkbox.SIZE, click, tip);
+        }
+        if (checked) {
+            line.centered("\u2714", cb.x(), Checkbox.SIZE, cb.y() + 4, WHITE, LineBuilder.shadowOf(WHITE));
+        }
+        String s = cb.text().apply(view);
+        if (s != null && !s.isEmpty()) {
+            TextColor color = skinText(cb.textColor().apply(view));
+            line.text(s, cb.x() + Checkbox.SIZE + 4, cb.y() + 4, color);
+            hitbox(line, cb.x() + Checkbox.SIZE, cb.y(), Math.max(hit.width(), 4 + line.textWidth(s)), Checkbox.SIZE, click, tip);
+        }
+    }
+
+    /** A button "&lt;  option  &gt;": its left half picks the previous option, the right half the next. */
+    private void choice(LineBuilder line, Choice ch, View view, Binder binder, String name) {
+        Frame f = frame("button");
+        int h = f == null ? ch.height() : Math.max(f.tileSize(), ch.height() / f.tileSize() * f.tileSize());
+        boolean active = ch.onSelect() != null;
+        TextColor tint = ch.tint().apply(view);
+        if (f != null) {
+            line.frame(f, ch.x(), ch.y(), ch.width(), ch.height(), tint, null, null);
+        }
+        Component tip = tooltip(ch.tooltip(), view);
+        if (active) {
+            int half = ch.width() / 2;
+            hitbox(line, ch.x(), ch.y(), half, h,
+                binder.bind(name + ":prev", Redraw.after(c -> ch.onSelect().accept(c, ch.step(c, -1)))), tip);
+            hitbox(line, ch.x() + half, ch.y(), ch.width() - half, h,
+                binder.bind(name + ":next", Redraw.after(c -> ch.onSelect().accept(c, ch.step(c, 1)))), tip);
+        }
+        int textY = ch.y() + (h - 7) / 2;
+        ShadowColor shadow = LineBuilder.shadowOf(WHITE);
+        if (ch.options().size() > 1) {
+            line.centered("<", ch.x(), 12, textY, WHITE, shadow);
+            line.centered(">", ch.x() + ch.width() - 12, 12, textY, WHITE, shadow);
+        }
+        String s = line.fit(String.valueOf(ch.text().apply(ch.options().get(ch.index(view)))), ch.width() - 26);
+        line.centered(s, ch.x() + 12, ch.width() - 24, textY, WHITE, shadow);
     }
 
     /** "diamond" -> "Dia", "gold_ingot" -> "GI": stands in for an icon that is not drawn. */

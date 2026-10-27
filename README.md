@@ -40,7 +40,7 @@ and download the `.yml` file.
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
    built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
    web server with `pack.hosting: external`. Then `/glyphwork reload`.
-3. `/glyphwork test` opens the demo, `/glyphwork menu beispiel` the example YAML menu
+3. `/glyphwork test` opens the demo, `/glyphwork menu example` the example YAML menu (`beispiel` on German servers)
    ([docs/menus.md](docs/menus.md)).
 
 **Languages:** Glyphwork's own messages, dialogs and command words come in English and German
@@ -62,7 +62,7 @@ dependencies {
 
 Then build scenes as shown in [docs/api.md](docs/api.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
-A complete example plugin is in [example/](example/): `/haendler` opens a small trader with item
+A complete example plugin is in [example/](example/): `/trader` opens a small trader with item
 icons, amount buttons, a text prompt, a buy button that is only active when the player can pay, and
 an options screen for the display mode. It builds as `glyphwork-example-<version>.jar` (also
 attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
@@ -92,7 +92,7 @@ attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
 
 Frames (panel, button, slot ...) are autotiled from tiny A2 sheets, so any shape of cells joins
 seamlessly. Three skins are built in and exported to `plugins/Glyphwork/themes/` on start:
-`vanilla` (default), `dunkel` (dark, light text) and `pergament` (parchment); pick one with `theme:`
+`vanilla` (default), `dark` (light text) and `parchment`; pick one with `theme:`
 in `config.yml`. Own skins go next to them. Format: [docs/skin-format.md](docs/skin-format.md).
 
 ![Built-in skins](docs/img/skins.png)

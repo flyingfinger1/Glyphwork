@@ -167,7 +167,7 @@ Players choose it with `/glyphwork display` (German: `/glyphwork darstellung`). 
 
 The demo (`/glyphwork test`) is built with this API only:
 [Demo.java](../src/main/java/de/flyingfinger/glyphwork/demo/Demo.java). A separate plugin that uses
-the API the way yours would is in [example/](../example/): a trader (`/haendler`) with
+the API the way yours would is in [example/](../example/): a trader (`/trader`) with
 [Trader.java](../example/src/main/java/de/flyingfinger/glyphwork/example/Trader.java) as the
 screens and [ExamplePlugin.java](../example/src/main/java/de/flyingfinger/glyphwork/example/ExamplePlugin.java)
 as the command.

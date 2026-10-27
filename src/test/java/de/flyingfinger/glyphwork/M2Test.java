@@ -66,7 +66,7 @@ class M2Test {
         @Override public void open(Scene next) { }
         @Override public void back() { }
         @Override public void close() { }
-        @Override public void prompt(Component title, String initial, Consumer<String> onSubmit) { onSubmit.accept("beere"); }
+        @Override public void prompt(Component title, String initial, Consumer<String> onSubmit) { onSubmit.accept("berry"); }
     }
 
     private static String plain(Component c) {
@@ -80,18 +80,18 @@ class M2Test {
         FallbackRenderer.Model m = new FallbackRenderer(Logger.getLogger("test")).render(demo.lists, view);
         List<String> labels = m.actions().stream().map(a -> plain(a.label())).toList();
         // search button, 4 fruits, "next" for the fruits, 12 numbers (tooltips), "next" for the numbers, back
-        assertEquals("Suchen...", labels.getFirst());
-        assertTrue(labels.containsAll(List.of("Apfel", "Aprikose", "Banane", "Birne", "Nummer 1", "Nummer 12", "< Zurück")), labels.toString());
+        assertEquals("Search...", labels.getFirst());
+        assertTrue(labels.containsAll(List.of("Apple", "Apricot", "Banana", "Blackberry", "#1", "#12", "< Back")), labels.toString());
         assertEquals(2, labels.stream().filter(l -> l.startsWith("next")).count());
-        assertTrue(m.lines().stream().map(M2Test::plain).anyMatch(l -> l.startsWith("Obst:")));
+        assertTrue(m.lines().stream().map(M2Test::plain).anyMatch(l -> l.startsWith("Fruit:")));
 
         // clicking a fruit selects it and re-renders; the selection shows up as "▶ "
         m.actions().get(1).onClick().accept(view);
-        assertEquals("Apfel", view.state.get("fruit"));
+        assertEquals("Apple", view.state.get("fruit"));
         assertEquals(1, view.reopened);
         List<String> again = new FallbackRenderer(Logger.getLogger("test")).render(demo.lists, view).actions().stream()
             .map(a -> plain(a.label())).toList();
-        assertTrue(again.contains("▶ Apfel"), again.toString());
+        assertTrue(again.contains("▶ Apple"), again.toString());
 
         // paging
         m.actions().stream().filter(a -> plain(a.label()).startsWith("next")).findFirst().orElseThrow().onClick().accept(view);
@@ -103,8 +103,8 @@ class M2Test {
         Demo demo = new Demo();
         FallbackRenderer.Model m = new FallbackRenderer(Logger.getLogger("test")).render(demo.main, new TestClick(demo.main));
         List<String> labels = m.actions().stream().map(a -> plain(a.label())).toList();
-        assertEquals(List.of("x", "Sound: AUS", "+1", "Zelle 1", "Zelle 2", "Zelle 3", "Zelle 4", "Zelle 5", "Zelle 6",
-            "Zelle 7", "Zelle 8", "Listen >"), labels);   // panels (background, L shape) are left out
+        assertEquals(List.of("x", "Sound: OFF", "+1", "#1", "#2", "#3", "#4", "#5", "#6",
+            "#7", "#8", "Lists >"), labels);   // panels (background, L shape) are left out
         // dark label colors are lightened for the dark dialog background
         assertTrue(m.lines().stream().allMatch(l -> {
             TextColor c = l.color();

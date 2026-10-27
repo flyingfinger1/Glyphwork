@@ -36,16 +36,16 @@ public final class Trader {
     }
 
     private static final List<Offer> OFFERS = List.of(
-        new Offer(Material.BREAD, "Brot", 8, 1),
+        new Offer(Material.BREAD, "Bread", 8, 1),
         new Offer(Material.COOKED_BEEF, "Steak", 4, 1),
-        new Offer(Material.TORCH, "Fackeln", 16, 1),
-        new Offer(Material.ARROW, "Pfeile", 16, 2),
-        new Offer(Material.IRON_INGOT, "Eisenbarren", 4, 3),
-        new Offer(Material.ENDER_PEARL, "Enderperle", 1, 4),
-        new Offer(Material.EXPERIENCE_BOTTLE, "Erfahrungsflasche", 8, 5),
-        new Offer(Material.NAME_TAG, "Namensschild", 1, 6),
-        new Offer(Material.SADDLE, "Sattel", 1, 8),
-        new Offer(Material.DIAMOND, "Diamant", 1, 10));
+        new Offer(Material.TORCH, "Torches", 16, 1),
+        new Offer(Material.ARROW, "Arrows", 16, 2),
+        new Offer(Material.IRON_INGOT, "Iron ingots", 4, 3),
+        new Offer(Material.ENDER_PEARL, "Ender pearl", 1, 4),
+        new Offer(Material.EXPERIENCE_BOTTLE, "Bottle o' enchanting", 8, 5),
+        new Offer(Material.NAME_TAG, "Name tag", 1, 6),
+        new Offer(Material.SADDLE, "Saddle", 1, 8),
+        new Offer(Material.DIAMOND, "Diamond", 1, 10));
 
     private static final int MAX_AMOUNT = 64;
     private static final TextColor GREEN = TextColor.color(0x50E050);
@@ -100,16 +100,16 @@ public final class Trader {
 
     private static Scene buildMain(Scene options) {
         return Scene.builder("example:trader", 176, 200)
-            .title(Component.text("Händler"))
+            .title(Component.text("Trader"))
             .background()                                   // panel frame over the whole scene
-            .add(Label.of(8, 7, "Händler"))
+            .add(Label.of(8, 7, "Trader"))
 
             // the goods: 6 x 2 cells, each a 24 px slot frame on a 26 px pitch with the item icon
             .add(Grid.of("goods", 10, 20, 6, 2, v -> OFFERS)
                 .cell(26, 24)
                 .icon(Offer::item)
                 .count(o -> String.valueOf(o.count()))     // pack size at the bottom right, like in the inventory
-                .tooltip(o -> Component.text(o.count() + "x " + o.name() + " - " + o.price() + " Smaragde"))
+                .tooltip(o -> Component.text(o.count() + "x " + o.name() + " - " + o.price() + " emeralds"))
                 .selected(Trader::offer)
                 .onClick((c, o) -> {
                     c.set(OFFER, o);
@@ -120,30 +120,30 @@ public final class Trader {
             // the selected offer
             .add(Icon.of(10, 80, v -> offer(v) == null ? null : offer(v).item())
                 .count(v -> offer(v) == null ? null : String.valueOf(offer(v).count() * amount(v))))
-            .add(Label.of(32, 85, v -> offer(v) == null ? "Wähle eine Ware" : offer(v).name()).width(136))
-            .add(Label.of(10, 104, v -> offer(v) == null ? "" : "Packung: " + offer(v).count() + " Stück"))
-            .add(Label.of(10, 116, v -> offer(v) == null ? "" : "Preis: " + offer(v).price() + " Smaragde"))
+            .add(Label.of(32, 85, v -> offer(v) == null ? "Pick an offer" : offer(v).name()).width(136))
+            .add(Label.of(10, 104, v -> offer(v) == null ? "" : "Pack: " + offer(v).count() + " pieces"))
+            .add(Label.of(10, 116, v -> offer(v) == null ? "" : "Price: " + offer(v).price() + " emeralds"))
 
             // amount: - / + and a slider (native fields cannot sit in the pixel GUI, so it is a form)
-            .add(Label.of(10, 136, v -> "Menge: " + amount(v)).width(58))
+            .add(Label.of(10, 136, v -> "Amount: " + amount(v)).width(58))
             .add(Button.of(72, 132, 16, 16).text("-").onClick(c -> { setAmount(c, amount(c) - 1); c.reopen(); }))
             .add(Button.of(92, 132, 16, 16).text("+").onClick(c -> { setAmount(c, amount(c) + 1); c.reopen(); }))
-            .add(Button.of(112, 132, 56, 16).text("Wählen")
-                .tooltip("Menge mit dem Schieberegler wählen (1-" + MAX_AMOUNT + ")")
-                .onClick(c -> c.form(Form.builder(Component.text("Wie viele Packungen?"))
-                        .slider("amount", Component.text("Packungen"), 1, MAX_AMOUNT, 1, amount(c))
+            .add(Button.of(112, 132, 56, 16).text("Choose")
+                .tooltip("Choose the amount with a slider (1-" + MAX_AMOUNT + ")")
+                .onClick(c -> c.form(Form.builder(Component.text("How many packs?"))
+                        .slider("amount", Component.text("Packs"), 1, MAX_AMOUNT, 1, amount(c))
                         .build(),
                     values -> setAmount(c, Math.round(values.number("amount"))))))  // afterwards this scene is shown again
 
             // what it costs and what the player has (red when it is not enough)
-            .add(Label.of(10, 156, v -> "Gesamt: " + total(v)).width(76))
-            .add(Label.of(90, 156, v -> "Du hast: " + emeralds(v.player())).width(78)
+            .add(Label.of(10, 156, v -> "Total: " + total(v)).width(76))
+            .add(Label.of(90, 156, v -> "You have: " + emeralds(v.player())).width(78)
                 .color(v -> canBuy(v) || offer(v) == null ? Label.DARK : RED))
 
-            .add(Button.of(8, 176, 64, 16).text("Optionen").onClick(c -> c.open(options)))
-            .add(Button.of(96, 172, 72, 24).icon("emerald").text("Kaufen").tint(GREEN)
+            .add(Button.of(8, 176, 64, 16).text("Options").onClick(c -> c.open(options)))
+            .add(Button.of(96, 172, 72, 24).icon("emerald").text("Buy").tint(GREEN)
                 .enabled(Trader::canBuy)                    // grayed out and not clickable otherwise
-                .tooltip(v -> canBuy(v) ? null : Component.text("Nicht genug Smaragde"))
+                .tooltip(v -> canBuy(v) ? null : Component.text("Not enough emeralds"))
                 .onClick(Trader::buy))
             .build();
     }
@@ -161,24 +161,24 @@ public final class Trader {
         // whatever does not fit is dropped at the player's feet
         p.getInventory().addItem(new ItemStack(o.material(), pieces)).values()
             .forEach(rest -> p.getWorld().dropItemNaturally(p.getLocation(), rest));
-        p.sendMessage(Component.text("Gekauft: " + pieces + "x " + o.name() + " für " + cost + " Smaragde", GREEN));
+        p.sendMessage(Component.text("Bought: " + pieces + "x " + o.name() + " for " + cost + " emeralds", GREEN));
         c.reopen();
     }
 
     private static Scene buildOptions() {
         // the display mode belongs to Glyphwork and applies to every Glyphwork screen;
-        // one button per mode, the active one is marked (also readable in the plain "Einfach" dialog)
+        // one button per mode, the active one is marked (also readable in the plain "Simple" dialog)
         return Scene.builder("example:trader-options", 176, 136)
-            .title(Component.text("Händler - Optionen"))
+            .title(Component.text("Trader - options"))
             .background()
-            .add(Label.of(8, 7, "Optionen"))
-            .add(Label.of(8, 22, "Darstellung der Menüs:"))
+            .add(Label.of(8, 7, "Options"))
+            .add(Label.of(8, 22, "How menus are shown:"))
             .add(modeButton(DisplayMode.FULL, 34))
             .add(modeButton(DisplayMode.NO_ICONS, 52))
             .add(modeButton(DisplayMode.SIMPLE, 70))
-            .add(Label.of(8, 92, "Icons oder Text verrutscht? Dann"))
-            .add(Label.of(8, 102, "\"Ohne Icons\" oder \"Einfach\" nehmen."))
-            .add(Button.of(8, 114, 64, 16).text("< Zurück").onClick(Click::back))
+            .add(Label.of(8, 92, "Icons or text out of place? Then"))
+            .add(Label.of(8, 102, "pick \"No icons\" or \"Simple\"."))
+            .add(Button.of(8, 114, 64, 16).text("< Back").onClick(Click::back))
             .build();
     }
 
@@ -194,9 +194,9 @@ public final class Trader {
 
     private static String modeName(DisplayMode mode) {
         return switch (mode) {
-            case FULL -> "Voll (mit Icons)";
-            case NO_ICONS -> "Ohne Icons";
-            case SIMPLE -> "Einfach";
+            case FULL -> "Full (with icons)";
+            case NO_ICONS -> "No icons";
+            case SIMPLE -> "Simple";
         };
     }
 }

@@ -1,0 +1,16 @@
+# Templates for all menus. Files whose name starts with _ are no menus, they hold templates.
+# Use one in a menu:   - { use: warp, x: 8, y: 22, name: Spawn, target: spawn, item: compass }
+# {name} is replaced with the value of the use entry, {color|gray} has "gray" as its default.
+# Guide: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#templates
+
+warp:
+  type: button
+  width: 160
+  height: 24
+  icon: "{item}"
+  text: "{name}"
+  tint: "{color|gray}"
+  tooltip: "Teleport to {name}"
+  actions:
+    - "player: warp {target}"    # needs a warp plugin
+    - "close"

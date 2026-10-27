@@ -13,14 +13,14 @@ export const SKINS = {
     button: st(0xffc8c8c8, 0xff000000, false, 1, 0xffffffff, 2, 0xff6e6e6e),
     slot: st(0xff8b8b8b, null, false, 1, 0xff373737, 1, 0xffffffff),
   },
-  dunkel: {
-    name: 'Dunkel', text: 0xffe0e0e0,
+  dark: {
+    name: 'Dark', text: 0xffe0e0e0,
     panel: st(0xff2e3138, 0xff0a0b0d, true, 2, 0xff4a4f5a, 2, 0xff1a1c20),
     button: st(0xff7a7f8a, 0xff0a0b0d, false, 1, 0xffa8aeb8, 2, 0xff464a52),
     slot: st(0xff484c55, null, false, 1, 0xff1a1c20, 1, 0xff6a707a),
   },
-  pergament: {
-    name: 'Pergament', text: 0xff4a3420,
+  parchment: {
+    name: 'Parchment', text: 0xff4a3420,
     panel: st(0xffe9ddb8, 0xff4a3420, true, 2, 0xfffbf3dc, 2, 0xffb79f6e),
     button: st(0xffd6c49a, 0xff4a3420, false, 1, 0xfff4ead0, 2, 0xff9c8458),
     slot: st(0xffb8a27a, null, false, 1, 0xff7a6040, 1, 0xfff4ead0),

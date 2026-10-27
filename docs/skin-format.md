@@ -4,7 +4,7 @@ The easiest way to make one is the [skin editor](https://flyingfinger1.github.io
 ([guide](skin-editor.md)); this page describes the format itself.
 
 A **theme** (skin) is a folder in `plugins/Glyphwork/themes/<id>/`. Select it with `theme: <id>` in
-`config.yml`. The built-in skins `vanilla`, `dunkel` and `pergament` are exported to `themes/` on
+`config.yml`. The built-in skins `vanilla`, `dark` and `parchment` are exported to `themes/` on
 start when their folder is missing; copy one as a starting point.
 
 ```

@@ -41,8 +41,8 @@ public final class Theme {
 
     public static final List<Builtin> BUILTINS = List.of(
         new Builtin("vanilla", "Vanilla", Style.PANEL, Style.BUTTON, Style.SLOT, DEFAULT_TEXT),
-        new Builtin("dunkel", "Dunkel", Style.DARK_PANEL, Style.DARK_BUTTON, Style.DARK_SLOT, 0xE0E0E0),
-        new Builtin("pergament", "Pergament", Style.PARCHMENT_PANEL, Style.PARCHMENT_BUTTON, Style.PARCHMENT_SLOT, 0x4A3420));
+        new Builtin("dark", "Dark", Style.DARK_PANEL, Style.DARK_BUTTON, Style.DARK_SLOT, 0xE0E0E0),
+        new Builtin("parchment", "Parchment", Style.PARCHMENT_PANEL, Style.PARCHMENT_BUTTON, Style.PARCHMENT_SLOT, 0x4A3420));
 
     private final String id;
     private final String name;

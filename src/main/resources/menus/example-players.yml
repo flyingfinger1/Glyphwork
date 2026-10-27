@@ -1,0 +1,83 @@
+# Example for menu variables and dynamic lists - open it with /glyphwork menu example-players
+# Tabs, a search and lists that fill themselves (all players online, all worlds).
+# The menu redraws itself every 5 seconds (refresh), so the lists stay current.
+# Guide: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#variables
+
+title: "<gold>Players & worlds"
+width: 176
+height: 200
+refresh: 5            # redraw every 5 seconds while it is open
+variables:
+  tab: players        # which tab is open
+  filter: ""          # search text for the player list
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "%online% online"
+
+  # tabs: the active one is gold. Each tab is there twice, show-if shows the right one.
+  - { type: button, x: 8, y: 20, width: 76, text: "Players", tint: gold, show-if: "%menu_tab% == players" }
+  - { type: button, x: 8, y: 20, width: 76, text: "Players", actions: ["set: tab players"], show-if: "%menu_tab% != players" }
+  - { type: button, x: 92, y: 20, width: 76, text: "Worlds", tint: gold, show-if: "%menu_tab% == worlds" }
+  - { type: button, x: 92, y: 20, width: 76, text: "Worlds", actions: ["set: tab worlds"], show-if: "%menu_tab% != worlds" }
+
+  # tab "Players": search + list of all players online (without yourself)
+  - type: button
+    x: 8
+    y: 42
+    width: 136
+    text: "Search: %menu_filter%"
+    tooltip: "Type a name"
+    show-if: "%menu_tab% == players"
+    actions: ["input: Who are you looking for? | set: filter %input%"]
+  - type: button
+    x: 148
+    y: 42
+    width: 20
+    text: "x"
+    tooltip: "Clear the search"
+    show-if: ["%menu_tab% == players", "%menu_filter% != ''"]
+    actions: ["set: filter"]
+  - type: list
+    id: players
+    x: 8
+    y: 66               # with heads and 18 px rows: y = 9n + 3 (see docs/menus.md), then nothing moves
+    width: 160
+    rows: 5
+    show-if: "%menu_tab% == players"
+    items-from: online-players
+    item:
+      text: "%item%"
+      icon: "%item_head%"          # the player's head (8 x 8 px)
+      tooltip: "In world %item_world% - click to say hello"
+      show-if: ["%item% != %player%", "%item% contains %menu_filter%"]
+      actions:
+        - "player: msg %item% Hello from %player%!"
+        - "message: <green>Said hello to %item%."
+
+  # tab "Worlds": all worlds with icon and player count
+  - type: grid
+    id: worlds
+    x: 10
+    y: 44
+    cols: 6
+    rows: 3
+    cell: 26
+    size: 24
+    show-if: "%menu_tab% == worlds"
+    items-from: worlds
+    item:
+      text: ""                     # no label, the number is on the icon
+      icon: "%item_icon%"
+      count: "%item_players%"      # players in the world, bottom right like in the inventory (1 is not shown)
+      tooltip: "%item% - %item_players% players"
+      actions: ["message: <gold>%item%: %item_players% players (%item_environment%)"]
+
+  - type: button
+    x: 8
+    y: 178
+    width: 56
+    text: "Close"
+    actions: ["close"]

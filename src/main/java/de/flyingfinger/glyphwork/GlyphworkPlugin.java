@@ -79,17 +79,25 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         loadMenus();
     }
 
-    /** First start: copies the example menus to plugins/Glyphwork/menus/. */
+    /** The example menus, German and English (same layout). */
+    static final List<String> EXAMPLES_DE = List.of("beispiel.yml", "beispiel-regeln.yml", "beispiel-warps.yml",
+        "_beispiel-vorlagen.yml", "beispiel-spieler.yml", "beispiel-formular.yml");
+    static final List<String> EXAMPLES_EN = List.of("example.yml", "example-rules.yml", "example-warps.yml",
+        "_example-templates.yml", "example-players.yml", "example-forms.yml");
+
+    /**
+     * First start: copies the example menus to plugins/Glyphwork/menus/, in the server's language
+     * ({@code language}, or {@code fallback-language} when it is "auto"): German or English.
+     */
     private void exportExampleMenus() {
         if (Files.isDirectory(getDataFolder().toPath().resolve("menus"))) {
             return;
         }
-        saveResource("menus/beispiel.yml", false);
-        saveResource("menus/beispiel-regeln.yml", false);
-        saveResource("menus/beispiel-warps.yml", false);
-        saveResource("menus/_beispiel-vorlagen.yml", false);
-        saveResource("menus/beispiel-spieler.yml", false);
-        saveResource("menus/beispiel-formular.yml", false);
+        Settings s = Settings.read(getConfig());
+        String lang = "auto".equalsIgnoreCase(s.language()) ? s.fallbackLanguage() : s.language();
+        for (String f : lang.toLowerCase().startsWith("de") ? EXAMPLES_DE : EXAMPLES_EN) {
+            saveResource("menus/" + f, false);
+        }
     }
 
     /** (Re)loads menus/*.yml and their commands; returns the problems found. */

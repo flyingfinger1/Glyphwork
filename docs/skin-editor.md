@@ -9,7 +9,7 @@ quarters: paint on a real window and the editor writes the pixels to the right p
 ## Workflow
 
 0. **Pick a start.** *New* creates a skin from the template chosen under *Template for "New"*
-   (Vanilla, Dunkel, Pergament, the skins built into the plugin). *Text color* is the color of
+   (Vanilla, Dark, Parchment, the skins built into the plugin). *Text color* is the color of
    plain labels in game (theme.json `text`); on dark skins pick a light one. The demo scene uses it.
 1. **Start from the generator** (left column). Pick *Window*, *Button* or *Slot* and adjust fill,
    outline, rounded corners, light and shadow. Every change is applied live to the current frame;

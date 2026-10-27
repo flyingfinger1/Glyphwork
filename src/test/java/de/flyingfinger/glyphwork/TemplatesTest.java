@@ -170,6 +170,34 @@ class TemplatesTest {
         assertEquals(7, warps.elements().size());
     }
 
+    /** The English set is exported instead of the German one (never both: the warp templates differ). */
+    @Test
+    void bundledEnglishExamplesLoad(@TempDir Path dir) throws Exception {
+        for (String f : List.of("_example-templates.yml", "example-warps.yml", "example.yml", "example-rules.yml",
+            "example-players.yml", "example-forms.yml")) {
+            try (var in = getClass().getResourceAsStream("/menus/" + f)) {
+                Files.write(dir.resolve(f), in.readAllBytes());
+            }
+        }
+        Menus menus = Menus.load(dir);
+        assertEquals(List.of(), menus.errors());
+        assertEquals(5, menus.all().size());
+        Scene warps = menus.get("example-warps").scene();
+        assertEquals("Spawn", button(warps, 2).text().apply(NOBODY));
+        assertEquals(true, button(warps, 4).enabled().apply(NOBODY));
+        assertEquals(7, warps.elements().size());
+        // same layout as the German examples
+        for (String[] pair : new String[][] {{"example-forms", "beispiel-formular"}, {"example-players", "beispiel-spieler"},
+            {"example", "beispiel"}, {"example-rules", "beispiel-regeln"}}) {
+            try (var in = getClass().getResourceAsStream("/menus/" + pair[1] + ".yml")) {
+                Scene german = new Menus().parse(pair[1], new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)).scene();
+                Scene english = menus.get(pair[0]).scene();
+                assertEquals(german.elements().size(), english.elements().size(), pair[0]);
+                assertEquals(german.height(), english.height(), pair[0]);
+            }
+        }
+    }
+
     @Test
     void underscoreFilesAreTemplatesNotMenus(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve("_vorlagen.yml"), SHARED);

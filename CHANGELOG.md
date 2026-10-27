@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **English examples:** the example menus exist in English (`example*.yml`) and German
+  (`beispiel*.yml`); on first start the set of the server's language is exported (`language`, or
+  `fallback-language` when it is `auto`, default English). The demo (`/glyphwork test`) speaks the
+  player's language (keys `demo.*` in the language files), and the example plugin is in English
+  (`/trader`, `/haendler` still works).
+- **Skins renamed:** the built-in skins are now `dark` and `parchment` (were `dunkel` and
+  `pergament`).
 - **Menu designer** in the browser (https://flyingfinger1.github.io/Glyphwork/designer.html, next
   to the skin editor): place and resize elements with the mouse, edit their options, variables,
   forms and templates in side panels, try the menu out (actions, controls, forms work on preview

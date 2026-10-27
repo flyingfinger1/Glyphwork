@@ -8,8 +8,8 @@
 language: auto
 fallback-language: en
 
-# Skin folder under plugins/Glyphwork/themes/. The built-in skins "vanilla", "dunkel" (dark) and
-# "pergament" (parchment) are exported there on start when their folder is missing.
+# Skin folder under plugins/Glyphwork/themes/. The built-in skins "vanilla", "dark" and "parchment"
+# are exported there on start when their folder is missing.
 # Make your own with the skin editor: https://flyingfinger1.github.io/Glyphwork/
 theme: vanilla
 

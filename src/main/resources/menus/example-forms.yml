@@ -1,0 +1,55 @@
+# Example for input - open it with /glyphwork menu example-forms
+# Two ways to write values into menu variables:
+#  - right in the menu: slider, checkbox and choice (slider, checkbox, choice), drawn from the skin
+#  - a form (forms:): a native dialog of its own with several fields, also for text
+# Guide: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md#forms
+
+title: "<gold>Profile"
+width: 176
+height: 152
+variables:
+  nickname: "%player%"
+  motto: ""
+  range: "8"
+  particles: "true"
+  difficulty: normal
+
+forms:
+  profile:
+    title: "Edit profile"
+    ok: "Save"
+    fields:
+      - { type: text, var: nickname, label: "Nickname", max-length: 16 }
+      - { type: text, var: motto, label: "Motto", max-length: 80, lines: 3 }
+      - { type: slider, var: range, label: "View range", min: 2, max: 32 }
+      - { type: checkbox, var: particles, label: "Show particles" }
+      - type: choice
+        var: difficulty
+        label: "Difficulty"
+        options: { easy: "<green>Easy", normal: "Normal", hard: "<red>Hard" }
+    # runs after "Save", the variables already hold the new values
+    actions:
+      - "message: <green>Profile saved, %menu_nickname%!"
+
+elements:
+  - { type: label, x: 8, y: 8, text: "Nickname: %menu_nickname%" }
+  - { type: label, x: 8, y: 20, text: "Motto: %menu_motto%", width: 160 }
+
+  # right in the menu: a click on the track sets the value, the tooltip shows it first
+  - { type: label, x: 8, y: 40, text: "Range: %menu_range%" }
+  - { type: slider, x: 64, y: 36, width: 104, var: range, min: 2, max: 32, tooltip: "View range %value% chunks" }
+
+  - { type: checkbox, x: 8, y: 58, var: particles, text: "Show particles" }
+
+  # click left = previous difficulty, right = next
+  - { type: label, x: 8, y: 84, text: "Level:" }
+  - type: choice
+    x: 64
+    y: 80
+    width: 104
+    var: difficulty
+    options: { easy: "Easy", normal: "Normal", hard: "Hard" }
+    actions: ["sound: ui.button.click"]
+
+  - { type: button, x: 8, y: 104, width: 160, text: "Edit all in a form", tooltip: "Also nickname and motto", actions: ["form: profile"] }
+  - { type: button, x: 8, y: 128, width: 64, text: "Close", actions: ["close"] }

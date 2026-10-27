@@ -1,0 +1,45 @@
+# Sub page of the example menu (example.yml opens it with "open: example-rules")
+
+title: "<gold>Rules"
+width: 176
+height: 144
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "Server rules - click for details"
+
+  - type: list
+    x: 8
+    y: 20
+    width: 160
+    rows: 5
+    items:
+      - text: "1. Be friendly"
+        tooltip: "No insults, no spam."
+        actions: ["message: <green>Rule 1:</green> Be friendly to everyone."]
+      - text: "2. No griefing"
+        tooltip: "Leave other builds alone."
+        actions: ["message: <green>Rule 2:</green> Do not break what is not yours."]
+      - text: "3. No hacks"
+        tooltip: "No unfair mods."
+        actions: ["message: <green>Rule 3:</green> No cheats or X-ray."]
+      - text: "4. Help newcomers"
+        actions: ["message: <green>Rule 4:</green> Explain how things work."]
+      - text: "5. Have fun!"
+        actions: ["message: <green>Rule 5:</green> Have fun!", "sound: entity.player.levelup"]
+      - text: "6. Admin rule"
+        permission: glyphwork.admin
+        actions: ["message: <red>Only admins see this."]
+      - text: "7. One more rule"
+        actions: ["message: Rule 7"]
+
+  - type: button
+    x: 8
+    y: 124
+    width: 64
+    height: 16
+    text: "< Back"
+    actions:
+      - "back"

@@ -58,7 +58,7 @@ elements:
 1. Put the jar into `plugins/` of a **Paper 26.3** server (Java 25) and start it.
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address your players can reach
    (built-in server: open `pack-server.port`; or `pack.hosting: external` with your own web server).
-3. `/glyphwork reload`, then `/glyphwork test` (demo) or `/glyphwork menu beispiel` (example menu).
+3. `/glyphwork reload`, then `/glyphwork test` (demo) or `/glyphwork menu example` (example menu; `beispiel` on German servers).
 
 ## For developers
 

@@ -114,7 +114,7 @@ class DemoHitTest {
         assertEquals(p + 8, l.hit(80, 104));        // L shape
         assertEquals(p + 8, l.hit(30, 112));
         assertEquals(p + 0, l.hit(60, 112));
-        assertEquals(p + 9, l.hit(130, 110));       // "Listen >" button
+        assertEquals(p + 9, l.hit(130, 110));       // "Lists >" button
         assertEquals(p + 3, l.hit(44, 30));         // text on a button does not block it
         assertNull(l.hit(50, 129));                 // outside the panel
     }
@@ -141,7 +141,7 @@ class DemoHitTest {
         Layout l = layout(demo.lists, view);
         assertEquals("glyphwork:demo-lists#3:row32", l.hit(40, 50));
         assertEquals("glyphwork:demo-lists#3:row35", l.hit(40, 42 + 16 * 3 + 8)); // 36 items fill page 9
-        view.set("query", "beere");                         // filter: 6 items, page clamped to 2/2
+        view.set("query", "berry");                         // filter: 6 items, page clamped to 2/2
         Layout f = layout(demo.lists, view);
         assertEquals("glyphwork:demo-lists#3:row4", f.hit(40, 50));
         view.set("glyphwork:page:fruits", 0);

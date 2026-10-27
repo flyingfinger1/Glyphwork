@@ -2,8 +2,11 @@
 
 Every `*.yml` file in `plugins/Glyphwork/menus/` is a menu; the file name is its id. Files whose
 name starts with `_` hold [templates](#templates) instead. On first start Glyphwork puts examples
-there (`beispiel.yml`, `beispiel-regeln.yml`, `beispiel-warps.yml` with `_beispiel-vorlagen.yml`
-for templates and conditions, `beispiel-spieler.yml` for variables and dynamic lists, `beispiel-formular.yml` for forms). After editing,
+there, in the server's language (`language`, or `fallback-language` when it is `auto`): `example.yml`,
+`example-rules.yml`, `example-warps.yml` with `_example-templates.yml` for templates and conditions,
+`example-players.yml` for variables and dynamic lists, `example-forms.yml` for forms; German servers
+get the same as `beispiel.yml`, `beispiel-regeln.yml`, `beispiel-warps.yml`, `_beispiel-vorlagen.yml`,
+`beispiel-spieler.yml` and `beispiel-formular.yml`. After editing,
 `/glyphwork reload` applies the changes; problems are shown in chat and the console with the exact
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
 
@@ -187,7 +190,7 @@ elements:
 - Values are kept per player and menu until the player leaves (also when the menu is closed and
   opened again).
 - To highlight the active tab, add the button twice with opposite `show-if` and different `tint`
-  (see `beispiel-spieler.yml`).
+  (see `example-players.yml`).
 
 ## Dynamic lists
 

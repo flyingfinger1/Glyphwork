@@ -1,0 +1,50 @@
+# Example for templates and conditions - open it with /glyphwork menu example-warps
+# The template "warp" is in _example-templates.yml.
+# Guide: https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md
+
+title: "<gold>Warps"
+width: 176
+height: 152
+
+elements:
+  - type: label
+    x: 8
+    y: 7
+    text: "Where to, %player%?"
+
+  # the same template three times, with other values
+  - { use: warp, x: 8, y: 20, name: Spawn, target: spawn, item: compass }
+  - { use: warp, x: 8, y: 48, name: Farm, target: farm, item: wheat, color: green }
+
+  # condition: grayed out while you are in the Nether already
+  - use: warp
+    x: 8
+    y: 76
+    name: Nether
+    target: nether
+    item: netherrack
+    color: red
+    enabled-if: "%world% != world_nether"
+    disabled-tooltip: "<red>You are in the Nether already"
+
+  # condition: only shown while at least 2 players are online.
+  # With PlaceholderAPI also e.g.: show-if: "%vault_eco_balance% >= 100"
+  - type: button
+    x: 8
+    y: 108
+    width: 76
+    text: "Group"
+    show-if: "%online% >= 2"
+    actions: ["message: <green>There are %online% of you!"]
+
+  # require: checked on click; if it does not hold, the message shows and the rest is skipped
+  - type: button
+    x: 92
+    y: 108
+    width: 76
+    text: "Reward"
+    tint: gold
+    actions:
+      - "require: %online% >= 2 | message: <red>Only with 2 players online"
+      - "message: <gold>Here is your reward!"
+      - "sound: entity.player.levelup"

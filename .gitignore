@@ -4,3 +4,6 @@ run/
 *.iml
 .idea/
 server.out
+
+# design notes, kept locally
+SPEC.md

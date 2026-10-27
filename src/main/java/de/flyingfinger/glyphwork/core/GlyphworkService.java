@@ -220,7 +220,7 @@ public final class GlyphworkService implements Glyphwork {
 
     private void showNow(Player player, Session s, Scene scene, int generation, ViewImpl view) {
         DisplayMode mode = displayMode(player);
-        if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player))) {
+        if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player)) || Bedrock.is(player)) {
             showFallback(player, s, generation, scene, view);
             return;
         }
@@ -290,7 +290,7 @@ public final class GlyphworkService implements Glyphwork {
     private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view) {
         FallbackRenderer.Model model = fallbackRenderer.render(scene, view);
         List<Component> lines = new ArrayList<>();
-        if (displayMode(player) != DisplayMode.SIMPLE && !s.forceFallback) {
+        if (displayMode(player) != DisplayMode.SIMPLE && !s.forceFallback && !Bedrock.is(player)) {
             lines.add(Messages.active().get(player, "fallback.notice"));
         }
         lines.addAll(model.lines());

@@ -96,7 +96,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         menuCommands = new MenuCommands(this);
         triggers = new de.flyingfinger.glyphwork.menu.MenuTriggers(this, () -> menus, this::openMenu,
-            p -> settings.sendOnJoin());
+            p -> settings.sendOnJoin() && !de.flyingfinger.glyphwork.core.Bedrock.is(p));
         getServer().getPluginManager().registerEvents(triggers, this);
         loadMenus();
     }
@@ -293,6 +293,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     /** /glyphwork reload: config, theme and pack; players get the new pack if it changed. */
     private void reload(CommandSender sender) {
         reloadConfig();
+        de.flyingfinger.glyphwork.core.Bedrock.reset();
         try {
             Build b = build();
             boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());

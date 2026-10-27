@@ -23,7 +23,8 @@ variables (tabs, search, switches), lists that fill themselves (online players, 
 that redraw themselves every few seconds:
 [docs/menus.md](docs/menus.md).
 
-Players without the pack get a plain native dialog built from the same scene. The pack is served by
+Players without the pack get a plain native dialog built from the same scene; Bedrock players
+(Geyser/Floodgate) always get it, as a Bedrock form. The pack is served by
 a built-in HTTP server or written to `plugins/Glyphwork/pack/<sha1>.zip` for your own web server
 (`pack.hosting: external`, `pack.url` with `{sha1}`). `/glyphwork reload` rebuilds theme and pack and
 sends it to everyone online; `/glyphwork status` shows who has it. See `config.yml`.

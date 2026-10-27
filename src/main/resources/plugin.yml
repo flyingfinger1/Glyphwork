@@ -4,7 +4,7 @@ main: de.flyingfinger.glyphwork.GlyphworkPlugin
 api-version: '26.3'
 description: Clickable font-based GUIs inside vanilla dialogs
 author: flyingfinger1
-softdepend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI, floodgate, Geyser-Spigot]
 website: https://github.com/flyingfinger1/Glyphwork
 commands:
   glyphwork:

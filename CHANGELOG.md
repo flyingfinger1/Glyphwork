@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Bedrock players** (Geyser, optionally Floodgate; found without a hard dependency) always get the
+  plain dialog, which Geyser turns into a Bedrock form, and no Java pack request; join menus open
+  at once for them.
 - **Text formatting:** labels, buttons and list entries understand MiniMessage for parts of their
   text (`<b>`, `<i>`, `<u>`, `<st>`, colors); labels also have `bold`, `italic`, `underline` and
   `strikethrough` for the whole text. Bold counts 1 px per character when cutting, centering and

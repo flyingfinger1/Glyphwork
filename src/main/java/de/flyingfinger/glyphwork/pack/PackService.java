@@ -111,6 +111,9 @@ public final class PackService {
     }
 
     public void send(Player player) {
+        if (de.flyingfinger.glyphwork.core.Bedrock.is(player)) {
+            return;                                 // Bedrock cannot load Java packs; it gets the plain dialog
+        }
         player.sendResourcePacks(ResourcePackRequest.resourcePackRequest()
             .packs(ResourcePackInfo.resourcePackInfo(PACK_ID, URI.create(url()), sha1))
             .required(settings.required())

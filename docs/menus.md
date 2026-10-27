@@ -585,3 +585,8 @@ elements:
 Players without the resource pack get a plain dialog: labels as text, buttons, list rows and grid
 cells as dialog buttons. Panels are decoration and are left out, so put every action on a button,
 hitbox, list or grid.
+
+**Bedrock players** (through [Geyser](https://geysermc.org/), optionally with Floodgate) cannot load
+the Java pack, and Bedrock forms have no clickable text. Glyphwork recognizes them and always sends
+them the plain dialog, which Geyser shows as a Bedrock form; they get no pack request and a join
+menu opens at once. `url:` cannot open links on Bedrock: the dialog shows the address as text.

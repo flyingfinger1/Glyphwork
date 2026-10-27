@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 – languages, menu variables and dynamic lists
 
 - **Languages:** all messages, Glyphwork's own dialogs (display mode, plain view, text prompt) and
   command words in English and German. `language: auto` (default) uses each player's game language,

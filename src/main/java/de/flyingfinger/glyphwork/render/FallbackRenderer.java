@@ -82,6 +82,13 @@ public final class FallbackRenderer {
                     case ListView<?> l -> list(l, view, actions);
                     case Grid<?> g -> grid(g, view, actions);
                     case Slider s -> slider(s, view, actions);
+                    case de.flyingfinger.glyphwork.api.Scroll sc -> {
+                        // the plain dialog scrolls by itself: all elements, in order
+                        java.util.List<Element> inner = sc.elements();
+                        for (int i = inner.size() - 1; i >= 0; i--) {
+                            todo.push(inner.get(i));
+                        }
+                    }
                     case de.flyingfinger.glyphwork.api.Tabs t -> {
                         de.flyingfinger.glyphwork.api.Tabs.Tab active = t.active(view);
                         for (de.flyingfinger.glyphwork.api.Tabs.Tab tab : t.tabs()) {

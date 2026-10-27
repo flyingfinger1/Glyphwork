@@ -34,9 +34,10 @@ placeholders (skins come from Mojang's servers). *Remove* deletes the stored tex
    menu from the clipboard (YAML tab, then *Apply*). The *Menu* tab holds title, size, command,
    permission, refresh and the file name used for the download.
 2. **Add elements** from the palette: text, button, panel, click area, icon, list, grid, slider,
-   checkbox, choice, bar, picture, head, tabs. A new element goes below the others, and the menu
-   grows if needed. The elements of a tab are edited as YAML in the tabs element (*Tabs* field);
-   *Try it* switches tabs with a click.
+   checkbox, choice, bar, picture, head, tabs, scroll pane. A new element goes below the others,
+   and the menu grows if needed. The elements of a tab or scroll pane are edited as YAML in that
+   element; *Try it* switches tabs and scrolls with a click. The preview cuts a scroll pane by
+   pixel, the game leaves out what does not fit completely.
 3. **Arrange them.** Drag an element to move it, drag the yellow corner to resize it (buttons,
    panels, lists, grids, sliders ...). Arrow keys move by the snap size (Shift: 8 px), Delete
    removes, Ctrl+D duplicates, Ctrl+Z / Ctrl+Y undo and redo. *Layers* lists the elements in

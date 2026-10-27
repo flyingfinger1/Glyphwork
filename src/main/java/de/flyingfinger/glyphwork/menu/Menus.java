@@ -82,6 +82,8 @@ public final class Menus {
     private Vars vars = Vars.NONE;
     /** Id of the menu being parsed (keys of saved variables and cooldowns). */
     private String menuId = "";
+    /** True while the elements of a scroll pane are parsed (no pane in a pane). */
+    private boolean inScroll;
     /** Templates of the menu being parsed (also used inside tabs). */
     private Templates templates = new Templates();
     /** Index of the element being parsed (the default cooldown key). */
@@ -468,6 +470,7 @@ public final class Menus {
             case de.flyingfinger.glyphwork.api.Image x -> x.visible(visible);
             case de.flyingfinger.glyphwork.api.Head x -> x.visible(visible);
             case de.flyingfinger.glyphwork.api.Tabs x -> x.visible(visible);
+            case de.flyingfinger.glyphwork.api.Scroll x -> x.visible(visible);
         }
     }
 
@@ -712,6 +715,36 @@ public final class Menus {
                 }
                 b.accept(im);
             }
+            case "scroll" -> {
+                n.only(with("type", "id", "x", "y", "width", "height", "step", "frame", "elements"));
+                if (inScroll) {
+                    throw n.error("type", "a scroll pane cannot be inside another scroll pane");
+                }
+                int x = n.integer("x");
+                int y = n.integer("y");
+                List<Element> inner = new ArrayList<>();
+                int saved = elementIndex;
+                inScroll = true;
+                try {
+                    int ci = 0;
+                    for (Node child : n.nodes("elements")) {
+                        for (Node c : templates.expand(child)) {
+                            // positions inside the pane are relative to its top left corner
+                            element(inner::add, shifted(c, x, y), index * 1000 + ci++);
+                        }
+                    }
+                } finally {
+                    inScroll = false;
+                }
+                elementIndex = saved;
+                int step = n.optInt("step", 18);
+                if (step < 1) {
+                    throw n.error("step", "at least 1 px expected");
+                }
+                b.accept(de.flyingfinger.glyphwork.api.Scroll.of(n.optString("id", "scroll" + index), x, y,
+                        n.optInt("width", 120), n.optInt("height", 80), inner)
+                    .step(step).frame(n.optString("frame", null)));
+            }
             case "tabs" -> {
                 n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "tint", "tabs"));
                 int x = n.integer("x");
@@ -774,7 +807,7 @@ public final class Menus {
                 b.accept(bar);
             }
             default -> throw n.error("type", "unknown type '" + type
-                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar, image, head, tabs)");
+                + "' (label, button, panel, hitbox, icon, list, grid, slider, checkbox, choice, bar, image, head, tabs, scroll)");
         }
     }
 

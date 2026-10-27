@@ -227,7 +227,7 @@ function pixelOf(e) {
   return [(e.clientX - r.left) * (stage.width / r.width) / zoom, (e.clientY - r.top) * (stage.height / r.height) / zoom];
 }
 
-const RESIZABLE = new Set(['button', 'panel', 'hitbox', 'label', 'slider', 'choice', 'list', 'grid', 'tabs']);
+const RESIZABLE = new Set(['button', 'panel', 'hitbox', 'label', 'slider', 'choice', 'list', 'grid', 'tabs', 'scroll']);
 const resizable = (el) => el && el.use == null && RESIZABLE.has(kindOf(el)) && !(kindOf(el) === 'panel' && el.shape != null);
 
 function hitElement(px, py) {
@@ -327,7 +327,7 @@ function resize(start, dw, dh) {
   let el = start;
   const set = (key, v) => { el = setField(el, key, v); };
   switch (k) {
-    case 'tabs': {
+    case 'scroll': case 'tabs': {
       set('width', Math.max(32, snapTo(n(start.width, 160) + dw)));
       set('height', Math.max(32, snapTo(n(start.height, 100) + dh)));
       break;

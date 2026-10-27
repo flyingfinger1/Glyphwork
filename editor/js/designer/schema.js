@@ -35,6 +35,8 @@ export const FIELDS = {
     ['actions', 'lines']],
   tabs: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['var', 'text'], ['frame', 'text'],
     ['tint', 'color'], ['tabs', 'yaml']],
+  scroll: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['step', 'int'], ['frame', 'text'],
+    ['elements', 'yaml']],
   use: [['use', 'use'], ['x', 'int'], ['y', 'int'], ['values', 'values']],
 };
 
@@ -54,7 +56,7 @@ export const ITEM_FIELDS = {
     ['actions', 'lines'], ['permission', 'text'], ['show-if', 'lines']],
 };
 
-export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice', 'bar', 'image', 'head', 'tabs'];
+export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'grid', 'slider', 'checkbox', 'choice', 'bar', 'image', 'head', 'tabs', 'scroll'];
 
 /** Field names that map to i18n keys (f_...). */
 export const FIELD_KEY = {
@@ -66,7 +68,7 @@ export const FIELD_KEY = {
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
   'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
   value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize', cooldown: 'f_cooldown',
-  'cooldown-key': 'f_cooldownKey', tabs: 'f_tabs', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
+  'cooldown-key': 'f_cooldownKey', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
 };
 
 /** A new element of this type at (x, y). */
@@ -86,6 +88,10 @@ export function create(type, x, y, de) {
     case 'bar': return { type, x, y, width: 100, value: 30, max: 100, text: '30 / 100' };
     case 'image': return { type, x, y, image: 'logo' };
     case 'head': return { type, x, y, player: '%player%', size: 32 };
+    case 'scroll': return {
+      type, x, y, width: 120, height: 64, frame: 'slot', elements: Array.from({ length: 8 }, (_, i) => (
+        { type: 'label', x: 4, y: 4 + i * 18, text: tx('Zeile ', 'Row ') + (i + 1) })),
+    };
     case 'tabs': return {
       type, x, y, width: 160, height: 96, tabs: [
         { id: 'one', title: tx('Erster', 'First'), elements: [{ type: 'label', x: 6, y: 6, text: tx('Inhalt 1', 'Content 1') }] },

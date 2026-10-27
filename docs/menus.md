@@ -104,6 +104,7 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
 | `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
 | `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
+| `scroll` | a window onto its elements with a scroll bar: `x`, `y`, `width` (120), `height` (80, at least 48), `elements`, `step` (18), `id`, `frame` (around the window, default none) |
 | `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `tint` (inactive tabs, default a bit darker) |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
@@ -199,6 +200,32 @@ followed by the elements of the active tab.
       title: Info
       elements:
         - { type: label, x: 6, y: 6, width: 144, wrap: true, text: "Open daily from 8 to 20." }
+```
+
+**Scroll panes** show part of their `elements` and keep the rest of the menu in place (a menu
+taller than the screen scrolls as a whole by itself, see [Long menus](#menu-settings)). Positions of
+the elements are relative to the pane's top left corner. On the right edge an 8 px bar appears when
+the content is longer than the window: ▲ and ▼ move it by `step` px, a click on the track jumps
+there, the knob shows which part is visible. Every click is a redraw by the server, there is no
+mouse wheel. Only what fits completely into the window is drawn and clickable: frames are cut by
+whole tiles (8 px), text and icons appear only in full. Keep the content 8 px narrower than the pane
+for the bar. `step: 18` (default) or another multiple of 9 keeps player heads in place. A pane cannot
+hold another pane; tabs, lists and everything else work inside. The position is kept while the menu
+is open. The plain dialog shows all elements of the pane in order.
+
+```yaml
+- type: scroll
+  x: 8
+  y: 20
+  width: 160
+  height: 80
+  frame: slot
+  elements:
+    - { type: label, x: 4, y: 4, text: "1. Be nice" }
+    - { type: label, x: 4, y: 22, text: "2. No griefing" }
+    - { type: label, x: 4, y: 40, text: "3. No cheats" }
+    - { type: label, x: 4, y: 58, text: "4. Have fun" }
+    - { type: button, x: 4, y: 76, width: 64, text: Accept, actions: ["close"] }
 ```
 
 **Slider, checkbox, choice** write a [menu variable](#variables) (`var`) and are drawn from the

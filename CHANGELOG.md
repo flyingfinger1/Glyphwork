@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Scroll panes:** `type: scroll` / `Scroll.of(...)` shows part of its elements in a window with a
+  scroll bar (▲ / ▼ by `step` px, a click on the track jumps there) while the rest of the menu stays
+  in place. Only what fits completely is drawn and clickable; any element works inside. The plain
+  dialog lists all of them, the designer shows and scrolls the pane.
 - **Long menus:** the pack height now follows the tallest YAML menu (rounded up to 32 px, at most
   2048 px), so frames are drawn in menus of any height and the dialog scrolls them natively, mouse
   wheel included. `max-height` is only the minimum (for scenes of plugins); small servers keep the

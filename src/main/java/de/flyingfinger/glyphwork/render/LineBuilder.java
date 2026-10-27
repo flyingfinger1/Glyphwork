@@ -47,13 +47,50 @@ public final class LineBuilder {
         lines.put(0, new Line());
     }
 
+    /** Marker of {@link #place}: not drawn. */
+    private static final int SKIP = Integer.MIN_VALUE;
+    // a window (scroll pane): things are moved by shift and drawn only when completely inside
+    private int clipTop = Integer.MIN_VALUE;
+    private int clipBottom = Integer.MAX_VALUE;
+    private int shift;
+    private int extent = Integer.MIN_VALUE;
+
+    /**
+     * From now on moves everything by {@code shift} px and draws only what lies completely in
+     * [top, bottom); {@code top == bottom} draws nothing and only measures. Ends with {@link #endWindow}.
+     */
+    public void window(int top, int bottom, int shift) {
+        clipTop = top;
+        clipBottom = bottom;
+        this.shift = shift;
+        extent = Integer.MIN_VALUE;
+    }
+
+    /** Ends the window; returns the lowest bottom edge placed in it (unmoved), or MIN_VALUE if nothing. */
+    public int endWindow() {
+        int e = extent;
+        clipTop = Integer.MIN_VALUE;
+        clipBottom = Integer.MAX_VALUE;
+        shift = 0;
+        extent = Integer.MIN_VALUE;
+        return e;
+    }
+
+    /** y moved by the window, or SKIP when the h px high thing is not completely inside it. */
+    private int place(int y, int h) {
+        extent = Math.max(extent, y + h);
+        int yy = y + shift;
+        return yy >= clipTop && yy + h <= clipBottom ? yy : SKIP;
+    }
+
     private Line line(int index) {
         return lines.computeIfAbsent(index, i -> new Line());
     }
 
     /** Draws one sheet glyph with its top-left pixel at (x, y) on the first line. */
     public LineBuilder glyph(Glyph g, int x, int y, @Nullable TextColor tint, @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
-        if (y < 0 || y >= maxHeight) {
+        y = place(y, g.height());
+        if (y == SKIP || y < 0 || y >= maxHeight) {
             return this; // no font for this row
         }
         line(0).draw(String.valueOf(g.codepoint()), g.advance(), x, ShiftFonts.sprite(y),
@@ -112,7 +149,11 @@ public final class LineBuilder {
 
     /** Text with a drop shadow (1 px right and down, drawn by the client with the glyphs). */
     public LineBuilder text(String s, int x, int y, TextColor color, @Nullable ShadowColor shadow) {
-        if (s.isEmpty() || y < 0) {
+        if (s.isEmpty()) {
+            return this;
+        }
+        y = place(y, 8);
+        if (y == SKIP || y < 0) {
             return this;
         }
         int index = y / ShiftFonts.LINE;
@@ -127,7 +168,8 @@ public final class LineBuilder {
      * tinted layers (e.g. a dyed leather color).
      */
     public LineBuilder icon(List<IconCatalog.Layer> layers, int x, int y, @Nullable TextColor tint) {
-        if (y < 0) {
+        y = place(y, IconCatalog.SIZE);
+        if (y == SKIP || y < 0) {
             return this;
         }
         int index = y / ShiftFonts.LINE;
@@ -146,8 +188,8 @@ public final class LineBuilder {
      */
     public LineBuilder image(de.flyingfinger.glyphwork.font.ImageCatalog.Picture picture, int x, int y, @Nullable TextColor tint) {
         for (de.flyingfinger.glyphwork.font.ImageCatalog.Tile t : picture.tiles()) {
-            int ty = y + t.dy();
-            if (ty < 0) {
+            int ty = place(y + t.dy(), t.cellHeight());
+            if (ty == SKIP || ty < 0) {
                 continue;
             }
             int index = ty / ShiftFonts.LINE;
@@ -168,9 +210,13 @@ public final class LineBuilder {
      * (at most 4 px from the one asked for).
      */
     public int head(Component head, int x, int top) {
-        int index = Math.max(1, Math.round((top + 1) / (float) ShiftFonts.LINE));
-        line(index).drawComponent(head, HEAD, x);
-        return index * ShiftFonts.LINE - 1;
+        int index = Math.max(1, Math.round((top + shift + 1) / (float) ShiftFonts.LINE));
+        int got = index * ShiftFonts.LINE - 1;
+        extent = Math.max(extent, got - shift + HEAD);
+        if (got >= clipTop && got + HEAD <= clipBottom) {
+            line(index).drawComponent(head, HEAD, x);
+        }
+        return got - shift;
     }
 
     /** Text horizontally centered in [x, x + w). */

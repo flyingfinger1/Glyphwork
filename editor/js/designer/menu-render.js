@@ -7,6 +7,7 @@ import { Pix, tint } from '../pix.js';
 import { tiles, renderShape } from '../autotile.js';
 import { drawText, textWidth, blend } from '../font.js';
 
+
 export const LINE = 9;
 export const HEAD = 8;
 export const ICON = 16;
@@ -619,6 +620,56 @@ export function renderMenu(menu, skin, ctx = {}) {
             if (tb.icon != null && drawIcon(c, String(tb.icon).trim(), tx + 3, ty)) { tx += ICON + 3; tw -= ICON + 3; }
             c.centered(fit(String(tb.title ?? tb.id), tw - 6), tx, tw, ty + 5, skin.text & 0xffffff);
           });
+          boxes.push({ top, x, y, w, h });
+          break;
+        }
+        case 'scroll': {
+          // the content is drawn as a menu of its own, then the visible rows are copied in
+          // (the game leaves out what does not fit completely; the preview cuts by pixel)
+          const w = int(el.width, 120), h = Math.max(48, int(el.height, 80));
+          const key = String(el.id ?? 'scroll' + top);
+          const step = Math.max(1, int(el.step, 18));
+          if (el.frame != null && !c.rect(String(el.frame), x, y, w, h, null)) errors.push({ top, text: `frame '${el.frame}'` });
+          const kids = Array.isArray(el.elements) ? el.elements : [];
+          const sub = renderMenu({ width: w, height: 2048, background: 'none', templates: menu.templates,
+            variables: menu.variables, elements: kids }, skin, { ...ctx, menu: undefined });
+          const bottom = Math.max(0, ...sub.boxes.filter((b) => !b.hidden).map((b) => b.y + b.h));
+          const max = Math.max(0, Math.ceil((bottom - h) / step) * step);
+          const off = Math.floor(Math.min(Math.max(0, int(ctx.pages?.['scroll:' + key], 0)), max) / step) * step;
+          for (let yy = 0; yy < h; yy++) {
+            for (let xx = 0; xx < w; xx++) {
+              const v = sub.pix.get(xx, off + yy);
+              if (v >>> 24) blend(c.pix, x + xx, y + yy, v);
+            }
+          }
+          for (const r of sub.regions) {
+            const ry = r.y - off + y;
+            if (ry >= y && ry + r.h <= y + h) regions.push({ ...r, x: r.x + x, y: ry });
+          }
+          for (const e of sub.errors) errors.push({ top, text: e.text });
+          if (max > 0) {
+            const bx = x + w - 8;
+            const go = (v) => ({ type: 'page', id: 'scroll:' + key, page: v });
+            const up = off > 0, down = off < max;
+            c.rect('button', bx, y, 8, 16, up ? BUTTON_GRAY : DISABLED);
+            c.rect('button', bx, y + h - 16, 8, 16, down ? BUTTON_GRAY : DISABLED);
+            c.centered('▲', bx, 8, y + 4, up ? WHITE : DISABLED_TEXT, up);
+            c.centered('▼', bx, 8, y + h - 11, down ? WHITE : DISABLED_TEXT, down);
+            if (up) region(bx, y, 8, 16, null, go(Math.max(0, off - step)));
+            if (down) region(bx, y + h - 16, 8, 16, null, go(Math.min(max, off + step)));
+            const t = c.tileSize();
+            const track = Math.floor((h - 32) / t) * t;
+            if (track >= t) {
+              c.rect('slot', bx, y + 16, 8, track, null);
+              const knob = Math.max(t, Math.min(track, Math.floor(track * h / Math.max(1, bottom) / t) * t));
+              c.rect('button', bx, y + 16 + Math.floor((track - knob) * off / max), 8, knob, null);
+              const segs = Math.floor(track / 8);
+              for (let i = 0; i < segs; i++) {
+                const target = segs === 1 ? 0 : Math.round(i / (segs - 1) * max / step) * step;
+                if (target !== off) region(bx, y + 16 + i * 8, 8, 8, null, go(target));
+              }
+            }
+          }
           boxes.push({ top, x, y, w, h });
           break;
         }

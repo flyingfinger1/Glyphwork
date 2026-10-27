@@ -6,6 +6,7 @@ import de.flyingfinger.glyphwork.api.Checkbox;
 import de.flyingfinger.glyphwork.api.Choice;
 import de.flyingfinger.glyphwork.api.Slider;
 import de.flyingfinger.glyphwork.api.Tabs;
+import de.flyingfinger.glyphwork.api.Scroll;
 import de.flyingfinger.glyphwork.api.Click;
 import de.flyingfinger.glyphwork.api.Element;
 import de.flyingfinger.glyphwork.api.Grid;
@@ -211,6 +212,7 @@ public final class SceneRenderer {
                 case Bar b -> bar(line, b, view);
                 case Image im -> image(line, im, view, binder, name);
                 case Tabs t -> tabs(line, t, view, binder, name, scene);
+                case Scroll sc -> scroll(line, sc, view, binder, name, scene);
                 case Head hd -> {
                     String who = hd.player().apply(view);
                     if (who != null && !who.isBlank()) {
@@ -522,6 +524,78 @@ public final class SceneRenderer {
             for (int i = 0; i < active.elements().size(); i++) {
                 element(line, active.elements().get(i), view, binder, name + "/" + active.id() + "#" + i, scene);
             }
+        }
+    }
+
+    /**
+     * A window onto its elements: first measured (how far down they reach), then drawn moved up by
+     * the position, only what fits completely. The scroll bar comes last, outside the window.
+     */
+    private void scroll(LineBuilder line, Scroll s, View view, Binder binder, String name, Scene scene) {
+        List<Element> inner = s.elements();
+        line.window(s.y(), s.y(), 0);
+        for (int i = 0; i < inner.size(); i++) {
+            element(line, inner.get(i), view, (n, a) -> null, name + "/" + i, scene);
+        }
+        int bottom = line.endWindow();
+        int content = bottom == Integer.MIN_VALUE ? 0 : bottom - s.y();
+        int step = s.step();
+        // the last position shows the end of the content (in whole steps, so it stays reachable)
+        int max = Math.max(0, (content - s.height() + step - 1) / step * step);
+        int off = Math.min(s.offset(view), max) / step * step;
+        if (s.frame() != null) {
+            Frame f = frame(s.frame());
+            if (f != null) {
+                line.frame(f, s.x(), s.y(), s.width(), s.height(), null, null, null);
+            }
+        }
+        line.window(s.y(), s.y() + s.height(), -off);
+        for (int i = 0; i < inner.size(); i++) {
+            element(line, inner.get(i), view, binder, name + "/" + i, scene);
+        }
+        line.endWindow();
+        if (max == 0) {
+            return;
+        }
+        int bx = s.x() + s.width() - Scroll.BAR;
+        String key = s.key();
+        Frame button = frame("button");
+        Frame slot = frame("slot");
+        boolean up = off > 0;
+        boolean down = off < max;
+        int arrow = 16;
+        if (button != null) {
+            line.frame(button, bx, s.y(), Scroll.BAR, arrow, up ? Button.GRAY : Button.DISABLED,
+                up ? binder.bind(name + ":up", Redraw.after(c -> c.set(key, Math.max(0, off - step)))) : null, null);
+            line.frame(button, bx, s.y() + s.height() - arrow, Scroll.BAR, arrow, down ? Button.GRAY : Button.DISABLED,
+                down ? binder.bind(name + ":down", Redraw.after(c -> c.set(key, Math.min(max, off + step)))) : null, null);
+        }
+        line.centered("▲", bx, Scroll.BAR, s.y() + 4, up ? WHITE : DISABLED_TEXT, up ? LineBuilder.shadowOf(WHITE) : null);
+        line.centered("▼", bx, Scroll.BAR, s.y() + s.height() - arrow + 5, down ? WHITE : DISABLED_TEXT,
+            down ? LineBuilder.shadowOf(WHITE) : null);
+        // track between the arrows; the knob shows which part is visible, a click jumps there
+        int ts = slot == null ? 8 : slot.tileSize();
+        int top = s.y() + arrow;
+        int track = (s.height() - 2 * arrow) / ts * ts;
+        if (track < ts) {
+            return;
+        }
+        if (slot != null) {
+            line.frame(slot, bx, top, Scroll.BAR, track, null, null, null);
+        }
+        int knob = Math.max(ts, Math.min(track, track * s.height() / Math.max(1, content) / ts * ts));
+        int ky = top + (track - knob) * off / max;
+        if (button != null) {
+            line.frame(button, bx, ky, Scroll.BAR, knob, null, null, null);
+        }
+        int segments = track / 8;
+        for (int i = 0; i < segments; i++) {
+            int target = segments == 1 ? 0 : Math.round((float) i / (segments - 1) * max / step) * step;
+            if (target == off) {
+                continue;
+            }
+            hitbox(line, bx, top + i * 8, Scroll.BAR, 8,
+                binder.bind(name + ":to" + target, Redraw.after(c -> c.set(key, target))), null);
         }
     }
 

@@ -435,7 +435,9 @@ export function renderMenu(menu, skin, ctx = {}) {
         case 'label': {
           const w0 = int(el.width, -1);
           const wrap = el.wrap === true || el.wrap === 'true';
-          const full = f(el.text ?? '');
+          // inline MiniMessage tags are left out in the preview; the switches are shown
+          const full = plain(f(el.text ?? ''));
+          const look = { bold: on(el.bold), italic: on(el.italic), underline: on(el.underline), strike: on(el.strikethrough) };
           if ((wrap && w0 > 0) || full.includes('\n')) {
             const lh = Math.max(8, int(el['line-height'], 10));
             const lines = wrap && w0 > 0 ? wrapText(full, w0) : full.split('\n');
@@ -445,7 +447,7 @@ export function renderMenu(menu, skin, ctx = {}) {
               const part = w0 > 0 ? fit(ln, w0) : ln;
               const vw = visibleWidth(part);
               const lx = x + (w0 <= 0 ? 0 : align === 'center' ? Math.floor((w0 - vw) / 2) : align === 'right' ? w0 - vw : 0);
-              c.textOut(part, lx, y + i * lh, rgb, el.shadow === true || el.shadow === 'true');
+              styledOut(c, part, lx, y + i * lh, rgb, el.shadow === true || el.shadow === 'true', look);
             });
             const bw = w0 > 0 ? w0 : Math.max(4, ...lines.map((l) => visibleWidth(l)));
             boxes.push({ top, x, y, w: bw, h: (lines.length - 1) * lh + 8 });
@@ -461,8 +463,8 @@ export function renderMenu(menu, skin, ctx = {}) {
             lx += align === 'center' ? Math.floor((w - vw) / 2) : align === 'right' ? w - vw : 0;
           }
           const rgb = skinText(color(el.color) ?? DARK);
-          c.textOut(s, lx, y, rgb, el.shadow === true || el.shadow === 'true');
-          boxes.push({ top, x, y, w: w > 0 ? w : Math.max(4, visibleWidth(s)), h: 8 });
+          styledOut(c, s, lx, y, rgb, el.shadow === true || el.shadow === 'true', look);
+          boxes.push({ top, x, y, w: w > 0 ? w : Math.max(4, visibleWidth(s) + (look.bold ? s.length : 0)), h: 8 });
           break;
         }
         case 'button': {
@@ -717,6 +719,31 @@ export function renderMenu(menu, skin, ctx = {}) {
     }
   }
   return { pix: c.pix, boxes, regions, hints, errors };
+}
+
+const on = (v) => v === true || v === 'true';
+
+/** Label text with the label's switches: bold drawn twice 1 px apart, lines 1 px high like the plugin. */
+function styledOut(c, s, x, y, rgb, shadow, look) {
+  if (!s) return;
+  const w = textWidth(s) + (look.bold ? [...s].length : 0);
+  const line = (ly) => {
+    if (shadow) c.fillRect(x, ly + 1, w + 1, 1, (0xff000000 | ((rgb & 0xfcfcfc) >> 2)) >>> 0);
+    c.fillRect(x - 1, ly, w + 1, 1, (0xff000000 | rgb) >>> 0);
+  };
+  if (look.bold) {
+    // the client widens every character by 1 px; drawn character by character like that
+    let cx = x;
+    for (const ch of s) {
+      c.textOut(ch, cx, y, rgb, shadow);
+      c.textOut(ch, cx + 1, y, rgb, false);
+      cx += textWidth(ch) + 1;
+    }
+  } else {
+    c.textOut(s, x, y, rgb, shadow);
+  }
+  if (look.underline) line(y + 8);
+  if (look.strike) line(y + 4);
 }
 
 /** MiniMessage tags removed (pixel text has no formatting). */

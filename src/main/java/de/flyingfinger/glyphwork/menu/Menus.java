@@ -484,8 +484,14 @@ public final class Menus {
     private void element(Consumer<Element> b, Node n, int index, String type) throws MenuException {
         switch (type) {
             case "label" -> {
-                n.only(with("type", "x", "y", "text", "color", "width", "align", "shadow", "wrap", "line-height"));
+                n.only(with("type", "x", "y", "text", "color", "width", "align", "shadow", "wrap", "line-height",
+                    "bold", "italic", "underline", "strikethrough"));
                 Label l = Label.of(n.integer("x"), n.integer("y"), text(n.string("text")))
+                    .markup(true)
+                    .bold(n.optBool("bold", false))
+                    .italic(n.optBool("italic", false))
+                    .underline(n.optBool("underline", false))
+                    .strikethrough(n.optBool("strikethrough", false))
                     .color(n.optColor("color", Label.DARK))
                     .shadow(n.optBool("shadow", false))
                     .wrap(n.optBool("wrap", false))
@@ -510,6 +516,7 @@ public final class Menus {
                     "cooldown-tooltip", "cooldown-message"));
                 Button bt = Button.of(n.integer("x"), n.integer("y"), n.optInt("width", 64), n.optInt("height", 16))
                     .text(text(n.optString("text", "")))
+                    .markup(true)
                     .tint(n.optColor("tint", Button.GRAY))
                     .textColor(n.optColor("text-color", TextColor.color(0xFFFFFF)))
                     .frame(n.optString("frame", "button"))
@@ -589,6 +596,7 @@ public final class Menus {
                     "head-size"));
                 ListView<Row> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
                         n.optInt("width", 120), n.optInt("rows", 4), rows(n))
+                    .markup(true)
                     // lists of players show heads, which need rows of 9 or 18 px to look even
                     .rowHeight(n.optInt("row-height", "online-players".equalsIgnoreCase(n.optString("items-from", "")) ? 18 : 16))
                     .text(e -> e.text)

@@ -43,7 +43,7 @@ const T = {
     mcWhereText: 'Minecraft-Launcher: .minecraft/versions/<Version>/<Version>.jar. Prism/MultiMC: libraries/com/mojang/minecraft/<Version>/minecraft-<Version>-client.jar. Ein Resource-Pack (ZIP) danach laden: seine Texturen ersetzen die der Jar, eigene Items (ns:name) werden als Icon nutzbar.',
     // element types
     t_label: 'Text', t_button: 'Button', t_panel: 'Panel', t_hitbox: 'Klickfläche', t_icon: 'Icon', t_list: 'Liste',
-    t_grid: 'Raster', t_slider: 'Schieberegler', t_checkbox: 'Checkbox', t_choice: 'Auswahl', t_use: 'Vorlage (use)', t_bar: 'Balken', t_image: 'Bild', t_head: 'Kopf', t_tabs: 'Reiter', t_scroll: 'Scrollbereich', f_selectedIf: 'Markiert, wenn (selected-if)',
+    t_grid: 'Raster', t_slider: 'Schieberegler', t_checkbox: 'Checkbox', t_choice: 'Auswahl', t_use: 'Vorlage (use)', t_bar: 'Balken', t_image: 'Bild', t_head: 'Kopf', t_tabs: 'Reiter', t_scroll: 'Scrollbereich', f_selectedIf: 'Markiert, wenn (selected-if)', f_bold: 'Fett', f_italic: 'Kursiv', f_underline: 'Unterstrichen', f_strike: 'Durchgestrichen',
     f_elements: 'Elemente (YAML – Positionen relativ zum Bereich)',
     f_tabs: 'Reiter (YAML: id, title, icon, elements – Positionen relativ zum Feld)', f_player: 'Spieler (Name, UUID oder %player%)',
     f_headSize: 'Kopfgröße (8 = Client-Kopf, 16-32 gemalt)',
@@ -104,7 +104,7 @@ const T = {
     mcWhere: 'Where is the jar?',
     mcWhereText: 'Minecraft launcher: .minecraft/versions/<version>/<version>.jar. Prism/MultiMC: libraries/com/mojang/minecraft/<version>/minecraft-<version>-client.jar. Load a resource pack (ZIP) afterwards: its textures replace those of the jar, its own items (ns:name) work as icons.',
     t_label: 'Text', t_button: 'Button', t_panel: 'Panel', t_hitbox: 'Click area', t_icon: 'Icon', t_list: 'List',
-    t_grid: 'Grid', t_slider: 'Slider', t_checkbox: 'Checkbox', t_choice: 'Choice', t_use: 'Template (use)', t_bar: 'Bar', t_image: 'Picture', t_head: 'Head', t_tabs: 'Tabs', t_scroll: 'Scroll pane', f_selectedIf: 'Highlighted if (selected-if)',
+    t_grid: 'Grid', t_slider: 'Slider', t_checkbox: 'Checkbox', t_choice: 'Choice', t_use: 'Template (use)', t_bar: 'Bar', t_image: 'Picture', t_head: 'Head', t_tabs: 'Tabs', t_scroll: 'Scroll pane', f_selectedIf: 'Highlighted if (selected-if)', f_bold: 'Bold', f_italic: 'Italic', f_underline: 'Underline', f_strike: 'Strikethrough',
     f_elements: 'Elements (YAML – positions relative to the pane)',
     f_tabs: 'Tabs (YAML: id, title, icon, elements – positions relative to the panel)', f_player: 'Player (name, UUID or %player%)',
     f_headSize: 'Head size (8 = client head, 16-32 painted)',

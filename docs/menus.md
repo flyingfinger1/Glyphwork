@@ -91,7 +91,7 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 
 | type | settings |
 |---|---|
-| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10) |
+| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text) |
 | `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `text-color`, `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24) |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
@@ -132,6 +132,14 @@ dialog leaves pictures out (a clickable one becomes a button named by its toolti
 **Item tooltips:** `item-tooltip: true` (on an `icon`, or on a `list` / `grid` for all its entries)
 shows the item's own tooltip when hovering, like in the inventory, instead of the text tooltip.
 Vanilla items only; with the API a plugin can pass a full item with enchantments and lore.
+
+**Formatting:** the text of labels, buttons and list entries is
+[MiniMessage](https://docs.advntr.dev/minimessage/format.html), like tooltips:
+`"Price: <b>100</b> <gold>coins"`, `<i>`, `<u>`, `<st>` and colors work for parts of a text (a color
+tag beats the element's `color`). Bold text is 1 px wider per character, which cutting, centering
+and wrapping take into account; underline and strikethrough are drawn as 1 px lines exactly under
+and through the letters. Other MiniMessage tags (gradients, click, hover) have no effect in pixel
+text. A `<` that is not a tag stays as it is; write `\<` for a `<` that would look like one.
 
 **Text blocks:** a label with `width` and `wrap: true` breaks its text into lines at spaces; `
 `
@@ -315,7 +323,8 @@ exist stays as it is, so typos are visible. `/glyphwork reload` loads everything
 | filter | effect |
 |---|---|
 | `\|date` | a date (ISO 8601 like `2026-10-27T14:03:11+00:00`, RFC 1123, or Unix time in seconds or milliseconds) in the format of `feeds.date-format`, server time zone: `%item_timestamp\|date%` |
-| `\|discord` | Discord message markup made readable: mentions become `@user` / `#channel` / `@role`, custom emojis `:name:`, `<t:...>` a date; bold, italics, strikethrough, spoilers, code, headings, quotes and masked links lose their markers: `%item_content\|discord%` |
+| `\|discord` | Discord message markup as formatting: `**bold**`, `*italics*`, `__underline__`, `~~strikethrough~~` and `# headings` become MiniMessage tags (shown as such in labels, buttons, lists, tooltips and chat); mentions become `@user` / `#channel` / `@role`, custom emojis `:name:`, `<t:...>` a date; spoilers, code, quotes and masked links lose their markers. Tags typed in the message itself stay text: `%item_content\|discord%` |
+| `\|discord-plain` | the same without formatting, all markers removed (for places that show text as it is, e.g. commands) |
 
 **A Discord channel** is a web source with a bot token. Create an application with a bot in the
 [Discord Developer Portal](https://discord.com/developers/applications), switch on its *Message

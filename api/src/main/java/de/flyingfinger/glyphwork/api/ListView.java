@@ -37,6 +37,7 @@ public final class ListView<T> implements Element {
     private @Nullable Function<T, @Nullable String> icon;
     private @Nullable Function<T, @Nullable String> count;
     private boolean itemTooltip;
+    private boolean markup;
     private int headSize = 8;
     private @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem;
 
@@ -58,6 +59,16 @@ public final class ListView<T> implements Element {
     public ListView<T> rowHeight(int rowHeight) {
         this.rowHeight = rowHeight;
         return this;
+    }
+
+    /** Reads the row texts as MiniMessage (bold, italic, underline, strikethrough, colors for parts). */
+    public ListView<T> markup(boolean markup) {
+        this.markup = markup;
+        return this;
+    }
+
+    public boolean markup() {
+        return markup;
     }
 
     public ListView<T> text(Function<T, String> text) {

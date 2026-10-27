@@ -144,6 +144,18 @@ public final class Button implements Element {
         return text;
     }
 
+    private boolean markup;
+
+    /** Reads the text as MiniMessage (bold, italic, underline, strikethrough, colors for parts of it). */
+    public Button markup(boolean markup) {
+        this.markup = markup;
+        return this;
+    }
+
+    public boolean markup() {
+        return markup;
+    }
+
     public Function<View, TextColor> textColor() {
         return textColor;
     }

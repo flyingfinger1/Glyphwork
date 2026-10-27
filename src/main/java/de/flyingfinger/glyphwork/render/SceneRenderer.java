@@ -645,36 +645,75 @@ public final class SceneRenderer {
         if (s == null || s.isEmpty()) {
             return;
         }
-        if (l.wrap() || s.indexOf('\n') >= 0) {
-            List<String> lines = l.wrap() && l.width() > 0 ? wrapText(line, s, l.width()) : List.of(s.split("\n", -1));
-            TextColor color = skinText(l.color().apply(view));
-            for (int i = 0; i < lines.size(); i++) {
-                String part = lines.get(i);
-                if (l.width() > 0) {
-                    part = line.fit(part, l.width());
-                }
-                int w = line.visibleWidth(part);
-                int lx = l.x() + (l.width() <= 0 ? 0 : switch (l.align()) {
-                    case LEFT -> 0;
-                    case CENTER -> (l.width() - w) / 2;
-                    case RIGHT -> l.width() - w;
-                });
-                line.text(part, lx, l.y() + i * l.lineHeight(), color, l.shadow() ? LineBuilder.shadowOf(color) : null);
+        TextColor color = skinText(l.color().apply(view));
+        RichText.Look base = new RichText.Look(color, l.bold(), l.italic(), l.underline(), l.strikethrough());
+        List<RichText.Span> spans = l.markup() ? RichText.parse(s, base) : RichText.plain(s, base);
+        List<List<RichText.Span>> lines;
+        if (l.wrap() && l.width() > 0) {
+            lines = RichText.wrap(text, spans, l.width());
+        } else {
+            lines = RichText.splitLines(spans);
+            if (l.width() > 0) {
+                lines.replaceAll(part -> RichText.fit(text, part, l.width()));
             }
-            return;
         }
-        int x = l.x();
-        if (l.width() > 0) {
-            s = line.fit(s, l.width());
-            int w = line.visibleWidth(s);
-            x += switch (l.align()) {
+        for (int i = 0; i < lines.size(); i++) {
+            List<RichText.Span> part = lines.get(i);
+            int w = RichText.visibleWidth(text, part);
+            int lx = l.x() + (l.width() <= 0 ? 0 : switch (l.align()) {
                 case LEFT -> 0;
                 case CENTER -> (l.width() - w) / 2;
                 case RIGHT -> l.width() - w;
-            };
+            });
+            rich(line, part, lx, l.y() + i * l.lineHeight(), color, l.shadow());
         }
-        TextColor color = skinText(l.color().apply(view));
-        line.text(s, x, l.y(), color, l.shadow() ? LineBuilder.shadowOf(color) : null);
+    }
+
+    /**
+     * Formatted pieces from x on: bold and italic by the client, underline and strikethrough as
+     * 1 px lines of our own (the client's lines would sit where the text line is, not where our
+     * shifted glyphs are). Returns the advance.
+     */
+    private int rich(LineBuilder line, List<RichText.Span> spans, int x, int y, TextColor base, boolean shadow) {
+        int cx = x;
+        for (RichText.Span s : spans) {
+            RichText.Look k = s.look();
+            TextColor c = k.color() == null ? base : skinText(k.color());
+            line.text(s.text(), cx, y, c, shadow ? LineBuilder.shadowOf(c) : null, k.bold(), k.italic());
+            int w = RichText.width(text, s);
+            // like the client: from 1 px before the piece to the end of its advance
+            if (k.underline()) {
+                rule(line, cx - 1, y + 8, w + 1, c, shadow);
+            }
+            if (k.strike()) {
+                rule(line, cx - 1, y + 4, w + 1, c, shadow);
+            }
+            cx += w;
+        }
+        return cx - x;
+    }
+
+    /** A 1 px line from the fill strips (and its shadow 1 px right and down). */
+    private void rule(LineBuilder line, int x, int y, int w, TextColor color, boolean shadow) {
+        de.flyingfinger.glyphwork.font.Sheet strips = fills == null ? null : fills.forHeight(1);
+        if (strips == null || w <= 0) {
+            return;
+        }
+        if (shadow) {
+            strip(line, strips, x + 1, y + 1, w, TextColor.color((color.value() & 0xFCFCFC) >> 2));
+        }
+        strip(line, strips, x, y, w, color);
+    }
+
+    private static void strip(LineBuilder line, de.flyingfinger.glyphwork.font.Sheet strips, int x, int y, int w, TextColor color) {
+        int rest = w;
+        for (int i = 0; i < FillSheets.WIDTHS.length; i++) {
+            while (rest >= FillSheets.WIDTHS[i]) {
+                line.glyph(strips.glyph(i), x, y, color, null, null);
+                x += FillSheets.WIDTHS[i];
+                rest -= FillSheets.WIDTHS[i];
+            }
+        }
     }
 
     private void button(LineBuilder line, Button b, View view, Binder binder, String name) {
@@ -704,8 +743,16 @@ public final class SceneRenderer {
         }
         String s = b.text().apply(view);
         if (s != null && !s.isEmpty()) {
-            s = line.fit(s, textW - 6);
             TextColor color = enabled ? b.textColor().apply(view) : TextColor.color(0xA0A0A0);
+            if (b.markup() && enabled) {
+                // formatted: measured and centered as pieces
+                List<RichText.Span> spans = RichText.fit(text, RichText.parse(s, new RichText.Look(color, false, false, false, false)), textW - 6);
+                rich(line, spans, textX + (textW - RichText.visibleWidth(text, spans)) / 2, textY, color, true);
+                s = "";
+            } else if (b.markup()) {
+                s = RichText.plainText(RichText.parse(s, RichText.Look.PLAIN));
+            }
+            s = line.fit(s, textW - 6);
             // like vanilla buttons: shadow while enabled, flat when grayed out
             line.centered(s, textX, textW, textY, color, enabled ? LineBuilder.shadowOf(color) : null);
         }
@@ -785,9 +832,14 @@ public final class SceneRenderer {
                         top + l.rowHeight());
                 }
             }
-            String s = line.fit(String.valueOf(l.text().apply(item)), l.x() + l.width() - 4 - textX);
             TextColor color = l.color().apply(item);
-            line.text(s, textX, textY, color, LineBuilder.shadowOf(color));
+            String rowText = String.valueOf(l.text().apply(item));
+            if (l.markup()) {
+                rich(line, RichText.fit(text, RichText.parse(rowText, new RichText.Look(color, false, false, false, false)),
+                    l.x() + l.width() - 4 - textX), textX, textY, color, true);
+            } else {
+                line.text(line.fit(rowText, l.x() + l.width() - 4 - textX), textX, textY, color, LineBuilder.shadowOf(color));
+            }
             ClickEvent<?> click = l.onSelect() == null ? null
                 : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
             HoverEventSource<?> rowItem = l.hoverItem() != null ? safeItem(l.hoverItem().apply(item))

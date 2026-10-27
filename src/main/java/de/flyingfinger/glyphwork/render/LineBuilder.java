@@ -164,6 +164,26 @@ public final class LineBuilder {
     }
 
     /**
+     * One piece of formatted text: bold and italic are drawn by the client (bold is 1 px wider per
+     * character, see {@link RichText#width}). Underline and strikethrough are not drawn here.
+     */
+    public LineBuilder text(String s, int x, int y, TextColor color, @Nullable ShadowColor shadow, boolean bold, boolean italic) {
+        if (s.isEmpty()) {
+            return this;
+        }
+        y = place(y, 8);
+        if (y == SKIP || y < 0) {
+            return this;
+        }
+        int index = y / ShiftFonts.LINE;
+        String one = oneLine(s);
+        int w = text.width(one) + (bold ? one.codePointCount(0, one.length()) : 0);
+        line(index).draw(one.replace(' ', VanillaText.NB_SPACE), w, x,
+            ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null, shadow, bold, italic);
+        return this;
+    }
+
+    /**
      * A line break inside the message would start a real new text line and move everything after
      * it (web data, chat messages): control characters become spaces.
      */
@@ -324,6 +344,8 @@ public final class LineBuilder {
         private @Nullable ClickEvent<?> segClick;
         private @Nullable HoverEventSource<?> segHover;
         private @Nullable ShadowColor segShadow;
+        private boolean segBold;
+        private boolean segItalic;
         private int cursor;
         private int maxCursor;
         private boolean used;
@@ -335,17 +357,25 @@ public final class LineBuilder {
 
         void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
                   @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow) {
+            draw(chars, advance, x, font, color, click, hover, shadow, false, false);
+        }
+
+        void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
+                  @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow,
+                  boolean bold, boolean italic) {
             used = true;
             moveTo(x);
             if (seg.isEmpty() || !font.equals(segFont) || !Objects.equals(color, segColor)
                 || !Objects.equals(click, segClick) || !Objects.equals(hover, segHover)
-                || !Objects.equals(shadow, segShadow)) {
+                || !Objects.equals(shadow, segShadow) || bold != segBold || italic != segItalic) {
                 flush();
                 segFont = font;
                 segColor = color;
                 segClick = click;
                 segHover = hover;
                 segShadow = shadow;
+                segBold = bold;
+                segItalic = italic;
             }
             seg.append(chars);
             cursor += advance;
@@ -370,7 +400,8 @@ public final class LineBuilder {
             // Spaces exist in every shifted font. A positive space inherits the segment's events
             // and would be clickable on its line, so only negative moves join an interactive segment.
             // a shadowed segment would draw the shadow of a space too (nothing), but keep it simple
-            if (!seg.isEmpty() && ShiftFonts.isShiftFont(segFont) && segShadow == null
+            // never inside bold text: the client would make the moving space 1 px wider too
+            if (!seg.isEmpty() && ShiftFonts.isShiftFont(segFont) && segShadow == null && !segBold && !segItalic
                 && (dx < 0 || (segClick == null && segHover == null))) {
                 seg.append(SpaceFont.of(dx));
             } else {
@@ -385,10 +416,18 @@ public final class LineBuilder {
                 return;
             }
             Component c = Component.text(seg.toString()).font(segFont).color(segColor).clickEvent(segClick).hoverEvent(segHover);
+            if (segBold) {
+                c = c.decoration(TextDecoration.BOLD, true);
+            }
+            if (segItalic) {
+                c = c.decoration(TextDecoration.ITALIC, true);
+            }
             out.append(segShadow == null ? c : c.shadowColor(segShadow));
             seg.setLength(0);
             segFont = null;
             segShadow = null;
+            segBold = false;
+            segItalic = false;
         }
 
         Component build() {

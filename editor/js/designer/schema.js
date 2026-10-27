@@ -6,7 +6,8 @@ const COMMON_TAIL = ['show-if'];
 
 export const FIELDS = {
   label: [['x', 'int'], ['y', 'int'], ['text', 'text'], ['color', 'color'], ['width', 'int'],
-    ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool'], ['wrap', 'bool'], ['line-height', 'int']],
+    ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool'], ['wrap', 'bool'], ['line-height', 'int'],
+    ['bold', 'bool'], ['italic', 'bool'], ['underline', 'bool'], ['strikethrough', 'bool']],
   button: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['text', 'text'], ['tint', 'color'],
     ['text-color', 'color'], ['icon', 'text'], ['tooltip', 'text'], ['actions', 'lines'], ['permission', 'text'],
     ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text']],
@@ -68,7 +69,7 @@ export const FIELD_KEY = {
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
   'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
   value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize', cooldown: 'f_cooldown',
-  'cooldown-key': 'f_cooldownKey', 'selected-if': 'f_selectedIf', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
+  'cooldown-key': 'f_cooldownKey', 'selected-if': 'f_selectedIf', bold: 'f_bold', italic: 'f_italic', underline: 'f_underline', strikethrough: 'f_strike', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
 };
 
 /** A new element of this type at (x, y). */

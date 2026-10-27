@@ -156,7 +156,7 @@ public final class FallbackRenderer {
                     if (s != null && !s.isEmpty()) {
                         // the dialog wraps by itself; "\n" lines stay lines
                         for (String part : s.split("\n")) {
-                            lines.add(Component.text(part, readable(l.color().apply(view))));
+                            lines.add(styled(l, part, view));
                         }
                     }
                 } else if (e instanceof Bar b) {
@@ -164,6 +164,26 @@ public final class FallbackRenderer {
                 }
             });
         return new Model(scene.title().apply(view), lines, actions);
+    }
+
+    /** A label line as a component: formatting and the label's switches, in a readable color. */
+    private static Component styled(Label l, String part, View view) {
+        Component c = l.markup() ? net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(part)
+            : Component.text(part);
+        c = c.colorIfAbsent(readable(l.color().apply(view)));
+        if (l.bold()) {
+            c = c.decoration(net.kyori.adventure.text.format.TextDecoration.BOLD, true);
+        }
+        if (l.italic()) {
+            c = c.decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, true);
+        }
+        if (l.underline()) {
+            c = c.decoration(net.kyori.adventure.text.format.TextDecoration.UNDERLINED, true);
+        }
+        if (l.strikethrough()) {
+            c = c.decoration(net.kyori.adventure.text.format.TextDecoration.STRIKETHROUGH, true);
+        }
+        return c;
     }
 
     /** Label colors are chosen for light panels; the dialog background is dark. */
@@ -178,7 +198,9 @@ public final class FallbackRenderer {
         }
         String text = b.text().apply(view);
         Component tip = b.tooltip() == null ? null : b.tooltip().apply(view);
-        Component label = text != null && !text.isBlank() ? Component.text(text) : tip != null ? tip : Component.text("•");
+        Component label = text != null && !text.isBlank()
+            ? (b.markup() ? net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(text) : Component.text(text))
+            : tip != null ? tip : Component.text("•");
         actions.add(new Action(withHead(label, b.icon() == null ? null : b.icon().apply(view)), tip, b.onClick()));
     }
 
@@ -193,7 +215,8 @@ public final class FallbackRenderer {
                 continue;
             }
             String text = String.valueOf(l.text().apply(item));
-            Component label = withHead(withCount(Component.text(l.isSelected(view, item) ? "▶ " + text : text),
+            Component shown = l.markup() ? net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(text) : Component.text(text);
+            Component label = withHead(withCount(l.isSelected(view, item) ? Component.text("▶ ").append(shown) : shown,
                 l.count() == null ? null : l.count().apply(item)), l.icon() == null ? null : l.icon().apply(item));
             actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onSelect().accept(c, item)));
         }

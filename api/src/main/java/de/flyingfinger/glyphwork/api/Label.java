@@ -83,6 +83,62 @@ public final class Label implements Element {
         return wrap;
     }
 
+    private boolean markup;
+    private boolean bold;
+    private boolean italic;
+    private boolean underline;
+    private boolean strikethrough;
+
+    /**
+     * Reads the text as MiniMessage: {@code <b>}, {@code <i>}, {@code <u>}, {@code <st>} and colors
+     * for parts of it ("Price: <b>100</b> <gold>coins"). Off by default (the text is shown as it is).
+     */
+    public Label markup(boolean markup) {
+        this.markup = markup;
+        return this;
+    }
+
+    public boolean markup() {
+        return markup;
+    }
+
+    /** The whole text bold (each character 1 px wider). */
+    public Label bold(boolean bold) {
+        this.bold = bold;
+        return this;
+    }
+
+    public boolean bold() {
+        return bold;
+    }
+
+    public Label italic(boolean italic) {
+        this.italic = italic;
+        return this;
+    }
+
+    public boolean italic() {
+        return italic;
+    }
+
+    public Label underline(boolean underline) {
+        this.underline = underline;
+        return this;
+    }
+
+    public boolean underline() {
+        return underline;
+    }
+
+    public Label strikethrough(boolean strikethrough) {
+        this.strikethrough = strikethrough;
+        return this;
+    }
+
+    public boolean strikethrough() {
+        return strikethrough;
+    }
+
     /** Distance between wrapped lines in pixels (default 10). */
     public Label lineHeight(int lineHeight) {
         this.lineHeight = Math.max(8, lineHeight);

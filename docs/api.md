@@ -49,7 +49,7 @@ Glyphwork.get().open(player, settings);
 | Element | Use |
 |---|---|
 | `Panel.of(x, y, w, h)` / `Panel.shape(x, y, "##.", "###")` | autotiled frame (`panel` by default, `.frame("slot")` etc.), optional `tint`, `tooltip`, `onClick` |
-| `Label.of(x, y, text)` | one line of text; `.color`, `.width` (clips with "..."), `.align` / `.center(width)`, `.shadow(true)` |
+| `Label.of(x, y, text)` | one line of text; `.color`, `.width` (clips with "..."), `.align` / `.center(width)`, `.shadow(true)`, `.wrap(true)`, `.bold/.italic/.underline/.strikethrough(true)`, `.markup(true)` (MiniMessage for parts: `<b>`, `<i>`, `<u>`, `<st>`, colors; also on `Button` and `ListView`) |
 | `Button.of(x, y, w, h)` | frame + centered text; `.text`, `.tint`, `.textColor`, `.tooltip`, `.enabled`, `.onClick` |
 | `Hitbox.of(x, y, w, h)` | invisible clickable area (min. 8 x 8), e.g. over a label |
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |

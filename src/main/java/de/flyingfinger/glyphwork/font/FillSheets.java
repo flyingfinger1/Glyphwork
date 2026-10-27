@@ -16,7 +16,8 @@ public final class FillSheets {
 
     public static final int[] WIDTHS = {128, 64, 32, 16, 8, 4, 2, 1};
     private static final int CELL = 128;
-    public static final int[] HEIGHTS = {6, 14};
+    /** 1: lines (underline, strikethrough), 6 and 14: bars. */
+    public static final int[] HEIGHTS = {1, 6, 14};
 
     private final List<Sheet> sheets = new ArrayList<>();
 

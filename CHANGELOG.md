@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Text formatting:** labels, buttons and list entries understand MiniMessage for parts of their
+  text (`<b>`, `<i>`, `<u>`, `<st>`, colors); labels also have `bold`, `italic`, `underline` and
+  `strikethrough` for the whole text. Bold counts 1 px per character when cutting, centering and
+  wrapping; underline and strikethrough are drawn as pixel-exact lines of their own. API:
+  `markup(true)` on Label, Button and ListView, plus the four switches on Label. `|discord` now turns
+  Discord markdown into this formatting; `|discord-plain` keeps the old plain text.
 - **Fix:** a line break inside a value (chat messages, web data, PlaceholderAPI, `%input%`) no
   longer breaks the layout of the whole menu; single-line text shows it as a space.
 - **Clearer web errors:** refused requests (401/403) say what to check, e.g. that Discord needs

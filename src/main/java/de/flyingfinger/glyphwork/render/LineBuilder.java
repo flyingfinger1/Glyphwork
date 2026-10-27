@@ -157,9 +157,28 @@ public final class LineBuilder {
             return this;
         }
         int index = y / ShiftFonts.LINE;
-        line(index).draw(s.replace(' ', VanillaText.NB_SPACE), text.width(s), x,
+        String one = oneLine(s);
+        line(index).draw(one.replace(' ', VanillaText.NB_SPACE), text.width(one), x,
             ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null, shadow);
         return this;
+    }
+
+    /**
+     * A line break inside the message would start a real new text line and move everything after
+     * it (web data, chat messages): control characters become spaces.
+     */
+    static String oneLine(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (Character.isISOControl(s.charAt(i))) {
+                StringBuilder b = new StringBuilder(s.length());
+                for (int j = 0; j < s.length(); j++) {
+                    char c = s.charAt(j);
+                    b.append(Character.isISOControl(c) ? ' ' : c);
+                }
+                return b.toString();
+            }
+        }
+        return s;
     }
 
     /**
@@ -245,6 +264,7 @@ public final class LineBuilder {
 
     /** Cuts {@code s} to fit into {@code maxWidth} pixels, adding "..." when shortened. */
     public String fit(String s, int maxWidth) {
+        s = oneLine(s);
         if (text.width(s) - 1 <= maxWidth) {
             return s;
         }

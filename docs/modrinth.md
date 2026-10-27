@@ -37,7 +37,8 @@ elements:
   (open / back / reopen / close) and text input through a small native dialog.
 - **Item icons** for 1595 items in grids, buttons, lists and menus, drawn from the textures every
   client already has. Icons follow your server's resource pack: replaced textures are measured,
-  and the pack's own items (`myserver:ruby`) work as icons.
+  and the pack's own items (`myserver:ruby`) work as icons. **Player heads** as small 8 x 8 icons
+  (`head:Steve`), e.g. in a list of online players.
 - **Pixel-exact clicks**, also off the 9 px text grid.
 - **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. Three skins are
   built in (vanilla, dark, parchment); make your own with the browser-based
@@ -82,7 +83,8 @@ Documentation: [API](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/a
 
 - Paper 26.3 only for now; the API may still change before 1.0.
 - Text and icons are always drawn on top of frames; blocks show one face (no 3D), items drawn by
-  special renderers (heads, chests, beds, banners) have no icon.
+  special renderers (chests, beds, banners, shields) have no icon; player heads are 8 x 8 and sit on
+  the 9 px text grid (elements with a head move by up to 4 px).
 
 The technique goes back to a public description by the developer of the HugoSMP server; Glyphwork
 is an independent, MIT-licensed implementation.

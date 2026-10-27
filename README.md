@@ -11,7 +11,8 @@ plugins build screens with panels, labels, buttons, lists, grids, navigation and
 
 **Item icons:** 16 x 16 icons for 1595 items (in grids, buttons, lists, menus), drawn from the
 textures every client already has. They follow your server's resource pack: replaced textures
-are measured, and the pack's own items (`myserver:ruby`) work as icons.
+are measured, and the pack's own items (`myserver:ruby`) work as icons. Player heads
+(`head:Steve`) show as small 8 x 8 icons, e.g. in a list of online players.
 
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus or ask for input, PlaceholderAPI support, a
@@ -49,7 +50,7 @@ release (do not shade it; the classes come with the Glyphwork plugin), e.g. with
 
 ```groovy
 dependencies {
-    compileOnly files('libs/glyphwork-api-0.7.0.jar')
+    compileOnly files('libs/glyphwork-api-0.8.0.jar')
 }
 ```
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 – player heads
 
 - **Player heads as icons:** `head:<name or uuid>` wherever an item id goes (YAML `icon:`, API
   `Icon.head(...)`, grids, lists, buttons). The client draws heads as 8 x 8 px and only on its 9 px

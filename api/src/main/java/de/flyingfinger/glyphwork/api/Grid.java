@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A grid of clickable cells ("slot" frames) with a short centered label each, like an inventory or
@@ -17,7 +18,7 @@ import java.util.function.Function;
  */
 public final class Grid<T> implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final String id;
     private final int x;
@@ -27,8 +28,8 @@ public final class Grid<T> implements Element {
     private final Function<View, List<T>> items;
     private int cell = 18;
     private int size = 16;
-    private Function<T, String> label = t -> "";
-    private Function<T, TextColor> labelColor = t -> TextColor.color(0xFFFFFF);
+    private Function<T, String> text = t -> "";
+    private Function<T, TextColor> color = t -> TextColor.color(0xFFFFFF);
     private Function<T, @Nullable TextColor> tint = t -> null;
     private @Nullable Function<T, @Nullable Component> tooltip;
     private @Nullable BiConsumer<Click, T> onClick;
@@ -63,13 +64,15 @@ public final class Grid<T> implements Element {
         return this;
     }
 
-    public Grid<T> label(Function<T, String> label) {
-        this.label = label;
+    /** Short text centered in each cell (default none). */
+    public Grid<T> text(Function<T, String> text) {
+        this.text = text;
         return this;
     }
 
-    public Grid<T> labelColor(Function<T, TextColor> color) {
-        this.labelColor = color;
+    /** Color of the cell texts (default white). */
+    public Grid<T> color(Function<T, TextColor> color) {
+        this.color = color;
         return this;
     }
 
@@ -98,6 +101,7 @@ public final class Grid<T> implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable String> icon() {
         return icon;
     }
@@ -112,6 +116,7 @@ public final class Grid<T> implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable String> count() {
         return count;
     }
@@ -121,6 +126,7 @@ public final class Grid<T> implements Element {
      * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
      * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Grid<T> itemTooltip(boolean itemTooltip) {
         this.itemTooltip = itemTooltip;
         return this;
@@ -131,11 +137,13 @@ public final class Grid<T> implements Element {
      * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
      * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Grid<T> itemTooltip(Function<T, @Nullable HoverEventSource<?>> item) {
         this.hoverItem = item;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean itemTooltip() {
         return itemTooltip;
     }
@@ -144,15 +152,18 @@ public final class Grid<T> implements Element {
      * Size of player heads ("head:Name" icons): 8 (default) is the client's own head, 16, 24 or 32
      * paints the face from the skin, centered, at any position (see {@link Head}).
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Grid<T> headSize(int size) {
         this.headSize = Head.sizeOf(size);
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int headSize() {
         return headSize;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem() {
         return hoverItem;
     }
@@ -170,6 +181,7 @@ public final class Grid<T> implements Element {
     }
 
     /** Whether {@code item} is shown as selected for this viewer. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean isSelected(View view, T item) {
         if (selectedIf != null) {
             return selectedIf.test(view, item);
@@ -182,10 +194,12 @@ public final class Grid<T> implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable T> selected() {
         return selected;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public TextColor selectedTint() {
         return selectedTint;
     }
@@ -209,58 +223,69 @@ public final class Grid<T> implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int cols() {
         return cols;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int rows() {
         return rows;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int cellPitch() {
         return cell;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int cellSize() {
         return size;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, List<T>> items() {
         return items;
     }
 
-    public Function<T, String> label() {
-        return label;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Function<T, String> text() {
+        return text;
     }
 
-    public Function<T, TextColor> labelColor() {
-        return labelColor;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Function<T, TextColor> color() {
+        return color;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<T, @Nullable TextColor> tint() {
         return tint;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable Component> tooltip() {
         return tooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable BiConsumer<Click, T> onClick() {
         return onClick;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String frame() {
         return frame;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public Grid<T> visible(Function<View, Boolean> visible) {
+    public Grid<T> visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

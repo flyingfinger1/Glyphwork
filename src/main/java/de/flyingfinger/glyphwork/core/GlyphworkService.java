@@ -175,7 +175,7 @@ public final class GlyphworkService implements Glyphwork {
         String s = player.getPersistentDataContainer().get(displayKey, PersistentDataType.STRING);
         if (s != null) {
             try {
-                return DisplayMode.valueOf(s);
+                return DisplayMode.valueOf("SIMPLE".equals(s) ? "PLAIN" : s);   // SIMPLE: before 1.0
             } catch (IllegalArgumentException ignored) {
                 // value from a newer version; use the default
             }
@@ -224,7 +224,7 @@ public final class GlyphworkService implements Glyphwork {
 
     private void showNow(Player player, Session s, Scene scene, int generation, ViewImpl view, boolean redraw) {
         DisplayMode mode = displayMode(player);
-        if (s.forceFallback || mode == DisplayMode.SIMPLE || (fallback && !hasPack.test(player)) || Bedrock.is(player)) {
+        if (s.forceFallback || mode == DisplayMode.PLAIN || (fallback && !hasPack.test(player)) || Bedrock.is(player)) {
             showFallback(player, s, generation, scene, view, redraw);
             return;
         }
@@ -294,8 +294,8 @@ public final class GlyphworkService implements Glyphwork {
     private void showFallback(Player player, Session s, int generation, Scene scene, ViewImpl view, boolean redraw) {
         FallbackRenderer.Model model = fallbackRenderer.render(scene, view, !Bedrock.is(player));
         List<Component> lines = new ArrayList<>();
-        if (displayMode(player) != DisplayMode.SIMPLE && !s.forceFallback && !Bedrock.is(player)) {
-            lines.add(Messages.active().get(player, "fallback.notice"));
+        if (displayMode(player) != DisplayMode.PLAIN && !s.forceFallback && !Bedrock.is(player)) {
+            lines.add(Messages.active().get(player, "plain.notice"));
         }
         boolean bedrock = Bedrock.is(player);
         String name = "fallback " + scene.id();
@@ -559,6 +559,10 @@ public final class GlyphworkService implements Glyphwork {
 
         @Override
         public void openUrl(String url) {
+            String scheme = url.contains(":") ? url.substring(0, url.indexOf(':')).toLowerCase() : "";
+            if (!scheme.equals("http") && !scheme.equals("https")) {
+                throw new IllegalArgumentException("only http and https addresses can be opened: " + url);
+            }
             int generation = ++session.generation;
             session.stopRefresh();
             Runnable back = () -> Bukkit.getScheduler().runTask(plugin, () -> {
@@ -574,6 +578,7 @@ public final class GlyphworkService implements Glyphwork {
         @Override
         public void prompt(Component title, String initial, Consumer<String> onSubmit) {
             int generation = ++session.generation;
+            session.stopRefresh();                 // a refresh must not draw over the text field
             Runnable back = () -> {
                 if (player.isOnline() && session.generation == generation) {
                     show(player, session);

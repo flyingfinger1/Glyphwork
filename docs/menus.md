@@ -9,6 +9,8 @@ get the same as `beispiel.yml`, `beispiel-regeln.yml`, `beispiel-warps.yml`, `_b
 `beispiel-spieler.yml` and `beispiel-formular.yml`. After editing,
 `/glyphwork reload` applies the changes; problems are shown in chat and the console with the exact
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
+Hints follow in yellow: a frame the skin does not have, a picture missing in `images/`, an `open:`
+or `give-item:` target without a menu, a command or alias used by two menus, a renamed setting.
 
 Prefer the mouse? The [menu designer](menu-designer.md) builds these files in the browser.
 
@@ -34,6 +36,7 @@ templates: {...}              # optional: templates only for this menu, see belo
 variables: { tab: shop }      # optional: menu variables and their defaults, see below
 refresh: 5                    # optional: redraw every 5 seconds while open (at least 1), see below
 persist: [nick]               # optional: variables kept in the player's data (true = all), see Variables
+plain: {...}                  # optional: an own view for the plain dialog, see below
 forms: {...}                  # optional: forms with several input fields, see below
 open-on: {...}                # optional: open by itself on joining or with a menu item, see below
 on-open: [...]                # optional: actions when the menu opens (before it is drawn)
@@ -81,7 +84,7 @@ them by itself, with the mouse wheel and a scroll bar, without asking the server
 scrolls, title bar excepted. Frames need one small font per pixel row in the pack, so the pack
 grows with the tallest menu (about 160 KB per 256 px, up to 2048 px); `/glyphwork reload` builds
 the new pack and sends it to everyone online. Plugins that build tall scenes with the API set
-`max-height` in `config.yml` instead.
+`pack.min-height` in `config.yml` instead.
 
 ## Elements
 
@@ -91,26 +94,26 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 
 | type | settings |
 |---|---|
-| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default dark gray), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text) |
-| `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `text-color`, `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24) |
+| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default the skin's text color), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text) |
+| `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `color` (text color), `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24), `id` |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
 | `head` | a player's face painted from the skin: `x`, `y`, `player` (name, UUID or placeholder, default `%player%`), `size` (8, 16, 24 or 32; default 32), `tooltip`, `actions` |
 | `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `tint`, `tooltip`, `actions` |
-| `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `color` (fill), `text` (in the middle), `tooltip`, `frame` (`slot`) |
+| `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part), `text` (in the middle), `tooltip`, `frame` (`slot`) |
 | `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`; page buttons appear below when needed (+20 px) |
 | `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed |
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
 | `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
 | `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
 | `scroll` | a window onto its elements with a scroll bar: `x`, `y`, `width` (120), `height` (80, at least 48), `elements`, `step` (18), `id`, `frame` (around the window, default none) |
-| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `tint` (inactive tabs, default a bit darker) |
+| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `inactive-tint` (inactive tabs, default a bit darker) |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
 beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `cell: 26`, `size: 24`.
-Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icon-source-pack` in
+Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icons.source-pack` in
 `config.yml`.
 
 **Big heads:** `type: head` (and `head-size: 16`, `24` or `32` on lists and grids, for their
@@ -141,12 +144,11 @@ and wrapping take into account; underline and strikethrough are drawn as 1 px li
 and through the letters. Other MiniMessage tags (gradients, click, hover) have no effect in pixel
 text. A `<` that is not a tag stays as it is; write `\<` for a `<` that would look like one.
 
-**Text blocks:** a label with `width` and `wrap: true` breaks its text into lines at spaces; `
-`
+**Text blocks:** a label with `width` and `wrap: true` breaks its text into lines at spaces; `\n`
 in the text (or a YAML block with `|`) always starts a new line, also without `wrap`. Lines are
 `line-height` (10) px apart.
 
-**Bars** fill pixel exact from the left (`value` / `max`, clamped), in `color` (default green),
+**Bars** fill pixel exact from the left (`value` / `max`, clamped), in `fill` (default green),
 on the skin's `slot` frame. `height: 8` fills 6 px, `height: 16` fills 14 px; the width is rounded
 down to whole tiles like other frames. Numbers may come from placeholders (`1,234.5` works too); a
 value that is no number counts as 0. The `text` of an 8 px bar is drawn above it (like the
@@ -248,13 +250,18 @@ half. After a change the variable is set, the element's `actions` run, and the m
 Text fields need the keyboard, so they stay in [forms](#forms) and `input:`.
 
 **Cooldowns:** `cooldown: 1h` on a button, hitbox, icon, panel, picture or head lets each player
-use it once per hour (`30s`, `5m`, `2h`, `1d`, `1d 12h`; a plain number is seconds). A button on
+use it once per hour (`30s`, `5m`, `2h`, `1d`, `1d 12h`; a plain number is seconds). The element
+needs an `id` (`id: daily-reward`, unique in the menu) or a `cooldown-key`: the time is stored under
+it, so it stays with the element when others are added or moved. A button on
 cooldown is grayed out and its tooltip says when it is back; other elements answer a click with a
 chat message. While a cooldown runs, the open menu redraws by itself: every second in the last
 minute (the tooltip counts down), at each new minute before, and when it runs out (the button comes
 back). The time is kept in the player's data, so logging out does not reset it.
-`cooldown-key: daily` lets several elements (also in different menus) share one cooldown; without
-it every element has its own. If a `require` action stops the click, the cooldown is not used up.
+`cooldown-key: daily` lets several elements (also in different menus) share one cooldown; with
+only an `id` every element has its own (stored as menu + id, so renaming the menu file starts it
+anew). Stored is when the key was last used, and each element waits its own time from then: a
+`1h` and a `1d` button with the same key are free again after one hour and one day after either
+was used (the log mentions such a key, since it is often a copy mistake). If a `require` action stops the click, the cooldown is not used up.
 The texts come from the language files (`cooldown.tooltip`, `cooldown.wait`, with `<time>`); one
 element can have its own: `cooldown-tooltip` (buttons) and `cooldown-message`, MiniMessage with
 placeholders and `%cooldown%` for the time left.
@@ -276,7 +283,7 @@ A list of strings, run in order:
 | `sound: entity.experience_orb.pickup 1 1.2` | sound with optional volume and pitch |
 | `open: shop` | opens menu `shop`; `back` returns |
 | `back` / `close` / `refresh` | previous menu / close / redraw |
-| `input: Name? \| player: msg %input% hi` | asks for a text, then runs the action after `\|` with `%input%` |
+| `input: Name? \| player: msg %input% hi` | asks for a text, then runs the action after ` \| ` (with spaces) with `%input%` |
 | `require: %vault_eco_balance% >= 100 \| message: <red>Too poor` | checks a [condition](#conditions); if it does not hold, runs the action after `\|` (optional) and **skips the remaining actions** |
 | `set: tab shop` | sets the [menu variable](#variables) `tab` to `shop` (placeholders allowed: `set: filter %input%`); `set: tab` resets it to its default |
 | `toggle: sound` | switches the variable between `true` and `false` |
@@ -299,7 +306,7 @@ HH:MM:SS), and every
 installed. Values are filled in each time the menu is drawn; use `refresh` to update after an
 action.
 
-**Web data:** `%web_<name>_<path>%` shows a value from a JSON web API set up under `web:` in
+**Web data** (experimental): `%web_<name>_<path>%` shows a value from a JSON web API set up under `web:` in
 `config.yml`:
 
 ```yaml
@@ -322,9 +329,18 @@ exist stays as it is, so typos are visible. `/glyphwork reload` loads everything
 
 | filter | effect |
 |---|---|
-| `\|date` | a date (ISO 8601 like `2026-10-27T14:03:11+00:00`, RFC 1123, or Unix time in seconds or milliseconds) in the format of `feeds.date-format`, server time zone: `%item_timestamp\|date%` |
+| `\|date` | a date (ISO 8601 like `2026-10-27T14:03:11+00:00`, RFC 1123, or Unix time in seconds or milliseconds) in the format of `date-format` (`config.yml`), server time zone: `%item_timestamp\|date%` |
 | `\|discord` | Discord message markup as formatting: `**bold**`, `*italics*`, `__underline__`, `~~strikethrough~~` and `# headings` become MiniMessage tags (shown as such in labels, buttons, lists, tooltips and chat); mentions become `@user` / `#channel` / `@role`, custom emojis `:name:`, `<t:...>` a date; spoilers, code, quotes and masked links lose their markers. Tags typed in the message itself stay text: `%item_content\|discord%` |
 | `\|discord-plain` | the same without formatting, all markers removed (for places that show text as it is, e.g. commands) |
+| `\|raw` | the value as it is, with its MiniMessage tags (see below) |
+
+A misspelled filter is reported when the menu is loaded.
+
+**Values from outside are text.** Entries of feeds and web sources, `%item_...%` of dynamic lists
+and `%input%` come from other people. In texts and tooltips their `<` is escaped, so a feed title
+cannot add colors, click events or fake buttons, and `%` in them is never filled in as another
+placeholder. `|raw` turns that off for a source you trust (your own API that sends MiniMessage);
+`|discord` makes its own safe formatting.
 
 **A Discord channel** is a web source with a bot token. Create an application with a bot in the
 [Discord Developer Portal](https://discord.com/developers/applications), switch on its *Message
@@ -401,8 +417,8 @@ variables:            # defaults
 elements:
   - { type: button, x: 8, y: 20, text: "Shop", actions: ["set: tab shop"] }
   - { type: button, x: 92, y: 20, text: "Info", actions: ["set: tab info"] }
-  - { type: label, x: 8, y: 44, text: "Angebote", show-if: "%menu_tab% == shop" }
-  - { type: button, x: 8, y: 60, text: "Suche: %menu_filter%", actions: ["input: Name? | set: filter %input%"] }
+  - { type: label, x: 8, y: 44, text: "Offers", show-if: "%menu_tab% == shop" }
+  - { type: button, x: 8, y: 60, text: "Search: %menu_filter%", actions: ["input: Name? | set: filter %input%"] }
 ```
 
 - `%menu_<name>%` works in every text, tooltip, condition and action; a variable without a value
@@ -451,7 +467,7 @@ e.g. the one that was clicked last: `selected-if: "%menu_pick% == %item%"` toget
 
 **Feeds** (news of your website, a forum, a changelog) are loaded in the background and kept for
 `feeds.cache` (`config.yml`, default 10 minutes); the first time a menu shows a feed, its list is
-empty for a moment and fills itself when the feed arrives. `feeds.date-format` sets how
+empty for a moment and fills itself when the feed arrives. `date-format` sets how
 `%item_date%` looks (default `dd.MM.yyyy HH:mm`, server time zone). Feeds larger than 1 MB, or
 that do not answer within 10 seconds, are skipped with a warning in the log; on errors the last
 entries stay. `/glyphwork reload` loads them again.
@@ -496,10 +512,7 @@ elements:
     step: 36
     frame: slot
     elements:
-      - { type: label, x: 5, y: 5, width: 204, wrap: true, text: "%menu_title%
-%menu_date%
-
-%menu_text%" }
+      - { type: label, x: 5, y: 5, width: 204, wrap: true, text: "%menu_title%\n%menu_date%\n\n%menu_text%" }
   - { type: button, x: 8, y: 196, width: 120, text: "Open in browser", actions: ["url: %menu_link%"], show-if: "%menu_link% contains http" }
 ```
 
@@ -548,17 +561,17 @@ used. Put templates into a file whose name starts with `_` (for all menus) or un
 a menu (only there; it replaces a shared template of the same name).
 
 ```yaml
-# menus/_vorlagen.yml
+# menus/_templates.yml
 warp:
   type: button
   width: 160
   height: 24
   icon: "{item}"
   text: "{name}"
-  tint: "{farbe|gray}"          # {key|default}
-  actions: ["player: warp {ziel}", "close"]
+  tint: "{color|gray}"          # {key|default}
+  actions: ["player: warp {target}", "close"]
 
-eintrag:                        # a group: positions relative to the use entry
+entry:                          # a group: positions relative to the use entry
   - { type: icon, x: 0, y: 4, item: "{item}" }
   - { type: label, x: 20, y: 8, text: "{name}" }
 ```
@@ -566,10 +579,10 @@ eintrag:                        # a group: positions relative to the use entry
 ```yaml
 # menus/warps.yml
 elements:
-  - { use: warp, x: 8, y: 20, name: Spawn, ziel: spawn, item: compass }
-  - { use: warp, x: 8, y: 48, name: Nether, ziel: nether, item: netherrack, farbe: red,
+  - { use: warp, x: 8, y: 20, name: Spawn, target: spawn, item: compass }
+  - { use: warp, x: 8, y: 48, name: Nether, target: nether, item: netherrack, color: red,
       enabled-if: "%world% != world_nether" }
-  - { use: eintrag, x: 8, y: 80, item: wheat, name: Farm }
+  - { use: entry, x: 8, y: 80, item: wheat, name: Farm }
 ```
 
 - `x`/`y` of the `use` entry move the template; its own positions are relative (default 0).
@@ -582,7 +595,7 @@ elements:
 
 ## Own plain view
 
-The plain dialog is normally derived from the pixel GUI. A menu can bring its own instead, written
+*Experimental: the format may still change in a minor version.* The plain dialog is normally derived from the pixel GUI. A menu can bring its own instead, written
 for that view: what players without the pack and Bedrock players see.
 
 ```yaml
@@ -613,7 +626,7 @@ keeps the layout). Tabs are a clickable line above the buttons of the active tab
 buttons (no permission, `enabled-if`, cooldown) stay in gray: native buttons cannot be grayed out,
 so a click on one only sends its tooltip ("available again in 8 s") as a chat message.
 
-**Bedrock players** (through [Geyser](https://geysermc.org/), optionally with Floodgate) cannot load
+**Bedrock players** (experimental; through [Geyser](https://geysermc.org/), optionally with Floodgate) cannot load
 the Java pack, and Bedrock forms have no clickable text. Glyphwork recognizes them and always sends
 them the plain dialog, which Geyser shows as a Bedrock form; they get no pack request and a join
 menu opens at once. Forms have no tooltips, so a button shows the first line of its tooltip below

@@ -183,16 +183,19 @@ public final class Scene {
          * its text, buttons, lists, checkboxes and so on its buttons, in this order. Same scene, same
          * state as the pixel GUI.
          */
+        @org.jetbrains.annotations.ApiStatus.Experimental
         public Builder plain(List<Element> elements) {
             this.plain = new ArrayList<>(elements);
             return this;
         }
 
+        @org.jetbrains.annotations.ApiStatus.Experimental
         public Builder plain(Element... elements) {
             return plain(List.of(elements));
         }
 
         /** Button columns of the plain dialog: 1 or 2 (0 = by the text lengths, the default). */
+        @org.jetbrains.annotations.ApiStatus.Experimental
         public Builder plainColumns(int columns) {
             this.plainColumns = Math.max(0, Math.min(2, columns));
             return this;
@@ -203,8 +206,37 @@ public final class Scene {
             return add(Panel.of(0, 0, width, height));
         }
 
+        /**
+         * @throws IllegalArgumentException if two lists, grids, tabs or scroll panes share an id
+         *                                  (they would share their page, tab or position)
+         */
         public Scene build() {
+            java.util.Set<String> ids = new java.util.HashSet<>();
+            checkIds(elements, ids);
+            if (plain != null) {
+                checkIds(plain, new java.util.HashSet<>());
+            }
             return new Scene(this);
+        }
+
+        private static void checkIds(List<Element> elements, java.util.Set<String> ids) {
+            for (Element e : elements) {
+                String id = switch (e) {
+                    case ListView<?> l -> "list " + l.id();
+                    case Grid<?> g -> "grid " + g.id();
+                    case Tabs t -> "tabs " + t.id();
+                    case Scroll s -> s.hasPosition() ? null : "scroll " + s.id();
+                    default -> null;
+                };
+                if (id != null && !ids.add(id)) {
+                    throw new IllegalArgumentException("two elements use the " + id + " (ids must be unique in a scene)");
+                }
+                if (e instanceof Tabs t) {
+                    t.tabs().forEach(tab -> checkIds(tab.elements(), ids));
+                } else if (e instanceof Scroll s) {
+                    checkIds(s.elements(), ids);
+                }
+            }
         }
     }
 }

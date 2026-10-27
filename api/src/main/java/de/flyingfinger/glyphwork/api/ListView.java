@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A vertical list in a sunken frame ("slot"), one clickable row per item. If there are more items
@@ -17,7 +18,7 @@ import java.util.function.Function;
  */
 public final class ListView<T> implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final String id;
     private final int x;
@@ -29,7 +30,7 @@ public final class ListView<T> implements Element {
     private Function<T, String> text = String::valueOf;
     private Function<T, TextColor> color = t -> TextColor.color(0xFFFFFF);
     private @Nullable Function<T, @Nullable Component> tooltip;
-    private @Nullable BiConsumer<Click, T> onSelect;
+    private @Nullable BiConsumer<Click, T> onClick;
     private @Nullable Function<View, @Nullable T> selected;
     private java.util.function.@Nullable BiPredicate<View, T> selectedIf;
     private TextColor selectedTint = TextColor.color(0xFFD25A);
@@ -62,11 +63,13 @@ public final class ListView<T> implements Element {
     }
 
     /** Reads the row texts as MiniMessage (bold, italic, underline, strikethrough, colors for parts). */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public ListView<T> markup(boolean markup) {
         this.markup = markup;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean markup() {
         return markup;
     }
@@ -86,8 +89,8 @@ public final class ListView<T> implements Element {
         return this;
     }
 
-    public ListView<T> onSelect(BiConsumer<Click, T> onSelect) {
-        this.onSelect = onSelect;
+    public ListView<T> onClick(BiConsumer<Click, T> onClick) {
+        this.onClick = onClick;
         return this;
     }
 
@@ -104,6 +107,7 @@ public final class ListView<T> implements Element {
     }
 
     /** Whether {@code item} is shown as selected for this viewer. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean isSelected(View view, T item) {
         if (selectedIf != null) {
             return selectedIf.test(view, item);
@@ -122,6 +126,7 @@ public final class ListView<T> implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable String> icon() {
         return icon;
     }
@@ -136,6 +141,7 @@ public final class ListView<T> implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable String> count() {
         return count;
     }
@@ -145,6 +151,7 @@ public final class ListView<T> implements Element {
      * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
      * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public ListView<T> itemTooltip(boolean itemTooltip) {
         this.itemTooltip = itemTooltip;
         return this;
@@ -155,11 +162,13 @@ public final class ListView<T> implements Element {
      * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
      * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public ListView<T> itemTooltip(Function<T, @Nullable HoverEventSource<?>> item) {
         this.hoverItem = item;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean itemTooltip() {
         return itemTooltip;
     }
@@ -168,15 +177,18 @@ public final class ListView<T> implements Element {
      * Size of player heads ("head:Name" icons): 8 (default) is the client's own head, 16, 24 or 32
      * paints the face from the skin, centered, at any position (see {@link Head}).
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public ListView<T> headSize(int size) {
         this.headSize = Head.sizeOf(size);
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int headSize() {
         return headSize;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable HoverEventSource<?>> hoverItem() {
         return hoverItem;
     }
@@ -201,58 +213,69 @@ public final class ListView<T> implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return w;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int rows() {
         return rows;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int rowHeight() {
         return rowHeight;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, List<T>> items() {
         return items;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<T, String> text() {
         return text;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<T, TextColor> color() {
         return color;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<T, @Nullable Component> tooltip() {
         return tooltip;
     }
 
-    public @Nullable BiConsumer<Click, T> onSelect() {
-        return onSelect;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable BiConsumer<Click, T> onClick() {
+        return onClick;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable T> selected() {
         return selected;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public TextColor selectedTint() {
         return selectedTint;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String frame() {
         return frame;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public ListView<T> visible(Function<View, Boolean> visible) {
+    public ListView<T> visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

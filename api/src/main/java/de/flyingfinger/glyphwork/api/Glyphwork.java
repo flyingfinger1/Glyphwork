@@ -19,6 +19,7 @@ import org.bukkit.entity.Player;
  * Glyphwork.get().open(player, settings);
  * }</pre>
  */
+@org.jetbrains.annotations.ApiStatus.NonExtendable
 public interface Glyphwork {
 
     /** The running Glyphwork instance. */

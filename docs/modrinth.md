@@ -51,8 +51,9 @@ elements:
 - **Example plugin** to copy from: a small trader built against the API, attached to every release.
 - **Resource pack handled for you:** generated on start, stable hash (no re-downloads), served by
   a built-in web server or written to disk for your own web server / CDN.
-- **Fallback:** players who decline the pack get a plain native dialog built from the same screen.
-- **Display mode per player** (full / without icons / simple) for players whose own resource pack
+- **Plain dialog:** players who decline the pack, and Bedrock players through Geyser, get a native
+  dialog built from the same screen (or an own plain view of the menu).
+- **Display mode per player** (full / without icons / plain) for players whose own resource pack
   tears the menus: `/glyphwork display`, or controlled by your own system through the API.
 - **English and German** messages and commands, picked per player from the game language; edit the
   texts or add languages in `plugins/Glyphwork/lang/`.

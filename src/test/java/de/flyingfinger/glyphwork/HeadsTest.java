@@ -75,7 +75,7 @@ class HeadsTest {
     void listRowTextFollowsTheHead() {
         Scene s = Scene.builder("t", 176, 120)
             .add(ListView.of("p", 8, 13, 120, 4, v -> List.of("Alex", "Steve", "Zoe")).icon(n -> "head:" + n)
-                .rowHeight(18).onSelect((c, n) -> { }))
+                .rowHeight(18).onClick((c, n) -> { }))
             .build();
         Layout l = layout(s);
         assertEquals(3, l.heads.size());
@@ -149,7 +149,7 @@ class HeadsTest {
     @Test
     void plainViewPutsTheHeadInFrontOfTheLabel() {
         Scene s = Scene.builder("t", 176, 100)
-            .add(ListView.of("p", 8, 8, 120, 4, v -> List.of("Alex")).icon(n -> "head:" + n).onSelect((c, n) -> { }))
+            .add(ListView.of("p", 8, 8, 120, 4, v -> List.of("Alex")).icon(n -> "head:" + n).onClick((c, n) -> { }))
             .build();
         var model = new FallbackRenderer(Logger.getLogger("test")).render(s, view(s));
         Component label = model.actions().getFirst().label();

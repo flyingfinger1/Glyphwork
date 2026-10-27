@@ -30,33 +30,181 @@ public final class Form {
 
     private static final Pattern KEY = Pattern.compile("[a-zA-Z0-9_]+");
 
-    /** One input field. */
-    public sealed interface Field permits Text, Checkbox, Slider, Choice {
+    /**
+     * One input field. Fields are made by the {@link Builder}; more kinds of fields may come in later
+     * versions, so a switch over them should have a default branch.
+     */
+    public sealed interface Field permits TextField, CheckboxField, SliderField, ChoiceField {
         String key();
 
         Component label();
     }
 
     /** Text field; {@code lines > 1} makes it a multi-line box. */
-    public record Text(String key, Component label, String initial, int maxLength, int lines) implements Field {
+    public static final class TextField implements Field {
+        private final String key;
+        private final Component label;
+        private final String initial;
+        private final int maxLength;
+        private final int lines;
+
+        private TextField(String key, Component label, String initial, int maxLength, int lines) {
+            this.key = key;
+            this.label = label;
+            this.initial = initial;
+            this.maxLength = maxLength;
+            this.lines = lines;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Component label() {
+            return label;
+        }
+
+        public String initial() {
+            return initial;
+        }
+
+        public int maxLength() {
+            return maxLength;
+        }
+
+        public int lines() {
+            return lines;
+        }
     }
 
-    public record Checkbox(String key, Component label, boolean initial) implements Field {
+    /** A checkbox; comes back in {@link Values#checked}. */
+    public static final class CheckboxField implements Field {
+        private final String key;
+        private final Component label;
+        private final boolean initial;
+
+        private CheckboxField(String key, Component label, boolean initial) {
+            this.key = key;
+            this.label = label;
+            this.initial = initial;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Component label() {
+            return label;
+        }
+
+        public boolean initial() {
+            return initial;
+        }
     }
 
     /** Slider from {@code min} to {@code max} in steps of {@code step}; the client shows "label: value". */
-    public record Slider(String key, Component label, float min, float max, float step, float initial) implements Field {
+    public static final class SliderField implements Field {
+        private final String key;
+        private final Component label;
+        private final double min;
+        private final double max;
+        private final double step;
+        private final double initial;
+
+        private SliderField(String key, Component label, double min, double max, double step, double initial) {
+            this.key = key;
+            this.label = label;
+            this.min = min;
+            this.max = max;
+            this.step = step;
+            this.initial = initial;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Component label() {
+            return label;
+        }
+
+        public double min() {
+            return min;
+        }
+
+        public double max() {
+            return max;
+        }
+
+        public double step() {
+            return step;
+        }
+
+        public double initial() {
+            return initial;
+        }
     }
 
     /** A button that cycles through the options ("label: option"). */
-    public record Choice(String key, Component label, List<Option> options, String initial) implements Field {
+    public static final class ChoiceField implements Field {
+        private final String key;
+        private final Component label;
+        private final List<Option> options;
+        private final String initial;
+
+        private ChoiceField(String key, Component label, List<Option> options, String initial) {
+            this.key = key;
+            this.label = label;
+            this.options = options;
+            this.initial = initial;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Component label() {
+            return label;
+        }
+
+        public List<Option> options() {
+            return options;
+        }
+
+        public String initial() {
+            return initial;
+        }
     }
 
-    /** One option of a {@link Choice}: the id comes back in {@link Values#choice}, the text is shown. */
-    public record Option(String id, Component text) {
+    /** One option of a {@link ChoiceField}: the id comes back in {@link Values#choice}, the text is shown. Made by {@link #option}. */
+    public static final class Option {
+        private final String id;
+        private final Component text;
+
+        private Option(String id, Component text) {
+            this.id = id;
+            this.text = text;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        public Component text() {
+            return text;
+        }
     }
 
     /** What the player entered. Values are checked: numbers lie in range, choices are one of the ids. */
+    @org.jetbrains.annotations.ApiStatus.NonExtendable
     public interface Values {
         /** Text of a text field ("" if missing). */
         String text(String key);
@@ -64,7 +212,7 @@ public final class Form {
         boolean checked(String key);
 
         /** Value of a slider (its initial value if missing). */
-        float number(String key);
+        double number(String key);
 
         /** Id of the chosen option. */
         String choice(String key);
@@ -148,18 +296,18 @@ public final class Form {
             if (maxLength < 1 || lines < 1) {
                 throw new IllegalArgumentException("maxLength and lines must be at least 1");
             }
-            return add(new Text(key, label, initial, maxLength, lines));
+            return add(new TextField(key, label, initial, maxLength, lines));
         }
 
         public Builder checkbox(String key, Component label, boolean initial) {
-            return add(new Checkbox(key, label, initial));
+            return add(new CheckboxField(key, label, initial));
         }
 
-        public Builder slider(String key, Component label, float min, float max, float step, float initial) {
+        public Builder slider(String key, Component label, double min, double max, double step, double initial) {
             if (!(max > min) || !(step > 0)) {
                 throw new IllegalArgumentException("slider needs min < max and step > 0");
             }
-            return add(new Slider(key, label, min, max, step, Math.max(min, Math.min(max, initial))));
+            return add(new SliderField(key, label, min, max, step, Math.max(min, Math.min(max, initial))));
         }
 
         /** {@code initial} is the id of the preselected option (the first if unknown). */
@@ -173,7 +321,7 @@ public final class Form {
             }
             String first = options.getFirst().id();
             boolean known = options.stream().anyMatch(o -> o.id().equals(initial));
-            return add(new Choice(key, label, List.copyOf(options), known ? initial : first));
+            return add(new ChoiceField(key, label, List.copyOf(options), known ? initial : first));
         }
 
         /** Width of the fields in pixels (default 200). */

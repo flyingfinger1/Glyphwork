@@ -75,7 +75,7 @@ public final class WebSources {
                 continue;
             }
             Duration every = de.flyingfinger.glyphwork.core.Settings.duration(
-                s == null ? null : s.getString("every"), Duration.ofMinutes(1));
+                s == null ? null : s.getString("every"), Duration.ofMinutes(1), "web." + name + ".every", log::warning);
             Map<String, String> headers = new LinkedHashMap<>();
             org.bukkit.configuration.ConfigurationSection h = s == null ? null : s.getConfigurationSection("headers");
             if (h != null) {
@@ -91,6 +91,22 @@ public final class WebSources {
     private static Web.Result<JsonElement> load(Source s) {
         return Web.get("web:" + s.name(), s.url(), s.every(), s.headers(), "application/json, */*;q=0.5", "Web source " + s.name(),
             data -> JsonParser.parseString(new String(data, StandardCharsets.UTF_8)));
+    }
+
+    /**
+     * The value of %web_name_path% (without filter), or null if there is no such source. While the
+     * source loads for the first time the value is empty and the menu is drawn again soon.
+     */
+    static @Nullable String value(@Nullable View v, String name, String path) {
+        Source src = sources.get(name);
+        if (src == null) {
+            return null;
+        }
+        Web.Result<JsonElement> r = loader.apply(src);
+        if (r.loading() && v != null) {
+            v.redrawAfter(Duration.ofMillis(500));
+        }
+        return r.value() == null ? "" : format(at(r.value(), path));
     }
 
     /** Replaces %web_name_path%; while a source is loading for the first time, the menu is drawn again soon. */

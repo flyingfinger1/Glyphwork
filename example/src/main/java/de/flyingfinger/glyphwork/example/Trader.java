@@ -134,12 +134,12 @@ public final class Trader {
                 .onClick(c -> c.form(Form.builder(Component.text("How many packs?"))
                         .slider("amount", Component.text("Packs"), 1, MAX_AMOUNT, 1, amount(c))
                         .build(),
-                    values -> setAmount(c, Math.round(values.number("amount"))))))  // afterwards this scene is shown again
+                    values -> setAmount(c, (int) Math.round(values.number("amount"))))))  // afterwards this scene is shown again
 
             // what it costs and what the player has (red when it is not enough)
             .add(Label.of(10, 156, v -> "Total: " + total(v)).width(76))
             .add(Label.of(90, 156, v -> "You have: " + emeralds(v.player())).width(78)
-                .color(v -> canBuy(v) || offer(v) == null ? Label.DARK : RED))
+                .color(v -> canBuy(v) || offer(v) == null ? null : RED))
 
             .add(Button.of(8, 176, 64, 16).text("Options").onClick(c -> c.open(options)))
             .add(Button.of(96, 172, 72, 24).icon("emerald").text("Buy").tint(GREEN)
@@ -176,7 +176,7 @@ public final class Trader {
             .add(Label.of(8, 22, "How menus are shown:"))
             .add(modeButton(DisplayMode.FULL, 34))
             .add(modeButton(DisplayMode.NO_ICONS, 52))
-            .add(modeButton(DisplayMode.SIMPLE, 70))
+            .add(modeButton(DisplayMode.PLAIN, 70))
             .add(Label.of(8, 92, "Icons or text out of place? Then pick \"No icons\" or \"Simple\".")
                 .width(160).wrap(true))                     // breaks into lines at spaces
             .add(Button.of(8, 114, 64, 16).text("< Back").onClick(Click::back))
@@ -197,7 +197,7 @@ public final class Trader {
         return switch (mode) {
             case FULL -> "Full (with icons)";
             case NO_ICONS -> "No icons";
-            case SIMPLE -> "Simple";
+            case PLAIN -> "Plain";
         };
     }
 }

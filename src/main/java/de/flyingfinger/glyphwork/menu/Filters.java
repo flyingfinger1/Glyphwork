@@ -21,6 +21,9 @@ final class Filters {
         dates = f;
     }
 
+    /** Filters that exist ("raw" is handled where values are put in). */
+    static final java.util.Set<String> NAMES = java.util.Set.of("date", "discord", "discord-plain", "raw");
+
     static String apply(String filter, String value) {
         return switch (filter) {
             case "date" -> date(value, dates);

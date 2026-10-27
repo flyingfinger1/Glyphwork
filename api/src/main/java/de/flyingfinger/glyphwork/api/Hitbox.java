@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * An invisible clickable area (at least 8 x 8 px), e.g. to make a label or a part of an image
@@ -12,7 +13,7 @@ import java.util.function.Function;
  */
 public final class Hitbox implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
@@ -57,30 +58,34 @@ public final class Hitbox implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return w;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int height() {
         return h;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Consumer<Click> onClick() {
         return onClick;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public Hitbox visible(Function<View, Boolean> visible) {
+    public Hitbox visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

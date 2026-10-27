@@ -6,24 +6,25 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A checkbox drawn from the skin: a 16 x 16 box ("slot" frame) with a check mark when checked, and
- * an optional text to its right. Box and text are clickable. After {@link #onToggle} the scene is
+ * an optional text to its right. Box and text are clickable. After {@link #onChange} the scene is
  * drawn again (unless the handler opened, closed or redrew something itself).
  */
 public final class Checkbox implements Element {
 
     public static final int SIZE = 16;
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
     private Function<View, String> text = v -> "";
-    private Function<View, TextColor> textColor = v -> Label.DARK;
-    private Function<View, Boolean> checked = v -> false;
-    private @Nullable BiConsumer<Click, Boolean> onToggle;
+    private Function<View, @Nullable TextColor> color = v -> null;
+    private Predicate<View> checked = v -> false;
+    private @Nullable BiConsumer<Click, Boolean> onChange;
     private @Nullable Function<View, @Nullable Component> tooltip;
 
     private Checkbox(int x, int y) {
@@ -46,19 +47,20 @@ public final class Checkbox implements Element {
         return this;
     }
 
-    public Checkbox textColor(Function<View, TextColor> color) {
-        this.textColor = color;
+    /** Text color per viewer; null (the default) = the skin's text color. */
+    public Checkbox color(Function<View, @Nullable TextColor> color) {
+        this.color = color;
         return this;
     }
 
-    public Checkbox checked(Function<View, Boolean> checked) {
+    public Checkbox checked(Predicate<View> checked) {
         this.checked = checked;
         return this;
     }
 
     /** Called with the new state (the opposite of the drawn one). */
-    public Checkbox onToggle(BiConsumer<Click, Boolean> onToggle) {
-        this.onToggle = onToggle;
+    public Checkbox onChange(BiConsumer<Click, Boolean> onChange) {
+        this.onChange = onChange;
         return this;
     }
 
@@ -68,13 +70,13 @@ public final class Checkbox implements Element {
     }
 
     /** Shown only while this returns true; hidden elements do not take clicks. */
-    public Checkbox visible(Function<View, Boolean> visible) {
+    public Checkbox visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 
@@ -88,22 +90,27 @@ public final class Checkbox implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, String> text() {
         return text;
     }
 
-    public Function<View, TextColor> textColor() {
-        return textColor;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Function<View, @Nullable TextColor> color() {
+        return color;
     }
 
-    public Function<View, Boolean> checked() {
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Predicate<View> checked() {
         return checked;
     }
 
-    public @Nullable BiConsumer<Click, Boolean> onToggle() {
-        return onToggle;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable BiConsumer<Click, Boolean> onChange() {
+        return onChange;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }

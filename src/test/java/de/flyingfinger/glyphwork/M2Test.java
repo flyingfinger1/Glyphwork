@@ -29,7 +29,7 @@ class M2Test {
     private static Settings settings(String yaml) throws Exception {
         YamlConfiguration c = new YamlConfiguration();
         c.loadFromString(yaml);
-        return Settings.read(c);
+        return Settings.read(c, w -> { });
     }
 
     @Test
@@ -39,13 +39,27 @@ class M2Test {
         assertTrue(settings("pack: {hosting: external}").external());
         // without placeholder the hash is appended
         assertEquals("https://x.org/p/abc.zip", settings("pack: {url: 'https://x.org/p'}").url("abc"));
-        // config from M0/M1: pack-server.public-url
-        assertEquals("http://1.2.3.4:8765/abc.zip", settings("pack-server: {public-url: 'http://1.2.3.4:8765/'}").url("abc"));
         Settings d = settings("");
         assertFalse(d.external());
         assertEquals("http://127.0.0.1:8765/abc.zip", d.url("abc"));
-        assertTrue(d.fallback());
-        assertEquals(256, d.maxHeight());
+        assertTrue(d.plainDialog());
+        assertEquals(256, d.minHeight());
+    }
+
+    @Test
+    void oldKeysStillWorkWithAHint() throws Exception {
+        YamlConfiguration c = new YamlConfiguration();
+        c.loadFromString("max-height: 512\nfallback: false\nicons: false\nicon-source-pack: none\n"
+            + "feeds: { date-format: 'yyyy' }\npack: { prompt: 'x', hostnig: external }\ntypo: 1\n");
+        java.util.List<String> hints = new java.util.ArrayList<>();
+        Settings s = Settings.read(c, hints::add);
+        assertEquals(512, s.minHeight());
+        assertFalse(s.plainDialog());
+        assertFalse(s.icons());
+        assertEquals("none", s.iconSourcePack());
+        assertEquals("yyyy", s.dateFormat());
+        // five renamed keys, pack.prompt, the misspelled pack key and the unknown top key
+        assertEquals(8, hints.size(), hints.toString());
     }
 
     /** Minimal Click for running fallback actions. */

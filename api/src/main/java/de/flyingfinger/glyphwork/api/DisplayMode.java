@@ -1,9 +1,10 @@
 package de.flyingfinger.glyphwork.api;
 
 /**
- * How a player sees Glyphwork screens. Players can choose it with {@code /glyphwork darstellung};
+ * How a player sees Glyphwork screens. Players can choose it with {@code /glyphwork display};
  * servers can set it through {@link Glyphwork#displayMode(org.bukkit.entity.Player, DisplayMode)}
- * (e.g. from their own settings menu). Stored with the player, survives restarts.
+ * (e.g. from their own settings menu). Stored with the player, survives restarts. Modes may be
+ * added in minor versions, so a switch over it should have a default branch.
  */
 public enum DisplayMode {
 
@@ -17,8 +18,8 @@ public enum DisplayMode {
     NO_ICONS,
 
     /**
-     * The plain native dialog (the same as without the pack). For players whose resource pack
-     * breaks the pixel GUI, e.g. by replacing the Minecraft font.
+     * The plain dialog: a native dialog (the same as without the pack). For players whose resource
+     * pack breaks the pixel GUI, e.g. by replacing the Minecraft font.
      */
-    SIMPLE
+    PLAIN
 }

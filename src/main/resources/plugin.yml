@@ -9,7 +9,7 @@ website: https://github.com/flyingfinger1/Glyphwork
 commands:
   glyphwork:
     description: Glyphwork resource pack and admin commands
-    usage: /glyphwork <pack|menu <id> [player]|test [fallback]|status|reload>
+    usage: /glyphwork <pack|display|menu <id> [player]|item <menu> [player]|test [plain]|status|reload>
 permissions:
   glyphwork.admin:
     description: /glyphwork menu, test, status and reload

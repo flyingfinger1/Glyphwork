@@ -5,6 +5,7 @@ import net.kyori.adventure.text.format.TextColor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A progress bar: a frame ("slot" by default) filled from the left by {@code value / max}, pixel
@@ -16,7 +17,7 @@ public final class Bar implements Element {
     /** Default fill color (vanilla experience green). */
     public static final TextColor GREEN = TextColor.color(0x80FF20);
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
@@ -24,7 +25,7 @@ public final class Bar implements Element {
     private int height = 8;
     private Function<View, Double> value = v -> 0.0;
     private Function<View, Double> max = v -> 1.0;
-    private Function<View, TextColor> color = v -> GREEN;
+    private Function<View, TextColor> fill = v -> GREEN;
     private Function<View, String> text = v -> "";
     private String frame = "slot";
     private @Nullable Function<View, @Nullable Component> tooltip;
@@ -67,13 +68,14 @@ public final class Bar implements Element {
         return this;
     }
 
-    public Bar color(TextColor color) {
-        this.color = v -> color;
+    /** Color of the filled part (default {@link #GREEN}). */
+    public Bar fill(TextColor color) {
+        this.fill = v -> color;
         return this;
     }
 
-    public Bar color(Function<View, TextColor> color) {
-        this.color = color;
+    public Bar fill(Function<View, TextColor> color) {
+        this.fill = color;
         return this;
     }
 
@@ -95,13 +97,13 @@ public final class Bar implements Element {
     }
 
     /** Shown only while this returns true. */
-    public Bar visible(Function<View, Boolean> visible) {
+    public Bar visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 
@@ -115,39 +117,48 @@ public final class Bar implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return width;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int height() {
         return height;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, Double> value() {
         return value;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, Double> max() {
         return max;
     }
 
-    public Function<View, TextColor> color() {
-        return color;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Function<View, TextColor> fill() {
+        return fill;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, String> text() {
         return text;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String frame() {
         return frame;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
     /** Filled share (0..1) of a value; max <= 0 counts as empty. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public static double ratio(double value, double max) {
         if (!(max > 0) || Double.isNaN(value)) {
             return 0;

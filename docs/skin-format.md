@@ -28,8 +28,8 @@ themes/my_skin/
 
 - `tileSize`: even, at least 8. All frames of a theme share it.
 - `text` (optional, default `#404040`): color of labels that use the default color (and the page
-  numbers of lists and grids). On a dark panel choose a light color. In code, `Label.DARK` stands
-  for this color; labels with another color keep it.
+  numbers of lists and grids). On a dark panel choose a light color. Labels without an own color (in
+  code `color(null)`, the default) use it; labels with another color keep it.
 - Required frames: `panel`, `button`, `slot`. More frames may be added; they become available to
   scenes under their key.
 - Buttons are drawn **tinted**: the scene's color multiplies the texture. Keep `button.png` light

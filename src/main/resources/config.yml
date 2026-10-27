@@ -1,4 +1,6 @@
 # Glyphwork – /glyphwork reload applies changes without a restart.
+# Layout version of this file (configs without it are from before 1.0; their old keys still work).
+config-version: 1
 
 # Language of Glyphwork's messages, its own dialogs and command words:
 #   auto = each player's game language, if there is a file for it in plugins/Glyphwork/lang/
@@ -13,17 +15,13 @@ fallback-language: en
 # Make your own with the skin editor: https://flyingfinger1.github.io/Glyphwork/
 theme: vanilla
 
-# Height in pixels the pack supports at least (one small font per pixel row, about 160 KB per
-# 256 px). Taller YAML menus raise it by themselves; set it only for tall scenes of plugins.
-max-height: 256
-
 pack:
   # embedded: Glyphwork serves the pack itself (pack-server below).
   # external: no web server; the pack is written to plugins/Glyphwork/pack/<sha1>.zip and you host
   #           that folder yourself (e.g. behind your reverse proxy). Old zips are pruned to the last 5.
-  # provided: Glyphwork sends no pack; merge plugins/Glyphwork/pack/glyphwork.zip into the pack your
-  #           server or proxy (Velocity, BungeeCord) sends, again after changes to theme, pictures or
-  #           menu heights (the log and /glyphwork reload say when).
+  # provided: (experimental) Glyphwork sends no pack; merge plugins/Glyphwork/pack/glyphwork.zip into
+  #           the pack your server or proxy (Velocity, BungeeCord) sends, again after changes to theme,
+  #           pictures or menu heights (the log and /glyphwork reload say when).
   hosting: embedded
   # Only for hosting: provided. Who has the pack? always = everyone (a required pack, e.g. sent by
   # the proxy); server-pack = players who loaded the pack of server.properties (resource-pack=).
@@ -34,25 +32,35 @@ pack:
   send-on-join: true
   # true = the client disconnects players who decline the pack
   required: false
-  # Text shown when the pack is offered; empty = pack.prompt from the language files
-  prompt: ""
+  # Height in pixels the pack supports at least (one small font per pixel row, about 160 KB per
+  # 256 px, at most 2048). Taller YAML menus raise it by themselves; set it only for tall scenes of
+  # plugins. The text shown when the pack is offered is pack.prompt in the language files.
+  min-height: 256
 
 # Built-in HTTP server for hosting: embedded. Serves only /<sha1>.zip.
 pack-server:
   bind: 0.0.0.0
   port: 8765
 
-# Players without the pack (declined, failed or still loading) get a plain native dialog built from
-# the same scene: labels as text, buttons/list rows/grid cells as dialog buttons.
-fallback: true
+# Players without the pack (declined, failed or still loading) and Bedrock players get the plain
+# dialog: a native dialog built from the same menu (or its own "plain:" view), with labels as text
+# and buttons, list rows and grid cells as dialog buttons. false = they get the pixel GUI anyway
+# (only sensible with a required pack).
+plain-dialog: true
 
-# Item icons (Icon element, icon: in menus). The pack references the textures every client already
-# has; false makes the pack smaller if you do not use icons.
-icons: true
-# Match icons to the resource pack your server sends: textures it replaces are measured (so icons
-# line up) and its own items work as icons ("myserver:ruby"). auto = the pack from server.properties
-# (resource-pack=), or a zip path (relative to plugins/Glyphwork/), an http(s) URL, or none.
-icon-source-pack: auto
+icons:
+  # Item icons (icon element, icon: in menus). The pack references the textures every client already
+  # has; false makes the pack smaller if you do not use icons.
+  enabled: true
+  # Match icons to the resource pack your server sends: textures it replaces are measured (so icons
+  # line up) and its own items work as icons ("myserver:ruby"). auto = the pack from
+  # server.properties (resource-pack=), or a zip path (relative to plugins/Glyphwork/), an http(s)
+  # URL, or none.
+  source-pack: auto
+
+# How dates look: %item_date% of feeds and the |date filter (Java DateTimeFormatter pattern, server
+# time zone).
+date-format: "dd.MM.yyyy HH:mm"
 
 # The warning button that Minecraft puts next to the title of every server dialog ("This is a custom
 # screen ..."). Replace its picture with one of yours from plugins/Glyphwork/images/ (20 x 20 px,
@@ -64,20 +72,19 @@ dialog-warning:
   icon-hover: ""        # shown under the mouse; empty = same as icon
 
 players:
-  # /glyphwork pack and /glyphwork darstellung for everyone. false hides /glyphwork from players
+  # /glyphwork pack and /glyphwork display for everyone. false hides /glyphwork from players
   # (admins keep it); use the API (Glyphwork#displayMode, #sendPack) to offer these in your own system.
   commands: true
 
 # RSS and Atom feeds in menus (items-from: "rss:https://..."). They are loaded in the background
 # and kept for the cache time; /glyphwork reload forgets them.
 feeds:
-  cache: 10m            # 30s, 5m, 1h ...
-  date-format: "dd.MM.yyyy HH:mm"   # %item_date% (Java DateTimeFormatter pattern, server time zone)
+  cache: 10m            # 30s, 5m, 1h, 1h 30m ...
 
-# JSON from web APIs, for menus: %web_<name>_<path>% shows one value (%web_status_players.online%),
-# items-from: "web:<name>.<path>" turns an array into list entries. Loaded in the background, at
-# most once per "every". Names use a-z, 0-9 and '-'. headers are sent along (e.g. an API token:
-# keep this file private then).
+# (experimental) JSON from web APIs, for menus: %web_<name>_<path>% shows one value
+# (%web_status_players.online%), items-from: "web:<name>.<path>" turns an array into list entries.
+# Loaded in the background, at most once per "every". Names use a-z, 0-9 and '-'. headers are sent
+# along (e.g. an API token: keep this file private then).
 web: {}
 #  status:
 #    url: "https://api.mcsrvstat.us/3/play.example.org"

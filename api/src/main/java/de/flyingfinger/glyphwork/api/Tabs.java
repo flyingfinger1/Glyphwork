@@ -7,14 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Tabs: a row of tabs on top of a panel, and the elements of the active tab. The active tab and the
  * panel are drawn as one frame (no edge between them), the other tabs a bit lower and darker behind
  * it. Only the active tab's elements are drawn and take clicks. The elements of a tab use scene coordinates (like every
  * element); the panel starts {@link #HEADER} px below {@code y}. Without {@link #selected} the active
- * tab is kept in the scene state ("glyphwork:tab:&lt;id&gt;"), starting with the first.
+ * tab is kept in the scene state for each viewer ({@link Click#tab} sets it), starting with the first.
  */
+@org.jetbrains.annotations.ApiStatus.Experimental
 public final class Tabs implements Element {
 
     /** Height of the tabs. */
@@ -22,11 +24,38 @@ public final class Tabs implements Element {
     /** How much darker the inactive tabs are (multiplies the frame colors). */
     public static final TextColor INACTIVE = TextColor.color(0xB8B8B8);
 
-    /** One tab: id, title on its button, optional item icon, its elements. */
-    public record Tab(String id, String title, @Nullable String icon, List<Element> elements) {
+    /** One tab: id, title on its button, optional item icon, its elements. Made by {@link Tabs#tab}. */
+    public static final class Tab {
+        private final String id;
+        private final String title;
+        private final @Nullable String icon;
+        private final List<Element> elements;
+
+        private Tab(String id, String title, @Nullable String icon, List<Element> elements) {
+            this.id = id;
+            this.title = title;
+            this.icon = icon;
+            this.elements = elements;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        public String title() {
+            return title;
+        }
+
+        public @Nullable String icon() {
+            return icon;
+        }
+
+        public List<Element> elements() {
+            return elements;
+        }
     }
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final String id;
     private final int x;
@@ -35,7 +64,7 @@ public final class Tabs implements Element {
     private final int height;
     private final List<Tab> tabs = new ArrayList<>();
     private @Nullable Function<View, @Nullable String> selected;
-    private @Nullable BiConsumer<Click, String> onSelect;
+    private @Nullable BiConsumer<Click, String> onChange;
     private String frame = "panel";
     private TextColor tint = INACTIVE;
 
@@ -72,8 +101,8 @@ public final class Tabs implements Element {
     }
 
     /** Called with the id of the clicked tab (the scene is drawn again afterwards). */
-    public Tabs onSelect(BiConsumer<Click, String> onSelect) {
-        this.onSelect = onSelect;
+    public Tabs onChange(BiConsumer<Click, String> onChange) {
+        this.onChange = onChange;
         return this;
     }
 
@@ -84,19 +113,19 @@ public final class Tabs implements Element {
     }
 
     /** Color of the inactive tabs (multiplies the frame colors; default {@link #INACTIVE}). */
-    public Tabs tint(TextColor tint) {
+    public Tabs inactiveTint(TextColor tint) {
         this.tint = tint;
         return this;
     }
 
     /** Shown only while this returns true; hidden elements do not take clicks. */
-    public Tabs visible(Function<View, Boolean> visible) {
+    public Tabs visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 
@@ -114,31 +143,38 @@ public final class Tabs implements Element {
         return id;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return width;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int height() {
         return height;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public List<Tab> tabs() {
         return List.copyOf(tabs);
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String frame() {
         return frame;
     }
 
-    public TextColor tint() {
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public TextColor inactiveTint() {
         return tint;
     }
 
-    public @Nullable BiConsumer<Click, String> onSelect() {
-        return onSelect;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable BiConsumer<Click, String> onChange() {
+        return onChange;
     }
 
     /** The active tab for this viewer (the first one if none or an unknown id is set). */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Tab active(View view) {
         if (tabs.isEmpty()) {
             return null;
@@ -152,10 +188,11 @@ public final class Tabs implements Element {
         return tabs.getFirst();
     }
 
-    /** Makes {@code tab} active: onSelect, or the scene state when there is no selected(...). */
+    /** Makes {@code tab} active: onChange, or the scene state when there is no selected(...). */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public void select(Click c, String tab) {
-        if (onSelect != null) {
-            onSelect.accept(c, tab);
+        if (onChange != null) {
+            onChange.accept(c, tab);
         }
         if (selected == null) {
             c.set("glyphwork:tab:" + id, tab);

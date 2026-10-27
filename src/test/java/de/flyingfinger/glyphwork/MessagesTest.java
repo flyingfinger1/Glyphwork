@@ -57,7 +57,7 @@ class MessagesTest {
         }
         // every "key" passed to get/plain/raw in the plugin sources exists
         Pattern use = Pattern.compile("(?:get|plain|raw)\\((?:[a-zA-Z.()]+|lang), \"([a-z0-9.-]+)\"");
-        Pattern keyLiteral = Pattern.compile("\"((?:cmd|display|dialog|fallback|pack|menu|reload|status|help)\\.[a-z0-9.-]+|players-only|no-permission|player-not-found)\"");
+        Pattern keyLiteral = Pattern.compile("\"((?:cmd|display|dialog|plain|pack|menu|reload|status|help)\\.[a-z0-9.-]+|players-only|no-permission|player-not-found)\"");
         Set<String> used = new TreeSet<>();
         try (Stream<Path> files = Files.walk(Path.of("src/main/java"))) {
             for (Path f : files.filter(p -> p.toString().endsWith(".java")).toList()) {

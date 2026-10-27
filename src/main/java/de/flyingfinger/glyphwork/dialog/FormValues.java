@@ -24,23 +24,23 @@ public final class FormValues implements Form.Values {
         FormValues v = new FormValues();
         for (Form.Field f : form.fields()) {
             switch (f) {
-                case Form.Text t -> {
+                case Form.TextField t -> {
                     String s = text.apply(t.key());
                     s = s == null ? t.initial() : s;
                     v.values.put(t.key(), s.length() > t.maxLength() ? s.substring(0, t.maxLength()) : s);
                 }
-                case Form.Checkbox c -> {
+                case Form.CheckboxField c -> {
                     Boolean b = bool.apply(c.key());
                     v.values.put(c.key(), b == null ? c.initial() : b);
                 }
-                case Form.Slider s -> {
+                case Form.SliderField s -> {
                     Float n = number.apply(s.key());
-                    float x = n == null || n.isNaN() ? s.initial() : n;
+                    double x = n == null || n.isNaN() ? s.initial() : n;
                     x = Math.max(s.min(), Math.min(s.max(), x));
                     x = s.min() + Math.round((x - s.min()) / s.step()) * s.step();
                     v.values.put(s.key(), Math.min(s.max(), x));
                 }
-                case Form.Choice c -> {
+                case Form.ChoiceField c -> {
                     String id = text.apply(c.key());
                     boolean known = id != null && c.options().stream().anyMatch(o -> o.id().equals(id));
                     v.values.put(c.key(), known ? id : c.initial());
@@ -61,8 +61,8 @@ public final class FormValues implements Form.Values {
     }
 
     @Override
-    public float number(String key) {
-        return values.get(key) instanceof Float f ? f : 0f;
+    public double number(String key) {
+        return values.get(key) instanceof Double d ? d : 0;
     }
 
     @Override
@@ -72,6 +72,17 @@ public final class FormValues implements Form.Values {
 
     /** A number as menus show it: "12" for whole numbers, "2.5" otherwise. */
     public static String format(float n) {
-        return n == Math.rint(n) && Math.abs(n) < 1e9 ? String.valueOf((long) n) : String.valueOf(n);
+        return format((double) n);
+    }
+
+    /** "12" for whole numbers, else at most 6 decimals without trailing zeros ("0.3", not 0.30000000000000004). */
+    public static String format(double n) {
+        if (Double.isNaN(n) || Double.isInfinite(n)) {
+            return String.valueOf(n);
+        }
+        if (n == Math.rint(n) && Math.abs(n) < 1e15) {
+            return String.valueOf((long) n);
+        }
+        return java.math.BigDecimal.valueOf(n).setScale(6, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
     }
 }

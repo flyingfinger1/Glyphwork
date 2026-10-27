@@ -105,20 +105,67 @@ final class Vars {
         }
     }
 
+    /**
+     * One pass over the menu's own placeholders: menu variables, entry values, web values, input.
+     * Values put in are never read again, so a feed text with "%vault_eco_balance%" or
+     * "%menu_x%" in it stays text. PlaceholderAPI and %player% etc. run on the template before.
+     */
+    private static final Pattern OWN = Pattern.compile(
+        "%(?:menu_([a-z0-9_-]+)|item(?:_([A-Za-z0-9_.-]+))?|web_([a-z0-9-]+)_([^%\\s|]+)|(input))(?:[|]([a-z-]+))?%");
+    private static final net.kyori.adventure.text.minimessage.MiniMessage MM =
+        net.kyori.adventure.text.minimessage.MiniMessage.miniMessage();
+
+    /**
+     * For text that is read as MiniMessage (labels, tooltips, messages, titles): values from
+     * outside (entries, web sources, typed input) have their tags escaped, so a feed text cannot
+     * add a click event or colors. "|raw" keeps them; "|discord" makes its own safe markup.
+     */
     String fill(@Nullable View v, String text, @Nullable Map<String, String> item, @Nullable String input) {
+        return fill(v, text, item, input, true);
+    }
+
+    /** For commands, addresses, numbers and conditions: values go in as they are. */
+    String fillPlain(@Nullable View v, String text, @Nullable Map<String, String> item, @Nullable String input) {
+        return fill(v, text, item, input, false);
+    }
+
+    private String fill(@Nullable View v, String text, @Nullable Map<String, String> item, @Nullable String input,
+                        boolean markup) {
         if (text.indexOf('%') < 0) {
             return text;
         }
-        String s = input == null ? text : text.replace("%input%", input);
-        if (item != null) {
-            s = replace(s, ITEM_VAR, m -> {
-                String value = item.get(m.group(1) == null ? "" : m.group(1));
-                return value == null ? m.group() : m.group(2) == null ? value : Filters.apply(m.group(2), value);
-            });
+        String s = Placeholders.apply(v == null ? null : v.player(), text);
+        Matcher m = OWN.matcher(s);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            String filter = m.group(6);
+            String value;
+            boolean outside = true;                 // a value from outside the menu file
+            if (m.group(1) != null) {
+                value = get(v, m.group(1));
+                outside = false;                    // menu variables: set by the menu (stored escaped)
+            } else if (m.group(5) != null) {
+                value = input;
+            } else if (m.group(3) != null) {
+                value = WebSources.value(v, m.group(3), m.group(4));
+            } else {
+                value = item == null ? null : item.get(m.group(2) == null ? "" : m.group(2));
+            }
+            if (value == null) {
+                m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));      // unknown: stays visible
+                continue;
+            }
+            boolean safe = "raw".equals(filter) || "discord".equals(filter);
+            if (filter != null && !"raw".equals(filter)) {
+                value = Filters.apply(filter, value);
+            }
+            if (markup && outside && !safe) {
+                value = MM.escapeTags(value);
+            }
+            m.appendReplacement(sb, Matcher.quoteReplacement(value));
         }
-        s = replace(s, MENU_VAR, m -> m.group(2) == null ? get(v, m.group(1)) : Filters.apply(m.group(2), get(v, m.group(1))));
-        s = WebSources.fill(v, s);
-        return Placeholders.apply(v == null ? null : v.player(), s);
+        m.appendTail(sb);
+        return sb.toString();
     }
 
     private static String replace(String s, Pattern p, java.util.function.Function<Matcher, String> f) {

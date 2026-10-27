@@ -246,8 +246,9 @@ class Canvas {
     return this.t;
   }
 
-  /** Autotiled shape at (x, y); returns false if the skin has no such frame. */
+  /** Autotiled shape at (x, y); returns false if the skin has no such frame ("none" draws nothing). */
   shape(name, x, y, cells, tintRgb) {
+    if (String(name).toLowerCase() === 'none') return true;
     const tl = this.tileList(name);
     if (!tl || !cells.length) return false;
     const img = renderShape(tl, cells, this.t);
@@ -429,6 +430,10 @@ export function renderMenu(menu, skin, ctx = {}) {
       continue;
     }
     const x = int(el.x, 0), y = int(el.y, 0);
+    // the plugin refuses a cooldown without a place to store it
+    if (el.cooldown != null && el.cooldown !== '' && !el.id && !el['cooldown-key']) {
+      errors.push({ top, text: 'cooldown: id / cooldown-key' });
+    }
     const tip = el.tooltip != null ? f(el.tooltip) : null;
     try {
       switch (type) {
@@ -491,7 +496,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           }
           const s = f(el.text ?? '');
           if (s) {
-            const rgb = enabled ? (color(el['text-color']) ?? WHITE) : DISABLED_TEXT;
+            const rgb = enabled ? (color(el.color ?? el['text-color']) ?? WHITE) : DISABLED_TEXT;
             c.centered(fit(s, tw - 6), tx, tw, by + Math.floor((h - 7) / 2), rgb, enabled);
           }
           const offTip = !enabled && el['disabled-tooltip'] != null ? f(el['disabled-tooltip']) : tip;
@@ -593,7 +598,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           const max = toNum(el.max ?? 100);
           const ratio = max > 0 ? Math.max(0, Math.min(1, toNum(el.value) / max)) : 0;
           const fillW = Math.round(ratio * (w - 2));
-          if (fillW > 0) c.fillRect(x + 1, y + 1, fillW, h - 2, (0xff000000 | (color(el.color) ?? 0x80ff20)) >>> 0);
+          if (fillW > 0) c.fillRect(x + 1, y + 1, fillW, h - 2, (0xff000000 | (color(el.fill) ?? 0x80ff20)) >>> 0);
           const s = f(el.text ?? '');
           if (s) c.centered(fit(s, w - 4), x, w, h <= 8 ? y - 9 : y + Math.floor((h - 7) / 2), WHITE, true);
           region(x, y, w, h, tip, null);
@@ -618,7 +623,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           tabs.forEach((tb, i) => {
             if (i === ai) return;
             const cw = col[i + 1] - col[i];
-            c.shape(frameName, x + col[i] * t, y + 2, Array.from({ length: head }, () => new Array(cw).fill(true)), color(el.tint) ?? 0xB8B8B8);
+            c.shape(frameName, x + col[i] * t, y + 2, Array.from({ length: head }, () => new Array(cw).fill(true)), color(el['inactive-tint']) ?? 0xB8B8B8);
             region(x + col[i] * t, y + 2, cw * t, TAB_HEADER - 2, null, el.var != null
               ? { type: 'set', var: String(el.var).toLowerCase(), value: tb.id, then: [] }
               : { type: 'page', id: 'tab:' + key, page: tb.id });

@@ -138,7 +138,7 @@ public final class Demo {
                 .tooltip(v -> c(v, "demo.search-tip"))
                 .onClick(k -> k.prompt(c(k, "demo.search-title"), k.get("query", ""), text -> {
                     k.set("query", text.trim());
-                    k.set("glyphwork:page:fruits", 0);
+                    k.page("fruits", 0);
                 })))
             .add(ListView.of("fruits", 8, 42, 80, 4, v -> {
                     String q = v.get("query", "").toLowerCase();
@@ -146,9 +146,9 @@ public final class Demo {
                 })
                 .selected(v -> v.get("fruit", (String) null))
                 .color(f -> TextColor.color(0xFFFFFF))
-                .onSelect((k, f) -> { k.set("fruit", f); k.reopen(); }))
+                .onClick((k, f) -> { k.set("fruit", f); k.reopen(); }))
             .add(Grid.of("numbers", 96, 42, 4, 3, v -> NUMBERS)
-                .label(String::valueOf)
+                .text(String::valueOf)
                 .tint(n -> n % 3 == 0 ? BLUE : n % 3 == 1 ? GREEN : null)
                 .tooltip(n -> Component.text("#" + n))
                 .onClick((k, n) -> { k.set("number", n); k.reopen(); }))

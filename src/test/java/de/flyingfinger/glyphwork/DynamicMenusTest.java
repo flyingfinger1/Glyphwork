@@ -94,13 +94,13 @@ class DynamicMenusTest {
         TestClick c = new TestClick(s, "Steve", log);
         Label status = (Label) s.elements().get(0);
         assertEquals("Tab: shop, Sound: false", status.text().apply(c));
-        assertTrue(s.elements().get(3).visible().apply(c));
-        assertFalse(s.elements().get(4).visible().apply(c));
+        assertTrue(s.elements().get(3).visible().test(c));
+        assertFalse(s.elements().get(4).visible().test(c));
 
         button(s, 2).onClick().accept(c);
         assertEquals("Tab: info, Sound: false", status.text().apply(c));
-        assertFalse(s.elements().get(3).visible().apply(c));
-        assertTrue(s.elements().get(4).visible().apply(c));
+        assertFalse(s.elements().get(3).visible().test(c));
+        assertTrue(s.elements().get(4).visible().test(c));
         assertEquals(List.of("reopen"), log);                      // set redraws by itself
 
         button(s, 5).onClick().accept(c);
@@ -147,12 +147,12 @@ class DynamicMenusTest {
         List<Object> rows = list.items().apply(c);
         assertEquals(List.of("Alle", "Alex (farm)", "Zoe (world)"), rows.stream().map(r -> list.text().apply(r)).toList());
 
-        list.onSelect().accept(c, rows.get(1));                    // Alex
+        list.onClick().accept(c, rows.get(1));                    // Alex
         assertEquals(List.of("cmd tpa Alex", "reopen"), log);
         rows = list.items().apply(c);                              // filter = Alex now
         assertEquals(List.of("Alle", "Alex (farm)"), rows.stream().map(r -> list.text().apply(r)).toList());
 
-        list.onSelect().accept(c, rows.get(0));                    // "Alle" resets the filter
+        list.onClick().accept(c, rows.get(0));                    // "Alle" resets the filter
         assertEquals(3, list.items().apply(c).size());
     }
 
@@ -169,7 +169,7 @@ class DynamicMenusTest {
         de.flyingfinger.glyphwork.api.Grid<Object> g = (de.flyingfinger.glyphwork.api.Grid<Object>) s.elements().get(1);
         Object cell = g.items().apply(new TestClick(s, "x", new ArrayList<>())).getFirst();
         assertEquals("netherrack", g.icon().apply(cell));
-        assertEquals("world_nether", g.label().apply(cell));         // text defaults to %item%
+        assertEquals("world_nether", g.text().apply(cell));         // text defaults to %item%
     }
 
     @Test

@@ -109,7 +109,7 @@ class BarTooltipWrapTest {
     void barFillsPixelExact() {
         TextColor red = TextColor.color(0xFF2020);
         Scene s = Scene.builder("t", 120, 40)
-            .add(Bar.of(4, 8, 104).value(v -> 37).max(100).color(red))
+            .add(Bar.of(4, 8, 104).value(v -> 37).max(100).fill(red))
             .build();
         List<int[]> runs = fill(layout(render(s)), 0xFF2020);
         int total = runs.stream().mapToInt(r -> r[1]).sum();
@@ -138,7 +138,7 @@ class BarTooltipWrapTest {
             background: none
             variables: { xp: "1,500", goal: "3000" }
             elements:
-              - { type: bar, x: 0, y: 12, width: 82, value: "%menu_xp%", max: "%menu_goal%", color: gold, text: "%menu_xp% / %menu_goal%" }
+              - { type: bar, x: 0, y: 12, width: 82, value: "%menu_xp%", max: "%menu_goal%", fill: gold, text: "%menu_xp% / %menu_goal%" }
             """).scene();
         List<int[]> runs = fill(layout(render(s)), 0xFFAA00);
         assertEquals(39, runs.stream().mapToInt(r -> r[1]).sum());    // 82 px -> drawn 80, inner 78; half of it

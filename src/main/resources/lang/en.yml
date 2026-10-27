@@ -9,8 +9,8 @@ player-not-found: "<red>Player not found."
 
 pack.prompt: "Glyphwork needs this resource pack for its menus."
 pack.sent: "<gray>Pack sent."
-pack.declined: "<gray>Without the Glyphwork pack, menus are shown in a simple form. /glyphwork pack loads it later."
-pack.failed: "<gray>The Glyphwork pack could not be loaded (<status>). Menus are shown in a simple form."
+pack.declined: "<gray>Without the Glyphwork pack, menus are shown in a plain form. /glyphwork pack loads it later."
+pack.failed: "<gray>The Glyphwork pack could not be loaded (<status>). Menus are shown in a plain form."
 
 menu.unknown: "<red>Menu '<id>' does not exist."
 menu.usage: "<gray>/glyphwork menu \\<id> [player] – menus: <menus>"
@@ -30,23 +30,23 @@ reload.failed: "<red>Reload failed: <error>"
 status.pack: "<gray>Theme '<theme>', pack <sha1> (<hosting>)\n<url>"
 
 help.player: "<gray>/glyphwork \\<pack|display>"
-help.admin: "<gray>/glyphwork \\<pack|display|menu \\<id> [player]|item \\<menu> [player]|test [fallback]|status|reload>"
+help.admin: "<gray>/glyphwork \\<pack|display|menu \\<id> [player]|item \\<menu> [player]|test [plain]|status|reload>"
 
 cmd.display: "display"
 cmd.full: "full"
 cmd.no-icons: "no-icons"
-cmd.simple: "simple"
+cmd.plain: "plain"
 
-display.usage: "<gray>/glyphwork display \\<full|no-icons|simple>"
+display.usage: "<gray>/glyphwork display \\<full|no-icons|plain>"
 display.set: "<green>Menu display: <mode>"
 display.title: "Menu display"
 display.question: "How should menus be shown?"
 display.full: "Full (with icons)"
 display.no-icons: "Without icons"
-display.simple: "Simple"
+display.plain: "Plain"
 display.info-full: "<gray>Full: pixel menus with item icons."
 display.info-no-icons: "<gray>Without icons: if your resource pack moves item icons."
-display.info-simple: "<gray>Simple: plain dialogs, if your pack breaks the menus."
+display.info-plain: "<gray>Plain: native dialogs, if your pack breaks the menus."
 
 dialog.close: "Close"
 dialog.ok: "OK"
@@ -58,11 +58,10 @@ url.invalid: "<red>Not a valid link: <url>"
 # Tooltip of the warning button next to dialog titles (empty = Minecraft's own text).
 dialog.warning-tooltip: ""
 
-fallback.notice: "<gray>Simple view – resource pack not loaded"
-fallback.previous: "◀ back"
-fallback.next: "next ▶"
+plain.notice: "<gray>Plain view – resource pack not loaded"
+plain.previous: "◀ back"
+plain.next: "next ▶"
 
-commands.only-players: "Only players can open menus."
 
 # /glyphwork test (demo)
 demo.panel-tip: "Panel background"

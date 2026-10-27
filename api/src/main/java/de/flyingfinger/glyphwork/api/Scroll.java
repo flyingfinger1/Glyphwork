@@ -4,20 +4,22 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A scroll pane: a window of {@code width x height} px that shows part of its elements, with a
  * scroll bar on the right (▲, track, ▼). Clicks move the content by {@link #step} px; a click on the
  * track jumps there. Only what lies completely inside the window is drawn and takes clicks. The
  * elements use scene coordinates as if the pane were not scrolled. The position is kept in the scene
- * state ("glyphwork:scroll:&lt;id&gt;").
+ * state for each viewer; {@link Click#scroll} sets it.
  */
+@org.jetbrains.annotations.ApiStatus.Experimental
 public final class Scroll implements Element {
 
     /** Width of the scroll bar at the right edge of the pane. */
     public static final int BAR = 8;
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final String id;
     private final int x;
@@ -72,13 +74,13 @@ public final class Scroll implements Element {
     }
 
     /** Shown only while this returns true; hidden elements do not take clicks. */
-    public Scroll visible(Function<View, Boolean> visible) {
+    public Scroll visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 
@@ -96,32 +98,44 @@ public final class Scroll implements Element {
         return id;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return width;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int height() {
         return height;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public List<Element> elements() {
         return elements;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int step() {
         return step;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable String frame() {
         return frame;
     }
 
+    /** True if the position depends on the viewer (then panes may share the id). */
+    boolean hasPosition() {
+        return position != null;
+    }
+
     /** State key of the scroll position for this viewer. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String key(View view) {
         return "glyphwork:scroll:" + (position == null ? id : position.apply(view));
     }
 
     /** The stored position (not yet limited to the content). */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int offset(View view) {
         Object o = view.get(key(view), (Object) 0);
         return o instanceof Number n ? Math.max(0, n.intValue()) : 0;

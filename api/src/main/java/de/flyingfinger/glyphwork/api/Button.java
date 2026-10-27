@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A clickable frame ("button" by default) with centered text. The theme's button texture is light
@@ -14,7 +15,7 @@ import java.util.function.Function;
  */
 public final class Button implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     /** Default tint: vanilla-like gray. */
     public static final TextColor GRAY = TextColor.color(0x9C9C9C);
@@ -26,10 +27,10 @@ public final class Button implements Element {
     private final int h;
     private String frame = "button";
     private Function<View, String> text = v -> "";
-    private Function<View, TextColor> textColor = v -> TextColor.color(0xFFFFFF);
+    private Function<View, TextColor> color = v -> TextColor.color(0xFFFFFF);
     private Function<View, TextColor> tint = v -> GRAY;
     private @Nullable Function<View, @Nullable Component> tooltip;
-    private Function<View, Boolean> enabled = v -> true;
+    private Predicate<View> enabled = v -> true;
     private @Nullable Consumer<Click> onClick;
     private @Nullable Function<View, @Nullable String> icon;
 
@@ -59,13 +60,13 @@ public final class Button implements Element {
         return this;
     }
 
-    public Button textColor(TextColor color) {
-        this.textColor = v -> color;
+    public Button color(TextColor color) {
+        this.color = v -> color;
         return this;
     }
 
-    public Button textColor(Function<View, TextColor> color) {
-        this.textColor = color;
+    public Button color(Function<View, TextColor> color) {
+        this.color = color;
         return this;
     }
 
@@ -93,7 +94,7 @@ public final class Button implements Element {
         return this;
     }
 
-    public Button enabled(Function<View, Boolean> enabled) {
+    public Button enabled(Predicate<View> enabled) {
         this.enabled = enabled;
         return this;
     }
@@ -109,6 +110,7 @@ public final class Button implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable String> icon() {
         return icon;
     }
@@ -128,18 +130,22 @@ public final class Button implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return w;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int height() {
         return h;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String frame() {
         return frame;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, String> text() {
         return text;
     }
@@ -147,43 +153,50 @@ public final class Button implements Element {
     private boolean markup;
 
     /** Reads the text as MiniMessage (bold, italic, underline, strikethrough, colors for parts of it). */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Button markup(boolean markup) {
         this.markup = markup;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean markup() {
         return markup;
     }
 
-    public Function<View, TextColor> textColor() {
-        return textColor;
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Function<View, TextColor> color() {
+        return color;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, TextColor> tint() {
         return tint;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
-    public Function<View, Boolean> enabled() {
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Predicate<View> enabled() {
         return enabled;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Consumer<Click> onClick() {
         return onClick;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public Button visible(Function<View, Boolean> visible) {
+    public Button visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

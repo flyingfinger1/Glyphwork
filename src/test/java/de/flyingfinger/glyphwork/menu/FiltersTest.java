@@ -58,4 +58,20 @@ class FiltersTest {
         // the message's own tags stay text, Discord escapes stay characters
         assertEquals("\\<red>hi and *stars*", Filters.discord("<red>hi and \\*stars\\*", DAY, true));
     }
+
+    @Test
+    void outsideValuesCannotInjectMarkupOrPlaceholders() {
+        Vars vars = Vars.NONE;
+        Map<String, String> item = Map.of("t", "<click:run_command:/op me>hi</click> %menu_x% %item_t%");
+        // read as MiniMessage: tags escaped, placeholders inside the value stay text
+        String shown = vars.fill(null, "News: %item_t%", item, null);
+        assertEquals("News: \\<click:run_command:/op me>hi\\</click> %menu_x% %item_t%", shown);
+        assertEquals("News: <click:run_command:/op me>hi</click> %menu_x% %item_t%",
+            net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(
+                net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(shown)));
+        // commands get the value as it is, but still only once
+        assertEquals("say <click:run_command:/op me>hi</click> %menu_x% %item_t%", vars.fillPlain(null, "say %item_t%", item, null));
+        // |raw on purpose
+        assertEquals("<b>x</b>", vars.fill(null, "%item_b|raw%", Map.of("b", "<b>x</b>"), null));
+    }
 }

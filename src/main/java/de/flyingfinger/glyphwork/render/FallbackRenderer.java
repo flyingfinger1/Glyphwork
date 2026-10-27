@@ -107,7 +107,7 @@ public final class FallbackRenderer {
         while (!todo.isEmpty()) {
             Element e = todo.poll();
             try {
-                if (!Boolean.TRUE.equals(e.visible().apply(view))) {
+                if (!Boolean.TRUE.equals(e.visible().test(view))) {
                     continue;
                 }
                 switch (e) {
@@ -180,20 +180,20 @@ public final class FallbackRenderer {
                         }
                     }
                     case Checkbox cb -> {
-                        if (cb.onToggle() != null) {
-                            boolean on = Boolean.TRUE.equals(cb.checked().apply(view));
+                        if (cb.onChange() != null) {
+                            boolean on = Boolean.TRUE.equals(cb.checked().test(view));
                             String text = cb.text().apply(view);
                             actions.add(new Action(Component.text((on ? "\u2611 " : "\u2610 ") + (text == null ? "" : text)),
                                 cb.tooltip() == null ? null : cb.tooltip().apply(view),
-                                Redraw.after(c -> cb.onToggle().accept(c, !on))));
+                                Redraw.after(c -> cb.onChange().accept(c, !on))));
                         }
                     }
                     case Choice ch -> {
-                        if (ch.onSelect() != null) {
+                        if (ch.onChange() != null) {
                             String now = ch.text().apply(ch.options().get(ch.index(view)));
                             actions.add(new Action(Component.text(now + "  \u25b6"),
                                 ch.tooltip() == null ? null : ch.tooltip().apply(view),
-                                Redraw.after(c -> ch.onSelect().accept(c, ch.step(c, 1)))));
+                                Redraw.after(c -> ch.onChange().accept(c, ch.step(c, 1)))));
                         }
                     }
                 }
@@ -272,7 +272,10 @@ public final class FallbackRenderer {
     }
 
     /** Label colors are chosen for light panels; the dialog background is dark. */
-    static TextColor readable(TextColor c) {
+    static TextColor readable(@Nullable TextColor c) {
+        if (c == null) {
+            return LIGHT;                       // the skin's text color: dark on light panels
+        }
         double lum = (0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue()) / 255;
         return lum < 0.45 ? LIGHT : c;
     }
@@ -281,7 +284,7 @@ public final class FallbackRenderer {
         if (b.onClick() == null) {
             return;
         }
-        boolean enabled = Boolean.TRUE.equals(b.enabled().apply(view));
+        boolean enabled = Boolean.TRUE.equals(b.enabled().test(view));
         String text = b.text().apply(view);
         Component tip = b.tooltip() == null ? null : b.tooltip().apply(view);
         Component label = text != null && !text.isBlank()
@@ -307,14 +310,14 @@ public final class FallbackRenderer {
         int page = Math.max(0, Math.min(view.page(l.id()), pages - 1));
         for (int i = page * per; i < Math.min(items.size(), (page + 1) * per); i++) {
             T item = items.get(i);
-            if (l.onSelect() == null) {
+            if (l.onClick() == null) {
                 continue;
             }
             String text = String.valueOf(l.text().apply(item));
             Component shown = l.markup() ? net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(text) : Component.text(text);
             Component label = withHead(withCount(l.isSelected(view, item) ? Component.text("▶ ").append(shown) : shown,
                 l.count() == null ? null : l.count().apply(item)), l.icon() == null ? null : l.icon().apply(item));
-            actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onSelect().accept(c, item)));
+            actions.add(new Action(label, l.tooltip() == null ? null : l.tooltip().apply(item), c -> l.onClick().accept(c, item)));
         }
         pager(l.id(), page, pages, actions, view);
     }
@@ -330,7 +333,7 @@ public final class FallbackRenderer {
                 continue;
             }
             Component tip = g.tooltip() == null ? null : g.tooltip().apply(item);
-            String label = g.label().apply(item);
+            String label = g.text().apply(item);
             // grid labels are short (a symbol, a number); the tooltip usually says more
             String iconName = g.icon() == null ? null : humanize(g.icon().apply(item));
             String text = tip != null ? PlainTextComponentSerializer.plainText().serialize(tip)
@@ -347,21 +350,20 @@ public final class FallbackRenderer {
         if (s.onChange() == null) {
             return;
         }
-        Float current = s.value().apply(view);
-        int pos = s.positionOf(current == null ? s.min() : current);
+        int pos = s.positionOf(s.value().applyAsDouble(view));
         if (pos > 0) {
-            float v = s.valueAt(pos - 1);
+            double v = s.valueAt(pos - 1);
             actions.add(new Action(Component.text("\u25c0 ").append(sliderLabel(s, view, v)), null,
                 Redraw.after(c -> s.onChange().accept(c, v))));
         }
         if (pos < s.positions() - 1) {
-            float v = s.valueAt(pos + 1);
+            double v = s.valueAt(pos + 1);
             actions.add(new Action(sliderLabel(s, view, v).append(Component.text(" \u25b6")), null,
                 Redraw.after(c -> s.onChange().accept(c, v))));
         }
     }
 
-    private static Component sliderLabel(Slider s, View view, float v) {
+    private static Component sliderLabel(Slider s, View view, double v) {
         Component tip = s.tooltip() == null ? null : s.tooltip().apply(view, v);
         return tip != null ? tip : Component.text(de.flyingfinger.glyphwork.dialog.FormValues.format(v));
     }
@@ -372,7 +374,7 @@ public final class FallbackRenderer {
         int full = (int) Math.round(r * 10);
         String text = b.text().apply(view);
         return Component.text()
-            .append(Component.text("\u2588".repeat(full), b.color().apply(view)))
+            .append(Component.text("\u2588".repeat(full), b.fill().apply(view)))
             .append(Component.text("\u2588".repeat(10 - full), NamedTextColor.DARK_GRAY))
             .append(Component.text(" " + (text != null && !text.isEmpty() ? text : Math.round(r * 100) + " %"), LIGHT))
             .build();
@@ -454,11 +456,11 @@ public final class FallbackRenderer {
         String key = "glyphwork:page:" + id;
         Component info = Component.text(" (" + (page + 1) + "/" + pages + ")", NamedTextColor.GRAY);
         if (page > 0) {
-            actions.add(new Action(Messages.active().get(view.player(), "fallback.previous").append(info), null,
+            actions.add(new Action(Messages.active().get(view.player(), "plain.previous").append(info), null,
                 c -> { c.set(key, page - 1); c.reopen(); }));
         }
         if (page < pages - 1) {
-            actions.add(new Action(Messages.active().get(view.player(), "fallback.next").append(info), null,
+            actions.add(new Action(Messages.active().get(view.player(), "plain.next").append(info), null,
                 c -> { c.set(key, page + 1); c.reopen(); }));
         }
     }

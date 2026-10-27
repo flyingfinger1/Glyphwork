@@ -94,15 +94,15 @@ class PersistCooldownTest {
         FakePlayer p = new FakePlayer();
         TestClick c = new TestClick(s, p);
         Button reward = (Button) s.elements().get(0);
-        assertTrue(reward.enabled().apply(c));
+        assertTrue(reward.enabled().test(c));
         assertTrue(c.redraws.isEmpty());                            // nothing running: no redraw
         reward.onClick().accept(c);
-        reward.enabled().apply(c);                                  // 1 h left: redraw at the next minute
+        reward.enabled().test(c);                                  // 1 h left: redraw at the next minute
         long next = c.redraws.getLast();
         assertTrue(next > 50 && next <= 60_050, "next " + next);
         // 30 s left: every second
-        p.data.replaceAll((k, v) -> System.currentTimeMillis() + 30_000);
-        reward.enabled().apply(c);
+        p.data.replaceAll((k, v) -> System.currentTimeMillis() - 3_600_000 + 30_000);   // used 59.5 min ago
+        reward.enabled().test(c);
         assertTrue(c.redraws.getLast() <= 1050, "last " + c.redraws.getLast());
     }
 
@@ -149,8 +149,8 @@ class PersistCooldownTest {
         background: none
         variables: { online: "3" }
         elements:
-          - { type: button, x: 0, y: 0, text: Belohnung, cooldown: 1h, actions: ["message: Diamant!"] }
-          - { type: button, x: 0, y: 20, text: Streng, cooldown: 10s, actions: ["require: %menu_online% >= 5 | message: zu wenige", "message: geschafft"] }
+          - { type: button, id: belohnung, x: 0, y: 0, text: Belohnung, cooldown: 1h, actions: ["message: Diamant!"] }
+          - { type: button, id: streng, x: 0, y: 20, text: Streng, cooldown: 10s, actions: ["require: %menu_online% >= 5 | message: zu wenige", "message: geschafft"] }
           - { type: button, x: 0, y: 40, text: A, cooldown: 1d, cooldown-key: tagesbonus, actions: ["message: A"] }
           - { type: button, x: 0, y: 60, text: B, cooldown: 1d, cooldown-key: tagesbonus, actions: ["message: B"] }
         """;
@@ -161,17 +161,17 @@ class PersistCooldownTest {
         FakePlayer p = new FakePlayer();
         TestClick c = new TestClick(s, p);
         Button reward = (Button) s.elements().get(0);
-        assertTrue(reward.enabled().apply(c));
+        assertTrue(reward.enabled().test(c));
         reward.onClick().accept(c);
         assertEquals(List.of("Diamant!"), p.log);
         assertEquals(1, c.reopened);                                // drawn again: now grayed out
-        assertFalse(reward.enabled().apply(c));
+        assertFalse(reward.enabled().test(c));
         assertEquals("Available again in 1 h", PlainTextComponentSerializer.plainText().serialize(reward.tooltip().apply(c)));
         reward.onClick().accept(new TestClick(s, p));               // relogging does not help
         assertEquals("Not yet: available again in 1 h.", p.log.get(1));
         // the time runs out
         p.data.replaceAll((k, v) -> 1L);
-        assertTrue(reward.enabled().apply(c));
+        assertTrue(reward.enabled().test(c));
     }
 
     @Test
@@ -182,9 +182,9 @@ class PersistCooldownTest {
         Button strict = (Button) s.elements().get(1);
         strict.onClick().accept(c);
         assertEquals(List.of("zu wenige"), p.log);
-        assertTrue(strict.enabled().apply(c));                     // require failed: no cooldown
+        assertTrue(strict.enabled().test(c));                     // require failed: no cooldown
         ((Button) s.elements().get(2)).onClick().accept(c);
-        assertFalse(((Button) s.elements().get(3)).enabled().apply(c));   // same cooldown-key
+        assertFalse(((Button) s.elements().get(3)).enabled().test(c));   // same cooldown-key
     }
 
     @Test
@@ -195,6 +195,7 @@ class PersistCooldownTest {
               - type: button
                 x: 0
                 y: 0
+                id: morgen
                 cooldown: 2h
                 cooldown-tooltip: "<gold>Morgen wieder, %player%! (%cooldown%)"
                 cooldown-message: "<red>Geduld: %cooldown%"
@@ -250,12 +251,40 @@ class PersistCooldownTest {
     @Test
     void durations() {
         assertThrows(MenuException.class, () -> new Menus().parse("a",
-            "elements: [{ type: button, x: 0, y: 0, cooldown: bald }]\n"));
+            "elements: [{ type: button, id: b, x: 0, y: 0, cooldown: bald }]\n"));
         assertThrows(MenuException.class, () -> new Menus().parse("a",
-            "elements: [{ type: button, x: 0, y: 0, cooldown: 0s }]\n"));
+            "elements: [{ type: button, id: b, x: 0, y: 0, cooldown: 0s }]\n"));
         assertThrows(MenuException.class, () -> new Menus().parse("a",
             "elements: [{ type: button, x: 0, y: 0, cooldown-key: x }]\n"));
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> new Menus().parse("a",
-            "elements: [{ type: button, x: 0, y: 0, cooldown: 1d 12h }, { type: hitbox, x: 0, y: 0, width: 8, height: 8, cooldown: 90 }]\n"));
+            "elements: [{ type: button, id: a, x: 0, y: 0, cooldown: 1d 12h }, { type: hitbox, id: h, x: 0, y: 0, width: 8, height: 8, cooldown: 90 }]\n"));
+    }
+
+    @Test
+    void sharedKeyEachElementWaitsItsOwnTime() throws MenuException {
+        Menus menus = new Menus();
+        Scene s = menus.parse("bonus", """
+            background: none
+            elements:
+              - { type: button, x: 0, y: 0, text: Klein, cooldown: 1h, cooldown-key: bonus, actions: ["message: klein"] }
+              - { type: button, x: 0, y: 20, text: Gross, cooldown: 1d, cooldown-key: bonus, actions: ["message: gross"] }
+            """).scene();
+        assertEquals(1, menus.warnings().size(), menus.warnings().toString());   // same key, different times
+        FakePlayer p = new FakePlayer();
+        TestClick c = new TestClick(s, p);
+        Button small = (Button) s.elements().get(0);
+        Button big = (Button) s.elements().get(1);
+        small.onClick().accept(c);                                  // the small one first ...
+        p.data.replaceAll((k, v) -> System.currentTimeMillis() - 2 * 3_600_000);   // ... two hours ago
+        assertTrue(small.enabled().test(c));                       // its hour is over
+        assertFalse(big.enabled().test(c));                        // the big one waits a day since then
+    }
+
+    @Test
+    void cooldownNeedsAnIdOrKeyAndIdsAreUnique() {
+        assertThrows(MenuException.class, () -> new Menus().parse("a",
+            "elements: [{ type: button, x: 0, y: 0, cooldown: 1h }]\n"));
+        assertThrows(MenuException.class, () -> new Menus().parse("a",
+            "elements: [{ type: button, id: x, x: 0, y: 0 }, { type: label, id: X, x: 0, y: 0, text: t }]\n"));
     }
 }

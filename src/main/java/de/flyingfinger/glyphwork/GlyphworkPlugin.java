@@ -49,6 +49,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private GlyphworkService service;
     private Settings settings;
     private String themeName = "";
+    private @org.jspecify.annotations.Nullable SceneRenderer renderer;
     private final Demo demo = new Demo();
     private Menus menus = new Menus();
     private de.flyingfinger.glyphwork.menu.MenuTriggers triggers;
@@ -85,7 +86,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             Build b = build();
             packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
-            service = new GlyphworkService(this, b.renderer(), b.height(), b.settings().fallback(),
+            service = new GlyphworkService(this, b.renderer(), b.height(), b.settings().plainDialog(),
                 packs::hasPack, packs::send, packs::hasServerPack);
         } catch (IOException e) {
             getLogger().severe("Pack could not be published: " + e);
@@ -115,12 +116,15 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         if (Files.isDirectory(getDataFolder().toPath().resolve("menus"))) {
             return;
         }
-        Settings s = Settings.read(getConfig());
+        Settings s = Settings.read(getConfig(), w -> getLogger().warning(w));
         String lang = "auto".equalsIgnoreCase(s.language()) ? s.fallbackLanguage() : s.language();
         for (String f : lang.toLowerCase().startsWith("de") ? EXAMPLES_DE : EXAMPLES_EN) {
             saveResource("menus/" + f, false);
         }
     }
+
+    /** Hints of the last menu load (shown by /glyphwork reload after the errors). */
+    private List<String> lastHints = List.of();
 
     /** (Re)loads menus/*.yml and their commands; returns the problems found. */
     private List<String> loadMenus() {
@@ -128,6 +132,21 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         for (String e : menus.errors()) {
             getLogger().warning("Menu not loaded: " + e);
         }
+        List<String> hints = new ArrayList<>(menus.warnings());
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        menus.all().forEach(m -> ids.add(m.id()));
+        for (Menus.Ref r : menus.refs()) {
+            String problem = r.kind().equals("menu")
+                ? (ids.contains(r.name()) ? null : "no menu '" + r.name() + "' (menus/" + r.name() + ".yml)")
+                : renderer == null ? null : renderer.unknown(r.kind(), r.name());
+            if (problem != null && !hints.contains(r.where() + ": " + problem)) {
+                hints.add(r.where() + ": " + problem);
+            }
+        }
+        for (String w : hints) {
+            getLogger().warning("Menu hint: " + w);
+        }
+        lastHints = hints;
         menuCommands.register(menus, this::openMenu);
         if (triggers != null) {
             triggers.giveAll();
@@ -174,7 +193,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     }
 
     private Build build() {
-        Settings s = Settings.read(getConfig());
+        Settings s = Settings.read(getConfig(), w -> getLogger().warning(w));
         GlyphAllocator alloc = new GlyphAllocator();
         Theme theme = loadTheme(s.theme(), alloc);
         Sheet hit = Sheet.invisible(alloc);
@@ -199,7 +218,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         exportExampleMenus();
         List<Integer> heights = Menus.load(getDataFolder().toPath().resolve("menus")).all().stream()
             .map(m -> m.scene().height()).toList();
-        int height = packHeight(s.maxHeight(), heights, getLogger());
+        int height = packHeight(s.minHeight(), heights, getLogger());
         ShiftFonts.write(pack, sheets, height, text, icons);
         de.flyingfinger.glyphwork.render.FallbackRenderer.icons(icons);
         Path imageDir = getDataFolder().toPath().resolve("images");
@@ -244,7 +263,8 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
 
     private void apply(Build b) {
         settings = b.settings();
-        de.flyingfinger.glyphwork.menu.Feeds.configure(settings.feedCache(), settings.feedDateFormat(), getLogger());
+        renderer = b.renderer();
+        de.flyingfinger.glyphwork.menu.Feeds.configure(settings.feedCache(), settings.dateFormat(), getLogger());
         de.flyingfinger.glyphwork.menu.Feeds.clear();
         themeName = b.themeName();
         Path lang = getDataFolder().toPath().resolve("lang");
@@ -303,11 +323,14 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             Build b = build();
             boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
-            service.reconfigure(b.renderer(), b.height(), b.settings().fallback());
+            service.reconfigure(b.renderer(), b.height(), b.settings().plainDialog());
             List<String> menuErrors = loadMenus();
             sender.sendMessage(msg().get(sender, "reload.menus", "count", menus.all().size()));
             for (String e : menuErrors) {
                 sender.sendMessage(Component.text("  " + e, NamedTextColor.RED));
+            }
+            for (String h : lastHints) {
+                sender.sendMessage(Component.text("  " + h, NamedTextColor.YELLOW));
             }
             if (changed && settings.provided()) {
                 sender.sendMessage(msg().get(sender, "reload.pack-provided", "theme", themeName));
@@ -378,7 +401,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private static @org.jspecify.annotations.Nullable DisplayMode mode(String arg) {
         return is(arg, "cmd.full") || arg.equalsIgnoreCase("full") ? DisplayMode.FULL
             : is(arg, "cmd.no-icons") || arg.equalsIgnoreCase("no-icons") ? DisplayMode.NO_ICONS
-            : is(arg, "cmd.simple") || arg.equalsIgnoreCase("simple") ? DisplayMode.SIMPLE
+            : is(arg, "cmd.plain") || arg.equalsIgnoreCase("plain") || arg.equalsIgnoreCase("simple") ? DisplayMode.PLAIN
             : null;
     }
 
@@ -417,7 +440,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 } else if (!sender.hasPermission(ADMIN)) {
                     noPermission(sender);
                 } else {
-                    service.openAs(player, demo.main, args.length > 1 && args[1].equalsIgnoreCase("fallback"));
+                    service.openAs(player, demo.main, args.length > 1 && (args[1].equalsIgnoreCase("plain") || args[1].equalsIgnoreCase("fallback")));
                 }
             }
             case "menu" -> {
@@ -490,7 +513,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         return msg().plain(to, switch (m) {
             case FULL -> "display.full";
             case NO_ICONS -> "display.no-icons";
-            case SIMPLE -> "display.simple";
+            case PLAIN -> "display.plain";
         });
     }
 
@@ -506,7 +529,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             msg().get(player, "display.question"),
             msg().get(player, "display.info-full"),
             msg().get(player, "display.info-no-icons"),
-            msg().get(player, "display.info-simple"));
+            msg().get(player, "display.info-plain"));
         List<DialogFactory.FallbackButton> buttons = new ArrayList<>();
         for (DisplayMode m : DisplayMode.values()) {
             String label = (m == current ? "\u25b6 " : "") + displayName(player, m);
@@ -539,11 +562,11 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase())).toList();
         }
         if (args.length == 2 && (is(args[0], "cmd.display") || args[0].equalsIgnoreCase("display"))) {
-            return Stream.of("cmd.full", "cmd.no-icons", "cmd.simple").map(k -> msg().raw(lang, k))
+            return Stream.of("cmd.full", "cmd.no-icons", "cmd.plain").map(k -> msg().raw(lang, k))
                 .filter(s -> s.startsWith(args[1].toLowerCase())).toList();
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("test") && sender.hasPermission(ADMIN)) {
-            return "fallback".startsWith(args[1].toLowerCase()) ? List.of("fallback") : List.of();
+            return "plain".startsWith(args[1].toLowerCase()) ? List.of("plain") : List.of();
         }
         if (args.length != 1) {
             return List.of();

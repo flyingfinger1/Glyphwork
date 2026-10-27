@@ -167,7 +167,7 @@ class FeedsTest {
         c.log.clear();
         List<Object> rows = list.items().apply(c);
         assertEquals("News", list.text().apply(rows.getFirst()));
-        list.onSelect().accept(c, rows.getFirst());
+        list.onClick().accept(c, rows.getFirst());
         assertEquals(List.of("url https://example.org/a"), c.log);       // no redraw: the link dialog is shown
     }
 
@@ -208,7 +208,7 @@ class FeedsTest {
         TestClick c = new TestClick(s);
         List<Object> rows = list.items().apply(c);
         assertTrue(rows.stream().noneMatch(r -> list.isSelected(c, r)));
-        list.onSelect().accept(c, rows.get(1));
+        list.onClick().accept(c, rows.get(1));
         rows = list.items().apply(c);
         assertTrue(!list.isSelected(c, rows.get(0)) && list.isSelected(c, rows.get(1)));
         assertEquals("glyphwork:scroll:art-https://e.org/b", pane.key(c));

@@ -65,6 +65,14 @@ dependencies {
 
 Then build scenes as shown in [docs/api.md](docs/api.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
+**Compatibility:** from 1.0 on the API keeps working across minor versions (1.x); breaking changes
+come only with 2.0. Two exceptions are marked in the code: `@ApiStatus.Experimental` (may still
+change in a minor version: tabs, scroll panes, big heads, text styles, item tooltips, the own plain
+view, `redrawAfter`) and `@ApiStatus.Internal` (getters Glyphwork's renderer reads; do not call
+them). New element types, form fields and display modes may be added, so give a `switch` over
+them a default branch. The same promise holds for the YAML menu format and `config.yml`; renamed
+keys keep working with a hint in the log.
+
 A complete example plugin is in [example/](example/): `/trader` opens a small trader with item
 icons, amount buttons, a text prompt, a buy button that is only active when the player can pay, and
 an options screen for the display mode. It builds as `glyphwork-example-<version>.jar` (also
@@ -75,7 +83,7 @@ attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
 - **x (P1):** font `glyphwork:space` maps private-use chars to advances of +-2^k px; any offset is a
   combination of them. All frames are layered on the **first text line** in paint order.
 - **y (P2):** frames are drawn on the first text line; one font per pixel row (`glyphwork:y<N>`,
-  N below the tallest menu, at least `max-height`) registers every glyph sheet with `ascent = 7 - N`, so their paint order is exact.
+  N below the tallest menu, at least `pack.min-height`) registers every glyph sheet with `ascent = 7 - N`, so their paint order is exact.
   Text goes on the text line it falls into, with 9 fonts (`glyphwork:t0..8`) that re-register the
   vanilla text textures (`ascii.png` etc., not shipped) shifted by the remainder. Those textures are
   large and every font loads them again, so text gets only 9 fonts; text lines come after the first

@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+**1.0: the API, the menu format and `config.yml` are now stable** (see "Compatibility" in the
+README). Before that promise some names were cleaned up; plugins built against 0.9 need these
+changes, YAML menus and configs keep working (old keys are still read, with a hint in the log).
+
+- **Renamed (API):** `ListView.onSelect` → `onClick`; `Choice.onSelect`, `Checkbox.onToggle` and
+  `Tabs.onSelect` → `onChange`; `Button.textColor` and `Checkbox.textColor` → `color`;
+  `Grid.label` / `labelColor` → `text` / `color`; `Bar.color` → `fill`; `Tabs.tint` →
+  `inactiveTint`; `DisplayMode.SIMPLE` → `PLAIN` (stored choices carry over).
+- **Changed (API):** `visible`, `enabled` and `checked` take a `Predicate<View>`; sliders and form
+  numbers use `double` (`Form.Values.number` returns a double); form fields are the final classes
+  `Form.TextField`, `CheckboxField`, `SliderField`, `ChoiceField`; `Label.DARK` is gone, a label
+  without color (`null`, the default) uses the skin's text color; `Click.openUrl` accepts only
+  http/https; `Scene.Builder.build()` rejects two lists, grids, tabs or scroll panes with the same id.
+- **New (API):** `Click.page(listId, n)`, `tab(tabsId, tabId)` and `scroll(scrollId, offset)`;
+  `@NullMarked` package; `@ApiStatus.Internal` on renderer getters, `@ApiStatus.Experimental` on
+  tabs, scroll panes, big heads, text styles, item tooltips, the own plain view and `redrawAfter`.
+- **Renamed (YAML):** button `text-color` → `color`, bar `color` → `fill`, tabs `tint` →
+  `inactive-tint`. The `input:` action now splits at ` | ` with spaces, like `require:`.
+- **Cooldowns need an `id`** (unique in the menu) or a `cooldown-key`: before, an element without
+  them was keyed by its position, so adding an element moved cooldowns to other buttons. Stored is
+  when a key was last used; each element waits its own time from then (a key used with different
+  times is mentioned in the log). Running cooldowns of 0.9 start anew.
+- **Values from outside are text:** feed and web entries, `%item_...%` and `%input%` can no longer
+  add MiniMessage tags (colors, click events) or be filled in as another placeholder; `|raw` keeps
+  the tags for a source you trust. Placeholders of a text are filled in one pass.
+- **Checks when loading menus:** an unknown filter (`%x|dat%`) or an invalid alias is an error;
+  frames the skin does not have, missing pictures, `open:` / `give-item:` targets without a menu
+  and a command used by two menus are hints, in the log and after `/glyphwork reload`.
+- **`config.yml` cleaned up** (`config-version: 1`): `max-height` → `pack.min-height`,
+  `fallback` → `plain-dialog`, `icons` / `icon-source-pack` → `icons.enabled` /
+  `icons.source-pack`, `feeds.date-format` → `date-format`; the pack prompt text lives only in the
+  language files (`pack.prompt`). Unknown or misspelled keys are reported. "Simple" is called
+  "plain" everywhere (`/glyphwork display plain`, `/glyphwork test plain`; the old words still work).
+  Edited language files: `cmd.simple` → `cmd.plain`, `display.simple` / `display.info-simple` →
+  `display.plain` / `display.info-plain`, `fallback.*` → `plain.*` (the log names old keys).
+- **Lists, grids, tabs and scroll panes without an `id`** get one that is unique in the whole menu;
+  before, the same element in several tabs shared its page.
+
 - **Own plain view:** `plain:` in a menu (API `Scene.Builder.plain(...)`) defines the dialog for
   players without the pack and Bedrock players by hand, with `columns: 1|2`; same variables as the
   pixel GUI.
@@ -44,7 +82,7 @@
   `items-from: "web:<name>.<path>"` turns a JSON array into list entries (`%item_<key>%`, nested keys
   with dots). Loaded in the background with the same limits as feeds.
 - **Feeds:** `items-from: "rss:https://..."` fills lists and grids from an RSS or Atom feed (title,
-  text, date, link, author), loaded in the background, cached (`feeds.cache`, `feeds.date-format`
+  text, date, link, author), loaded in the background, cached (`feeds.cache`, `date-format`
   in `config.yml`), safe against external entities and limited to 1 MB / 50 entries. The menu
   draws itself again when a feed arrives for the first time.
 - **Detail views:** `%item_text%` of a feed is the whole text with paragraphs (up to 4000
@@ -59,7 +97,7 @@
   dialog lists all of them, the designer shows and scrolls the pane.
 - **Long menus:** the pack height now follows the tallest YAML menu (rounded up to 32 px, at most
   2048 px), so frames are drawn in menus of any height and the dialog scrolls them natively, mouse
-  wheel included. `max-height` is only the minimum (for scenes of plugins); small servers keep the
+  wheel included. `pack.min-height` is only the minimum (for scenes of plugins); small servers keep the
   small pack.
 - **Tabs:** `type: tabs` / `Tabs.of(...)` puts tabs on top of a panel; the active tab merges with
   the panel into one frame, the others sit slightly lower and darker behind it. Only the active
@@ -105,8 +143,7 @@
   shows the item's own vanilla tooltip when hovering; plugins can pass a full `ItemStack` with
   enchantments and lore. The example trader uses it.
 - **Text blocks:** labels with `wrap: true` and a `width` break into lines at spaces
-  (`line-height`, default 10); `
-` starts a new line in any label.
+  (`line-height`, default 10); `\n` starts a new line in any label.
 - The menu designer knows all three.
 - Button text is centered on the width that is drawn (frames are whole tiles: a 22 px button is
   16 px wide); before, it sat to the right.

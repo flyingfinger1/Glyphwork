@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * One of the server's own pictures: a PNG in {@code plugins/Glyphwork/images/}, named by its path
@@ -15,7 +16,7 @@ import java.util.function.Function;
  */
 public final class Image implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
@@ -61,13 +62,13 @@ public final class Image implements Element {
     }
 
     /** Shown only while this returns true; hidden elements do not take clicks. */
-    public Image visible(Function<View, Boolean> visible) {
+    public Image visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 
@@ -81,18 +82,22 @@ public final class Image implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, @Nullable String> image() {
         return image;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable TextColor> tint() {
         return tint;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Consumer<Click> onClick() {
         return onClick;
     }

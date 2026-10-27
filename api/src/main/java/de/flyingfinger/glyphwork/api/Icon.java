@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A 16 x 16 item icon ("diamond", "minecraft:oak_log"). Icons use the textures the client already
@@ -17,7 +18,7 @@ import java.util.function.Function;
  */
 public final class Icon implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
@@ -93,6 +94,7 @@ public final class Icon implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable String> count() {
         return count;
     }
@@ -102,6 +104,7 @@ public final class Icon implements Element {
      * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
      * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Icon itemTooltip(boolean itemTooltip) {
         this.itemTooltip = itemTooltip;
         return this;
@@ -112,15 +115,18 @@ public final class Icon implements Element {
      * tooltip. {@code true}: built from the icon's item id (vanilla items only). For a full item
      * pass {@code itemTooltip(v -> itemStack)}: Paper's ItemStack is a HoverEventSource.
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Icon itemTooltip(Function<View, @Nullable HoverEventSource<?>> item) {
         this.hoverItem = item;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean itemTooltip() {
         return itemTooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable HoverEventSource<?>> hoverItem() {
         return hoverItem;
     }
@@ -140,30 +146,34 @@ public final class Icon implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, @Nullable String> item() {
         return item;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable TextColor> tint() {
         return tint;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Consumer<Click> onClick() {
         return onClick;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public Icon visible(Function<View, Boolean> visible) {
+    public Icon visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

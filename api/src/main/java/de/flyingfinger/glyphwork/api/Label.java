@@ -1,8 +1,10 @@
 package de.flyingfinger.glyphwork.api;
 
 import net.kyori.adventure.text.format.TextColor;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * One line of text in the Minecraft font (no shadow). {@code y} is the top of the glyphs; capital
@@ -10,17 +12,14 @@ import java.util.function.Function;
  */
 public final class Label implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     public enum Align { LEFT, CENTER, RIGHT }
-
-    /** Default label color (vanilla GUI dark gray). */
-    public static final TextColor DARK = TextColor.color(0x404040);
 
     private final int x;
     private final int y;
     private final Function<View, String> text;
-    private Function<View, TextColor> color = v -> DARK;
+    private Function<View, @Nullable TextColor> color = v -> null;
     private int width = -1;
     private Align align = Align.LEFT;
     private boolean shadow;
@@ -41,12 +40,14 @@ public final class Label implements Element {
         return new Label(x, y, text);
     }
 
-    public Label color(TextColor color) {
+    /** Text color; null (the default) = the skin's text color (dark gray in vanilla, light on dark skins). */
+    public Label color(@Nullable TextColor color) {
         this.color = v -> color;
         return this;
     }
 
-    public Label color(Function<View, TextColor> color) {
+    /** Text color per viewer; null = the skin's text color. */
+    public Label color(Function<View, @Nullable TextColor> color) {
         this.color = color;
         return this;
     }
@@ -66,6 +67,7 @@ public final class Label implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean shadow() {
         return shadow;
     }
@@ -79,6 +81,7 @@ public final class Label implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean wrap() {
         return wrap;
     }
@@ -93,48 +96,58 @@ public final class Label implements Element {
      * Reads the text as MiniMessage: {@code <b>}, {@code <i>}, {@code <u>}, {@code <st>} and colors
      * for parts of it ("Price: <b>100</b> <gold>coins"). Off by default (the text is shown as it is).
      */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Label markup(boolean markup) {
         this.markup = markup;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean markup() {
         return markup;
     }
 
     /** The whole text bold (each character 1 px wider). */
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Label bold(boolean bold) {
         this.bold = bold;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean bold() {
         return bold;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Label italic(boolean italic) {
         this.italic = italic;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean italic() {
         return italic;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Label underline(boolean underline) {
         this.underline = underline;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean underline() {
         return underline;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Experimental
     public Label strikethrough(boolean strikethrough) {
         this.strikethrough = strikethrough;
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean strikethrough() {
         return strikethrough;
     }
@@ -145,6 +158,7 @@ public final class Label implements Element {
         return this;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int lineHeight() {
         return lineHeight;
     }
@@ -169,30 +183,34 @@ public final class Label implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, String> text() {
         return text;
     }
 
-    public Function<View, TextColor> color() {
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public Function<View, @Nullable TextColor> color() {
         return color;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return width;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Align align() {
         return align;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public Label visible(Function<View, Boolean> visible) {
+    public Label visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

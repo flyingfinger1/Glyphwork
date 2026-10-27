@@ -182,7 +182,7 @@ public final class SceneRenderer {
     /** One element; hidden ones are skipped (their number still counts, so click names stay stable). */
     private void element(LineBuilder line, Element e, View view, Binder binder, String name, Scene scene) {
         try {
-            if (!Boolean.TRUE.equals(e.visible().apply(view))) {
+            if (!Boolean.TRUE.equals(e.visible().test(view))) {
                 return;
             }
             switch (e) {
@@ -228,9 +228,9 @@ public final class SceneRenderer {
         }
     }
 
-    /** Label.DARK stands for "the skin's text color" (dark gray in vanilla, light on dark skins). */
-    private TextColor skinText(TextColor color) {
-        return Label.DARK.equals(color) ? TextColor.color(theme.text()) : color;
+    /** No color stands for "the skin's text color" (dark gray in vanilla, light on dark skins). */
+    private TextColor skinText(@Nullable TextColor color) {
+        return color == null ? TextColor.color(theme.text()) : color;
     }
 
     /**
@@ -421,7 +421,7 @@ public final class SceneRenderer {
         double ratio = Bar.ratio(b.value().apply(view), b.max().apply(view));
         int inner = w - 2;
         int fill = (int) Math.round(ratio * inner);
-        TextColor color = b.color().apply(view);
+        TextColor color = b.fill().apply(view);
         de.flyingfinger.glyphwork.font.Sheet strips = fills == null ? null : fills.forHeight(h - 2);
         if (fill > 0 && strips != null) {
             int x = b.x() + 1;
@@ -495,7 +495,7 @@ public final class SceneRenderer {
                     continue;
                 }
                 ClickEvent<?> click = binder.bind(name + ":tab:" + tab.id(), Redraw.after(c -> t.select(c, tab.id())));
-                line.frame(frame, t.x() + col[i] * ts, t.y() + 2, LineBuilder.cells(col[i + 1] - col[i], head), t.tint(),
+                line.frame(frame, t.x() + col[i] * ts, t.y() + 2, LineBuilder.cells(col[i + 1] - col[i], head), t.inactiveTint(),
                     click, null);
             }
             boolean[][] cells = new boolean[head + body][cols];
@@ -599,7 +599,28 @@ public final class SceneRenderer {
         }
     }
 
+    /** The skin's frame of this name; null for "none" (draw no frame) or a frame the skin lacks (logged). */
+    /**
+     * Checks a frame or image name a menu uses ({@code kind} "frame" or "image"); returns what is
+     * wrong, or null if the skin or images/ have it.
+     */
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String unknown(String kind, String name) {
+        if (kind.equals("frame")) {
+            return "none".equalsIgnoreCase(name) || theme.find(name) != null ? null
+                : "skin '" + theme.id() + "' has no frame '" + name + "'";
+        }
+        if (kind.equals("image")) {
+            return images.get(name) != null ? null : "no picture '" + name + "' in images/ (known: "
+                + (images.size() == 0 ? "none" : String.join(", ", images.ids())) + ")";
+        }
+        return null;
+    }
+
     private @Nullable Frame frame(String name) {
+        if ("none".equalsIgnoreCase(name)) {
+            return null;
+        }
         Frame f = theme.find(name);
         if (f == null) {
             warnOnce("frame:" + name, "Theme " + theme.id() + " has no frame '" + name + "'");
@@ -718,7 +739,7 @@ public final class SceneRenderer {
 
     private void button(LineBuilder line, Button b, View view, Binder binder, String name) {
         Frame f = frame(b.frame());
-        boolean enabled = Boolean.TRUE.equals(b.enabled().apply(view));
+        boolean enabled = Boolean.TRUE.equals(b.enabled().test(view));
         ClickEvent<?> click = enabled && b.onClick() != null ? binder.bind(name, b.onClick()) : null;
         String bIcon = b.icon() == null ? null : b.icon().apply(view);
         Component bHead = headOf(bIcon);
@@ -743,7 +764,7 @@ public final class SceneRenderer {
         }
         String s = b.text().apply(view);
         if (s != null && !s.isEmpty()) {
-            TextColor color = enabled ? b.textColor().apply(view) : TextColor.color(0xA0A0A0);
+            TextColor color = enabled ? b.color().apply(view) : TextColor.color(0xA0A0A0);
             if (b.markup() && enabled) {
                 // formatted: measured and centered as pieces
                 List<RichText.Span> spans = RichText.fit(text, RichText.parse(s, new RichText.Look(color, false, false, false, false)), textW - 6);
@@ -840,8 +861,8 @@ public final class SceneRenderer {
             } else {
                 line.text(line.fit(rowText, l.x() + l.width() - 4 - textX), textX, textY, color, LineBuilder.shadowOf(color));
             }
-            ClickEvent<?> click = l.onSelect() == null ? null
-                : binder.bind(name + ":row" + index, c -> l.onSelect().accept(c, item));
+            ClickEvent<?> click = l.onClick() == null ? null
+                : binder.bind(name + ":row" + index, c -> l.onClick().accept(c, item));
             HoverEventSource<?> rowItem = l.hoverItem() != null ? safeItem(l.hoverItem().apply(item))
                 : l.itemTooltip() ? itemHover(rowIcon) : null;
             hitbox(line, l.x(), top, l.width(), l.rowHeight(), click,
@@ -906,12 +927,12 @@ public final class SceneRenderer {
                     }
                 }
                 if (item != null) {
-                    String label = g.label().apply(item);
+                    String label = g.text().apply(item);
                     if ((label == null || label.isBlank()) && !drewIcon && g.icon() != null) {
                         label = shortName(g.icon().apply(item));
                     }
                     String s = line.fit(label == null ? "" : label, g.cellSize() - 2);
-                    TextColor color = g.labelColor().apply(item);
+                    TextColor color = g.color().apply(item);
                     line.centered(s, cx, g.cellSize(), cy + (g.cellSize() - 7) / 2, color, LineBuilder.shadowOf(color));
                 }
             }
@@ -938,8 +959,7 @@ public final class SceneRenderer {
         }
         int n = s.positions();
         int span = Math.max(1, w - knobW);
-        Float current = s.value().apply(view);
-        int pos = s.positionOf(current == null ? s.min() : current);
+        int pos = s.positionOf(s.value().applyAsDouble(view));
         int kx = s.x() + (n <= 1 ? 0 : Math.round(pos * span / (float) (n - 1)));
         if (knob != null) {
             line.frame(knob, kx, s.y(), knobW, Slider.HEIGHT, s.tint().apply(view), null, null);
@@ -954,7 +974,7 @@ public final class SceneRenderer {
             if (p == startPos) {
                 continue;
             }
-            float v = s.valueAt(startPos);
+            double v = s.valueAt(startPos);
             ClickEvent<?> click = binder.bind(name + ":v" + startPos, Redraw.after(c -> s.onChange().accept(c, v)));
             Component tip = s.tooltip() != null ? s.tooltip().apply(view, v)
                 : Component.text(de.flyingfinger.glyphwork.dialog.FormValues.format(v));
@@ -979,9 +999,9 @@ public final class SceneRenderer {
 
     /** Box ("slot", 16 x 16) with a check mark, text to the right; box and text toggle. */
     private void checkbox(LineBuilder line, Checkbox cb, View view, Binder binder, String name) {
-        boolean checked = Boolean.TRUE.equals(cb.checked().apply(view));
-        ClickEvent<?> click = cb.onToggle() == null ? null
-            : binder.bind(name, Redraw.after(c -> cb.onToggle().accept(c, !checked)));
+        boolean checked = Boolean.TRUE.equals(cb.checked().test(view));
+        ClickEvent<?> click = cb.onChange() == null ? null
+            : binder.bind(name, Redraw.after(c -> cb.onChange().accept(c, !checked)));
         Component tip = tooltip(cb.tooltip(), view);
         Frame box = frame("slot");
         if (box != null) {
@@ -994,7 +1014,7 @@ public final class SceneRenderer {
         }
         String s = cb.text().apply(view);
         if (s != null && !s.isEmpty()) {
-            TextColor color = skinText(cb.textColor().apply(view));
+            TextColor color = skinText(cb.color().apply(view));
             line.text(s, cb.x() + Checkbox.SIZE + 4, cb.y() + 4, color);
             hitbox(line, cb.x() + Checkbox.SIZE, cb.y(), Math.max(hit.width(), 4 + line.textWidth(s)), Checkbox.SIZE, click, tip);
         }
@@ -1004,7 +1024,7 @@ public final class SceneRenderer {
     private void choice(LineBuilder line, Choice ch, View view, Binder binder, String name) {
         Frame f = frame("button");
         int h = f == null ? ch.height() : Math.max(f.tileSize(), ch.height() / f.tileSize() * f.tileSize());
-        boolean active = ch.onSelect() != null;
+        boolean active = ch.onChange() != null;
         TextColor tint = ch.tint().apply(view);
         if (f != null) {
             line.frame(f, ch.x(), ch.y(), ch.width(), ch.height(), tint, null, null);
@@ -1013,9 +1033,9 @@ public final class SceneRenderer {
         if (active) {
             int half = ch.width() / 2;
             hitbox(line, ch.x(), ch.y(), half, h,
-                binder.bind(name + ":prev", Redraw.after(c -> ch.onSelect().accept(c, ch.step(c, -1)))), tip);
+                binder.bind(name + ":prev", Redraw.after(c -> ch.onChange().accept(c, ch.step(c, -1)))), tip);
             hitbox(line, ch.x() + half, ch.y(), ch.width() - half, h,
-                binder.bind(name + ":next", Redraw.after(c -> ch.onSelect().accept(c, ch.step(c, 1)))), tip);
+                binder.bind(name + ":next", Redraw.after(c -> ch.onChange().accept(c, ch.step(c, 1)))), tip);
         }
         int textY = ch.y() + (h - 7) / 2;
         ShadowColor shadow = LineBuilder.shadowOf(WHITE);
@@ -1072,6 +1092,6 @@ public final class SceneRenderer {
         }
         line.centered("<", x, 16, y + 4, prev ? WHITE : DISABLED_TEXT, prev ? LineBuilder.shadowOf(WHITE) : null);
         line.centered(">", x + w - 16, 16, y + 4, next ? WHITE : DISABLED_TEXT, next ? LineBuilder.shadowOf(WHITE) : null);
-        line.centered((page + 1) + "/" + pages, x, w, y + 4, skinText(Label.DARK));
+        line.centered((page + 1) + "/" + pages, x, w, y + 4, skinText(null));
     }
 }

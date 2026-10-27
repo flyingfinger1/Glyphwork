@@ -77,7 +77,7 @@ class TemplatesTest {
             """).scene();
         Button b = button(s, 1);
         assertEquals(100, b.width());
-        assertEquals(false, b.enabled().apply(NOBODY));               // "%world%" stays without a player
+        assertEquals(false, b.enabled().test(NOBODY));               // "%world%" stays without a player
     }
 
     @Test
@@ -126,8 +126,8 @@ class TemplatesTest {
             """).scene();
         assertNotNull(s.elements().get(0).visible());
         // visibility needs a player; with none, placeholders stay as they are and "%world%" != "lobby"
-        assertEquals(false, s.elements().get(0).visible().apply(NOBODY));
-        assertEquals(false, s.elements().get(1).visible().apply(NOBODY));
+        assertEquals(false, s.elements().get(0).visible().test(NOBODY));
+        assertEquals(false, s.elements().get(1).visible().test(NOBODY));
     }
 
     @Test
@@ -166,7 +166,7 @@ class TemplatesTest {
         assertEquals(5, menus.all().size());
         Scene warps = menus.get("beispiel-warps").scene();
         assertEquals("Spawn", button(warps, 2).text().apply(NOBODY));
-        assertEquals(true, button(warps, 4).enabled().apply(NOBODY));  // Nether: enabled-if via the use entry
+        assertEquals(true, button(warps, 4).enabled().test(NOBODY));  // Nether: enabled-if via the use entry
         assertEquals(7, warps.elements().size());
     }
 
@@ -184,7 +184,7 @@ class TemplatesTest {
         assertEquals(5, menus.all().size());
         Scene warps = menus.get("example-warps").scene();
         assertEquals("Spawn", button(warps, 2).text().apply(NOBODY));
-        assertEquals(true, button(warps, 4).enabled().apply(NOBODY));
+        assertEquals(true, button(warps, 4).enabled().test(NOBODY));
         assertEquals(7, warps.elements().size());
         // same layout as the German examples
         for (String[] pair : new String[][] {{"example-forms", "beispiel-formular"}, {"example-players", "beispiel-spieler"},

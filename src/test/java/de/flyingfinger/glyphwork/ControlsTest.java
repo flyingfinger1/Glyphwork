@@ -110,7 +110,7 @@ class ControlsTest {
 
     @Test
     void sliderClickPicksTheValueUnderTheCursor() {
-        float[] value = {3};
+        double[] value = {3};
         Scene s = Scene.builder("t", 120, 40)
             .add(Slider.of(0, 0, 96, 0, 10, 1).value(v -> value[0]).onChange((c, v) -> value[0] = v))
             .build();
@@ -130,7 +130,7 @@ class ControlsTest {
             previous = p;
         }
         bound.get("t#0:v7").accept(c);
-        assertEquals(7f, value[0]);
+        assertEquals(7.0, value[0]);
         assertEquals(List.of("reopen"), c.log);       // redrawn by itself
     }
 
@@ -150,7 +150,7 @@ class ControlsTest {
     void checkboxShowsAMarkAndToggles() {
         boolean[] on = {false};
         Scene s = Scene.builder("t", 120, 40)
-            .add(Checkbox.of(4, 4).text("Partikel").checked(v -> on[0]).onToggle((c, v) -> on[0] = v))
+            .add(Checkbox.of(4, 4).text("Partikel").checked(v -> on[0]).onChange((c, v) -> on[0] = v))
             .build();
         TestClick c = new TestClick(s);
         assertFalse(contains(message(s, c), "✔"));
@@ -167,7 +167,7 @@ class ControlsTest {
     void choiceStepsBackAndForthAndWraps() {
         String[] mode = {"leicht"};
         Scene s = Scene.builder("t", 120, 40)
-            .add(Choice.of(0, 0, 80, "leicht", "normal", "schwer").selected(v -> mode[0]).onSelect((c, id) -> mode[0] = id))
+            .add(Choice.of(0, 0, 80, "leicht", "normal", "schwer").selected(v -> mode[0]).onChange((c, id) -> mode[0] = id))
             .build();
         TestClick c = new TestClick(s);
         Layout l = layout(s, c);

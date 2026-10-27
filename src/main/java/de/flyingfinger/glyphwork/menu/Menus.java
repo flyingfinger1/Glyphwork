@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
@@ -152,10 +153,12 @@ public final class Menus {
                 m.menus.put(id, m.parse(id, Files.readString(f, StandardCharsets.UTF_8)));
             } catch (MenuException e) {
                 m.errors.add(e.getMessage());
+                m.refs.removeIf(r -> r.where().startsWith(id + ".yml"));
             } catch (IOException e) {
                 m.errors.add(f.getFileName() + ": " + e.getMessage());
             }
         }
+        m.checkCommands();
         return m;
     }
 
@@ -180,8 +183,11 @@ public final class Menus {
         }
         Node root = new Node(c.getValues(false), id + ".yml");
         root.only(MENU_KEYS);
+        scan(root.raw(), id + ".yml");
         vars = Vars.of(root, id);
         menuId = id;
+        elementIds.clear();
+        autoId = 0;
         forms = Forms.of(root, vars, this::get);
         Vars mv = vars;
         int width = root.optInt("width", 176);
@@ -230,6 +236,11 @@ public final class Menus {
             command = command.trim().replaceFirst("^/", "").toLowerCase();
             if (!command.matches("[a-z0-9_.-]+")) {
                 throw root.error("command", "only letters, digits, '_', '-', '.' (no spaces), got '" + command + "'");
+            }
+        }
+        for (String alias : root.strings("aliases")) {
+            if (!alias.trim().replaceFirst("^/", "").toLowerCase().matches("[a-z0-9_.-]+")) {
+                throw root.error("aliases", "alias '" + alias + "': use a-z, 0-9, '_', '.', '-'");
             }
         }
         return new Menu(id, b.build(), command, root.strings("aliases").stream().map(String::toLowerCase).toList(),
@@ -345,22 +356,30 @@ public final class Menus {
                         : de.flyingfinger.glyphwork.core.Messages.active().get(c.player(), "cooldown.wait", "time", formatDuration(left)));
                     return;
                 }
-                cd.start(c.player());              // before the actions, so a redraw already shows it
             }
+            long before = cd == null ? 0 : cd.start(c.player());   // before the actions, so a redraw already shows it
             if (!run.run(c, null) && cd != null) {
-                cd.reset(c.player());              // a "require" stopped the actions: nothing was used up
+                cd.restore(c.player(), before);    // a "require" stopped the actions: nothing was used up
             }
         };
         // a button on cooldown is grayed out: draw again unless the actions showed something else
         return cd == null ? body : de.flyingfinger.glyphwork.render.Redraw.after(body);
     }
 
-    /** A wait time per player after a click ("cooldown: 1h"), kept in the player's data. */
+    /**
+     * A wait time per player after a click ("cooldown: 1h"), kept in the player's data. Stored is
+     * when the key was last used; each element waits its own time from then, so elements sharing a
+     * key with different times behave the same in any order.
+     */
     record Cooldown(String key, long millis) {
 
+        private String dataKey() {
+            return "used/" + key;
+        }
+
         long left(org.bukkit.entity.@Nullable Player p) {
-            long until = PlayerData.getLong(p, "cooldown/" + key);
-            return Math.max(0, until - System.currentTimeMillis());
+            long used = PlayerData.getLong(p, dataKey());
+            return used <= 0 ? 0 : Math.max(0, used + millis - System.currentTimeMillis());
         }
 
         /**
@@ -376,16 +395,22 @@ public final class Menus {
             return left;
         }
 
-        void start(org.bukkit.entity.@Nullable Player p) {
-            PlayerData.setLong(p, "cooldown/" + key, System.currentTimeMillis() + millis);
+        /** Marks the key as used now; returns the time it was used before. */
+        long start(org.bukkit.entity.@Nullable Player p) {
+            long before = PlayerData.getLong(p, dataKey());
+            PlayerData.setLong(p, dataKey(), System.currentTimeMillis());
+            return before;
         }
 
-        void reset(org.bukkit.entity.@Nullable Player p) {
-            PlayerData.setLong(p, "cooldown/" + key, 0);
+        void restore(org.bukkit.entity.@Nullable Player p, long before) {
+            PlayerData.setLong(p, dataKey(), before);
         }
     }
 
-    /** "cooldown:" of an element (key: "cooldown-key" or menu + element number), or null. */
+    /**
+     * "cooldown:" of an element, or null. The key is "cooldown-key" (shared, also across menus) or
+     * menu + "id"; one of them is needed, so the stored time does not depend on where the element is.
+     */
     private @Nullable Cooldown cooldown(Node n) throws MenuException {
         if (!n.has("cooldown")) {
             if (n.has("cooldown-key")) {
@@ -393,36 +418,110 @@ public final class Menus {
             }
             return null;
         }
-        return new Cooldown(n.optString("cooldown-key", menuId + "/" + elementIndex).trim().toLowerCase(),
-            parseDuration(n, "cooldown"));
+        String key;
+        if (n.has("cooldown-key")) {
+            key = n.string("cooldown-key").trim().toLowerCase();
+        } else if (n.has("id")) {
+            key = menuId + "/" + n.string("id").trim().toLowerCase();
+        } else {
+            throw n.error("cooldown", "a cooldown needs an id (\"id: daily-reward\") or a cooldown-key to share it,"
+                + " so that it stays with this element when others are added or moved");
+        }
+        long millis = parseDuration(n, "cooldown");
+        Long other = cooldownTimes.putIfAbsent(key, millis);
+        if (other != null && other != millis) {
+            String w = n.path + ": cooldown key '" + key + "' is also used with " + formatDuration(other)
+                + " (each element waits its own time since the key was last used)";
+            if (!warnings.contains(w)) {
+                warnings.add(w);
+            }
+        }
+        return new Cooldown(key, millis);
     }
 
-    private static final java.util.regex.Pattern DURATION = java.util.regex.Pattern.compile("(\\d+)\\s*(d|h|min|m|s)?");
+    /** A name a menu uses that is checked after loading (frames and images need the skin and pictures). */
+    public record Ref(String kind, String name, String where) {
+    }
+
+    private final List<Ref> refs = new ArrayList<>();
+    private static final java.util.regex.Pattern FILTER = java.util.regex.Pattern.compile("%[^%\\s]+?[|]([a-z-]+)%");
+    private static final java.util.regex.Pattern TARGET =
+        java.util.regex.Pattern.compile("^\\s*(open|give-item)\\s*:\\s*([^\\s%|]+)\\s*$");
+
+    /** Frame and image names the menus use, for checks against the skin and the pictures. */
+    public List<Ref> refs() {
+        return List.copyOf(refs);
+    }
+
+    /** Two menus with the same command or alias: only one of them can be opened with it. */
+    private void checkCommands() {
+        Map<String, String> used = new LinkedHashMap<>();
+        for (Menu m : menus.values()) {
+            List<String> names = new ArrayList<>(m.aliases());
+            if (m.command() != null) {
+                names.addFirst(m.command());
+            }
+            for (String n : names) {
+                String other = used.putIfAbsent(n, m.id());
+                if (other != null && !other.equals(m.id())) {
+                    warn(m.id() + ".yml: command /" + n + " is also used by " + other + ".yml");
+                }
+            }
+        }
+    }
+
+    /** Walks the menu file: unknown filters fail it; frames, images and menu targets are noted. */
+    private void scan(@Nullable Object node, String where) throws MenuException {
+        if (node instanceof Map<?, ?> m) {
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String key = String.valueOf(e.getKey());
+                if (e.getValue() instanceof String s && s.indexOf('%') < 0) {
+                    if ((key.equals("frame") || key.equals("background")) && !s.equalsIgnoreCase("none")) {
+                        refs.add(new Ref("frame", s.trim(), where + "." + key));
+                    } else if (key.equals("image")) {
+                        refs.add(new Ref("image", s.trim(), where + "." + key));
+                    }
+                }
+                scan(e.getValue(), where + "." + key);
+            }
+        } else if (node instanceof org.bukkit.configuration.ConfigurationSection cs) {
+            scan(cs.getValues(false), where);
+        } else if (node instanceof List<?> l) {
+            for (int i = 0; i < l.size(); i++) {
+                scan(l.get(i), where + "[" + i + "]");
+            }
+        } else if (node instanceof String s) {
+            java.util.regex.Matcher f = FILTER.matcher(s);
+            while (f.find()) {
+                if (!Filters.NAMES.contains(f.group(1))) {
+                    throw new MenuException(where + ": unknown filter '|" + f.group(1) + "' (" + String.join(", ",
+                        new java.util.TreeSet<>(Filters.NAMES)) + ")");
+                }
+            }
+            java.util.regex.Matcher t = TARGET.matcher(s);
+            if (t.matches()) {
+                refs.add(new Ref("menu", t.group(2).toLowerCase(), where));
+            }
+        }
+    }
+
+    /** Cooldown keys and their times over all menus (a hint when one key has different times). */
+    private final Map<String, Long> cooldownTimes = new java.util.HashMap<>();
+    private final List<String> warnings = new ArrayList<>();
+
+    /** Hints that do not stop a menu from loading. */
+    public List<String> warnings() {
+        return List.copyOf(warnings);
+    }
+
 
     /** "90", "90s", "5m", "5min", "2h", "1d", "1d 12h" -> milliseconds (at least 1 s). */
     static long parseDuration(Node n, String key) throws MenuException {
-        String s = n.string(key).trim().toLowerCase();
-        java.util.regex.Matcher m = DURATION.matcher(s);
-        long total = 0;
-        int end = 0;
-        while (m.find()) {
-            if (!s.substring(end, m.start()).isBlank()) {
-                break;
-            }
-            long v = Long.parseLong(m.group(1));
-            String unit = m.group(2) == null ? "s" : m.group(2);
-            total += v * switch (unit) {
-                case "d" -> 86_400_000L;
-                case "h" -> 3_600_000L;
-                case "m", "min" -> 60_000L;
-                default -> 1000L;
-            };
-            end = m.end();
+        try {
+            return de.flyingfinger.glyphwork.core.Durations.parse(n.string(key));
+        } catch (IllegalArgumentException e) {
+            throw n.error(key, e.getMessage());
         }
-        if (end == 0 || !s.substring(end).isBlank() || total < 1000) {
-            throw n.error(key, "duration expected, e.g. 30s, 5m, 2h, 1d or 1d 12h; got '" + s + "'");
-        }
-        return total;
     }
 
     /** 7 s, 12 min, 3 h 12 min, 1 d 4 h */
@@ -446,25 +545,35 @@ public final class Menus {
     private static Set<String> with(String... keys) {
         Set<String> s = new java.util.HashSet<>(Set.of(keys));
         s.add("show-if");
+        s.add("id");
         return s;
     }
+
+    /** Element ids of the menu being parsed (unique per menu). */
+    private final Set<String> elementIds = new java.util.HashSet<>();
+    /** Counter for lists, grids, tabs and panes without an id (unique over the menu, also across tabs). */
+    private int autoId;
 
     private void element(Consumer<Element> b, Node n, int index) throws MenuException {
         elementIndex = index;
         String type = n.string("type").toLowerCase();
+        // an id with placeholders ("article-%menu_link%") differs per value, so it may repeat
+        if (n.has("id") && n.string("id").indexOf('%') < 0 && !elementIds.add(n.string("id").trim().toLowerCase())) {
+            throw n.error("id", "id '" + n.string("id").trim() + "' is used twice in this menu");
+        }
         List<Condition> showIf = Condition.all(n, "show-if");
         List<Element> added = new ArrayList<>();
         element(added::add, n, index, type);
         Vars mv = vars;
         for (Element e : added) {
             if (!showIf.isEmpty()) {
-                show(e, v -> Condition.all(showIf, s -> mv.fill(v, s, null, null)));
+                show(e, v -> Condition.all(showIf, s -> mv.fillPlain(v, s, null, null)));
             }
             b.accept(e);
         }
     }
 
-    private static void show(Element e, Function<View, Boolean> visible) {
+    private static void show(Element e, Predicate<View> visible) {
         switch (e) {
             case Label x -> x.visible(visible);
             case Button x -> x.visible(visible);
@@ -495,7 +604,7 @@ public final class Menus {
                     .italic(n.optBool("italic", false))
                     .underline(n.optBool("underline", false))
                     .strikethrough(n.optBool("strikethrough", false))
-                    .color(n.optColor("color", Label.DARK))
+                    .color(n.optColor("color", null))
                     .shadow(n.optBool("shadow", false))
                     .wrap(n.optBool("wrap", false))
                     .lineHeight(n.optInt("line-height", 10));
@@ -514,36 +623,36 @@ public final class Menus {
                 b.accept(l);
             }
             case "button" -> {
-                n.only(with("type", "x", "y", "width", "height", "text", "tint", "text-color", "tooltip",
+                n.only(with("type", "x", "y", "width", "height", "text", "tint", "color", "text-color", "tooltip",
                     "actions", "permission", "frame", "icon", "enabled-if", "disabled-tooltip", "cooldown", "cooldown-key",
                     "cooldown-tooltip", "cooldown-message"));
                 Button bt = Button.of(n.integer("x"), n.integer("y"), n.optInt("width", 64), n.optInt("height", 16))
                     .text(text(n.optString("text", "")))
                     .markup(true)
                     .tint(n.optColor("tint", Button.GRAY))
-                    .textColor(n.optColor("text-color", TextColor.color(0xFFFFFF)))
+                    .color(n.optColor("color", oldKey(n, "text-color", "color", TextColor.color(0xFFFFFF))))
                     .frame(n.optString("frame", "button"))
                     .onClick(actions(n));
                 String perm = n.optString("permission", null);
                 List<Condition> enabledIf = Condition.all(n, "enabled-if");
                 Vars mv = vars;
                 Cooldown cd = cooldown(n);
-                Function<View, Boolean> allowed = v -> (perm == null || v.player().hasPermission(perm))
-                    && Condition.all(enabledIf, s -> mv.fill(v, s, null, null));
-                Function<View, Boolean> enabled = v -> allowed.apply(v) && (cd == null || cd.left(v) == 0);
+                Predicate<View> allowed = v -> (perm == null || v.player().hasPermission(perm))
+                    && Condition.all(enabledIf, s -> mv.fillPlain(v, s, null, null));
+                Predicate<View> enabled = v -> allowed.test(v) && (cd == null || cd.left(v) == 0);
                 bt.enabled(enabled);
                 Function<View, @Nullable Component> tip = tooltip(n);
                 String off = n.optString("disabled-tooltip", null);
                 String coolTip = n.optString("cooldown-tooltip", null);
                 bt.tooltip(v -> {
                     long left = cd == null ? 0 : cd.left(v);
-                    if (left > 0 && allowed.apply(v)) {
+                    if (left > 0 && allowed.test(v)) {
                         return coolTip != null
                             ? MM.deserialize(mv.fill(v, coolTip.replace("%cooldown%", formatDuration(left)), null, null))
                             : de.flyingfinger.glyphwork.core.Messages.active().get(v.player(), "cooldown.tooltip",
                                 "time", formatDuration(left));
                     }
-                    if (off != null && !allowed.apply(v)) {
+                    if (off != null && !allowed.test(v)) {
                         return MM.deserialize(mv.fill(v, off, null, null));
                     }
                     return tip == null ? null : tip.apply(v);
@@ -597,7 +706,7 @@ public final class Menus {
             case "list" -> {
                 n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item", "item-tooltip",
                     "head-size"));
-                ListView<Row> l = ListView.of(n.optString("id", "list" + index), n.integer("x"), n.integer("y"),
+                ListView<Row> l = ListView.of(n.optString("id", "list" + autoId++), n.integer("x"), n.integer("y"),
                         n.optInt("width", 120), n.optInt("rows", 4), rows(n))
                     .markup(true)
                     // lists of players show heads, which need rows of 9 or 18 px to look even
@@ -610,17 +719,17 @@ public final class Menus {
                     .itemTooltip(n.optBool("item-tooltip", false))
                     .headSize(n.optInt("head-size", 8))
                     .selectedIf((v, e) -> e.selected)
-                    .onSelect((c, e) -> e.onClick.accept(c));
+                    .onClick((c, e) -> e.onClick.accept(c));
                 b.accept(l);
             }
             case "grid" -> {
                 n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items", "items-from", "item",
                     "item-tooltip", "head-size"));
-                Grid<Row> g = Grid.of(n.optString("id", "grid" + index), n.integer("x"), n.integer("y"),
+                Grid<Row> g = Grid.of(n.optString("id", "grid" + autoId++), n.integer("x"), n.integer("y"),
                         n.optInt("cols", 4), n.optInt("rows", 2), rows(n))
                     .cell(n.optInt("cell", 18), n.optInt("size", 16))
-                    .label(e -> e.text)
-                    .labelColor(e -> e.color)
+                    .text(e -> e.text)
+                    .color(e -> e.color)
                     .tint(e -> e.tint)
                     .tooltip(e -> e.tooltip)
                     .icon(e -> e.icon)
@@ -648,7 +757,7 @@ public final class Menus {
                 Slider s = Slider.of(n.integer("x"), n.integer("y"), n.optInt("width", 100), min, max, step)
                     .value(v -> {
                         try {
-                            return Float.parseFloat(mv.get(v, var).trim());
+                            return Double.parseDouble(mv.get(v, var).trim());
                         } catch (NumberFormatException e) {
                             return min;
                         }
@@ -669,12 +778,12 @@ public final class Menus {
                 String var = varName(n);
                 Vars mv = vars;
                 Actions.Chain then = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
-                TextColor color = n.optColor("color", Label.DARK);
+                TextColor color = n.optColor("color", null);
                 Checkbox cb = Checkbox.of(n.integer("x"), n.integer("y"))
                     .text(text(n.optString("text", "")))
-                    .textColor(v -> color)
+                    .color(v -> color)
                     .checked(v -> "true".equalsIgnoreCase(mv.get(v, var).trim()))
-                    .onToggle((c, on) -> {
+                    .onChange((c, on) -> {
                         mv.set(c, var, String.valueOf(on));
                         then.run(c, null);
                     });
@@ -697,7 +806,7 @@ public final class Menus {
                         .serialize(MM.deserialize(options.getOrDefault(id, id))))
                     .selected(v -> mv.get(v, var).trim())
                     .tint(v -> tint)
-                    .onSelect((c, id) -> {
+                    .onChange((c, id) -> {
                         mv.set(c, var, id);
                         then.run(c, null);
                     });
@@ -761,29 +870,29 @@ public final class Menus {
                 if (step < 1) {
                     throw n.error("step", "at least 1 px expected");
                 }
-                String id = n.optString("id", "scroll" + index);
+                String id = n.optString("id", "scroll" + autoId++);
                 de.flyingfinger.glyphwork.api.Scroll sc = de.flyingfinger.glyphwork.api.Scroll.of(id, x, y,
                         n.optInt("width", 120), n.optInt("height", 80), inner)
                     .step(step).frame(n.optString("frame", null));
                 if (id.indexOf('%') >= 0) {
                     // e.g. "detail-%menu_link%": every article keeps its own position and starts at the top
                     Vars mv = vars;
-                    sc.position(v -> mv.fill(v, id, null, null));
+                    sc.position(v -> mv.fillPlain(v, id, null, null));
                 }
                 b.accept(sc);
             }
             case "tabs" -> {
-                n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "tint", "tabs"));
+                n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "inactive-tint", "tabs"));
                 int x = n.integer("x");
                 int y = n.integer("y");
-                de.flyingfinger.glyphwork.api.Tabs t = de.flyingfinger.glyphwork.api.Tabs.of(n.optString("id", "tabs" + index),
+                de.flyingfinger.glyphwork.api.Tabs t = de.flyingfinger.glyphwork.api.Tabs.of(n.optString("id", "tabs" + autoId++),
                         x, y, n.optInt("width", 160), n.optInt("height", 100))
                     .frame(n.optString("frame", "panel"))
-                    .tint(n.optColor("tint", de.flyingfinger.glyphwork.api.Tabs.INACTIVE));
+                    .inactiveTint(n.optColor("inactive-tint", de.flyingfinger.glyphwork.api.Tabs.INACTIVE));
                 String var = n.has("var") ? varName(n) : null;
                 if (var != null) {
                     Vars mv = vars;
-                    t.selected(v -> mv.get(v, var).trim()).onSelect((c, id) -> mv.set(c, var, id));
+                    t.selected(v -> mv.get(v, var).trim()).onChange((c, id) -> mv.set(c, var, id));
                 }
                 java.util.Set<String> ids = new java.util.HashSet<>();
                 List<Node> tabNodes = n.nodes("tabs");
@@ -813,19 +922,19 @@ public final class Menus {
                 b.accept(t);
             }
             case "bar" -> {
-                n.only(with("type", "x", "y", "width", "height", "value", "max", "color", "text", "tooltip", "frame"));
+                n.only(with("type", "x", "y", "width", "height", "value", "max", "fill", "text", "tooltip", "frame"));
                 int h = n.optInt("height", 8);
                 if (h != 8 && h != 16) {
                     throw n.error("height", "8 or 16");
                 }
                 Function<View, String> value = text(n.string("value"));
                 Function<View, String> max = text(n.optString("max", "100"));
-                TextColor color = n.optColor("color", Bar.GREEN);
+                TextColor color = n.optColor("fill", Bar.GREEN);
                 Bar bar = Bar.of(n.integer("x"), n.integer("y"), n.optInt("width", 100))
                     .height(h)
                     .value(v -> number(value.apply(v)))
                     .max(v -> number(max.apply(v)))
-                    .color(v -> color)
+                    .fill(v -> color)
                     .text(text(n.optString("text", "")))
                     .frame(n.optString("frame", "slot"));
                 if (tooltip(n) != null) {
@@ -882,6 +991,24 @@ public final class Menus {
         m.put("x", n.optInt("x", 0) + dx);
         m.put("y", n.optInt("y", 0) + dy);
         return new Node(m, n.path);
+    }
+
+    /**
+     * A color under a key from before 1.0 ("text-color" is now "color"): still read, with a hint in
+     * the log; {@code fallback} if it is not there.
+     */
+    private @Nullable TextColor oldKey(Node n, String old, String now, @Nullable TextColor fallback) throws MenuException {
+        if (!n.has(old)) {
+            return fallback;
+        }
+        warn(n.path + ": '" + old + "' is now called '" + now + "'");
+        return n.optColor(old, fallback);
+    }
+
+    private void warn(String w) {
+        if (!warnings.contains(w)) {
+            warnings.add(w);
+        }
     }
 
     /** The menu variable an input element writes ("var: sichtweite"). */
@@ -1036,16 +1163,17 @@ public final class Menus {
         if (d.permission() != null && v.player() != null && !v.player().hasPermission(d.permission())) {
             return;
         }
-        UnaryOperator<String> fill = s -> mv.fill(v, s, item, null);
-        if (!Condition.all(d.showIf(), fill)) {
+        UnaryOperator<String> fill = s -> mv.fill(v, s, item, null);            // shown as MiniMessage
+        UnaryOperator<String> plain = s -> mv.fillPlain(v, s, item, null);     // ids, numbers, conditions
+        if (!Condition.all(d.showIf(), plain)) {
             return;
         }
-        String icon = d.icon() == null ? null : fill.apply(d.icon()).trim();
+        String icon = d.icon() == null ? null : plain.apply(d.icon()).trim();
         out.add(new Row(fill.apply(d.text()), d.color(), d.tint(),
             d.tooltip() == null ? null : MM.deserialize(fill.apply(d.tooltip())),
             icon == null || icon.isEmpty() ? null : icon,
-            d.count() == null ? null : fill.apply(d.count()),
+            d.count() == null ? null : plain.apply(d.count()),
             c -> d.actions().run(c, item),
-            !d.selectedIf().isEmpty() && Condition.all(d.selectedIf(), fill)));
+            !d.selectedIf().isEmpty() && Condition.all(d.selectedIf(), plain)));
     }
 }

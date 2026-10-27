@@ -138,7 +138,7 @@ public final class Theme {
         return tileSize;
     }
 
-    /** Color of labels that use the default color ({@code Label.DARK}), as 0xRRGGBB. */
+    /** Color of texts without an own color (labels, checkboxes, list page numbers), as 0xRRGGBB. */
     public int text() {
         return text;
     }

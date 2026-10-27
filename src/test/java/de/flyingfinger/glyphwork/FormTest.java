@@ -94,8 +94,8 @@ class FormTest {
         assertThrows(IllegalArgumentException.class, () -> Form.builder(l).build());
         Form f = Form.builder(l).slider("a", l, 1, 10, 1, 50)
             .choice("c", l, "nope", Form.option("x", l), Form.option("y", l)).build();
-        assertEquals(10f, ((Form.Slider) f.fields().get(0)).initial());          // clamped
-        assertEquals("x", ((Form.Choice) f.fields().get(1)).initial());         // unknown -> first
+        assertEquals(10f, ((Form.SliderField) f.fields().get(0)).initial());          // clamped
+        assertEquals("x", ((Form.ChoiceField) f.fields().get(1)).initial());         // unknown -> first
     }
 
     @Test
@@ -155,12 +155,12 @@ class FormTest {
         Form shown = c.shown;
         assertEquals("Einstellungen von Steve", plain(shown.title()));
         assertEquals("Speichern", plain(shown.ok()));
-        assertEquals("Steve", ((Form.Text) shown.fields().get(0)).initial());
-        assertEquals(8f, ((Form.Slider) shown.fields().get(1)).initial());
-        assertTrue(((Form.Checkbox) shown.fields().get(2)).initial());
-        assertEquals("normal", ((Form.Choice) shown.fields().get(3)).initial());
+        assertEquals("Steve", ((Form.TextField) shown.fields().get(0)).initial());
+        assertEquals(8f, ((Form.SliderField) shown.fields().get(1)).initial());
+        assertTrue(((Form.CheckboxField) shown.fields().get(2)).initial());
+        assertEquals("normal", ((Form.ChoiceField) shown.fields().get(3)).initial());
         assertEquals(List.of("Leicht", "Normal", "Schwer"),
-            ((Form.Choice) shown.fields().get(3)).options().stream().map(o -> plain(o.text())).toList());
+            ((Form.ChoiceField) shown.fields().get(3)).options().stream().map(o -> plain(o.text())).toList());
 
         assertEquals("Alexx / 20 / false / schwer", status.text().apply(c));
         assertEquals(List.of("form Einstellungen von Steve", "msg Gespeichert: Alexx 20 false schwer"), log);

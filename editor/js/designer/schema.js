@@ -9,7 +9,7 @@ export const FIELDS = {
     ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool'], ['wrap', 'bool'], ['line-height', 'int'],
     ['bold', 'bool'], ['italic', 'bool'], ['underline', 'bool'], ['strikethrough', 'bool']],
   button: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['text', 'text'], ['tint', 'color'],
-    ['text-color', 'color'], ['icon', 'text'], ['tooltip', 'text'], ['actions', 'lines'], ['permission', 'text'],
+    ['color', 'color'], ['icon', 'text'], ['tooltip', 'text'], ['actions', 'lines'], ['permission', 'text'],
     ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text']],
   panel: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['shape', 'shape'], ['frame', 'text'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
@@ -30,12 +30,12 @@ export const FIELDS = {
   choice: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['var', 'text'], ['options', 'options'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   bar: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'select', ['8', '16']], ['value', 'text'], ['max', 'text'],
-    ['color', 'color'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text']],
+    ['fill', 'color'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text']],
   image: [['x', 'int'], ['y', 'int'], ['image', 'text'], ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   head: [['x', 'int'], ['y', 'int'], ['player', 'text'], ['size', 'select', ['8', '16', '24', '32']], ['tooltip', 'text'],
     ['actions', 'lines']],
   tabs: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['var', 'text'], ['frame', 'text'],
-    ['tint', 'color'], ['tabs', 'yaml']],
+    ['inactive-tint', 'color'], ['tabs', 'yaml']],
   scroll: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['step', 'int'], ['frame', 'text'],
     ['elements', 'yaml']],
   use: [['use', 'use'], ['x', 'int'], ['y', 'int'], ['values', 'values']],
@@ -43,6 +43,8 @@ export const FIELDS = {
 
 // clickable elements can have a cooldown (wait time per player, kept in the player's data)
 for (const k of ['button', 'panel', 'hitbox', 'icon', 'image', 'head']) {
+  // a cooldown is stored under the element's id (or a shared cooldown-key)
+  if (!FIELDS[k].some((f) => f[0] === 'id')) FIELDS[k].unshift(['id', 'text']);
   FIELDS[k].push(['cooldown', 'text'], ['cooldown-key', 'text']);
   if (k === 'button') FIELDS[k].push(['cooldown-tooltip', 'text']);
   FIELDS[k].push(['cooldown-message', 'text']);
@@ -62,7 +64,7 @@ export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'gri
 /** Field names that map to i18n keys (f_...). */
 export const FIELD_KEY = {
   x: 'f_x', y: 'f_y', text: 'f_text', color: 'f_color', width: 'f_width', height: 'f_height', align: 'f_align',
-  shadow: 'f_shadow', tint: 'f_tint', 'text-color': 'f_textColor', tooltip: 'f_tooltip', actions: 'f_actions',
+  shadow: 'f_shadow', tint: 'f_tint', 'text-color': 'f_textColor', 'inactive-tint': 'f_inactiveTint', fill: 'f_fill', tooltip: 'f_tooltip', actions: 'f_actions',
   permission: 'f_permission', frame: 'f_frame', icon: 'f_icon', 'enabled-if': 'f_enabledIf',
   'disabled-tooltip': 'f_disabledTooltip', 'show-if': 'f_showIf', shape: 'f_shape', item: 'f_item', count: 'f_count',
   id: 'f_id', rows: 'f_rows', 'row-height': 'f_rowHeight', cols: 'f_cols', cell: 'f_cell', size: 'f_size', var: 'f_var',

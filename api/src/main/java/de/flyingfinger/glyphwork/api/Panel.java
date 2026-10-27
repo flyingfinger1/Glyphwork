@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * An autotiled frame from the theme ("panel" by default; also "button", "slot" or any frame a
@@ -13,7 +14,7 @@ import java.util.function.Function;
  */
 public final class Panel implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
@@ -93,44 +94,51 @@ public final class Panel implements Element {
     }
 
     /** Width in pixels, or in tiles for {@link #shape}. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int width() {
         return w;
     }
 
     /** Height in pixels, or in tiles for {@link #shape}. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int height() {
         return h;
     }
 
     /** Tile mask for shapes, null for rectangles. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public boolean @Nullable [][] cells() {
         return cells;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public String frame() {
         return frame;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, @Nullable TextColor> tint() {
         return tint;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Consumer<Click> onClick() {
         return onClick;
     }
 
     /** Shown only while this returns true (evaluated each time the scene is drawn); hidden elements do not take clicks. */
-    public Panel visible(Function<View, Boolean> visible) {
+    public Panel visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 }

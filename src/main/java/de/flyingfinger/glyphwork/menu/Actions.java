@@ -108,11 +108,11 @@ final class Actions {
         return switch (type) {
             case "player" -> {
                 String cmd = stripSlash(require(arg, at, key, "a command"));
-                yield go((c, in, r) -> c.player().performCommand(vars.fill(c, cmd, r.item, in)));
+                yield go((c, in, r) -> c.player().performCommand(vars.fillPlain(c, cmd, r.item, in)));
             }
             case "console" -> {
                 String cmd = stripSlash(require(arg, at, key, "a command"));
-                yield go((c, in, r) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), vars.fill(c, cmd, r.item, in)));
+                yield go((c, in, r) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), vars.fillPlain(c, cmd, r.item, in)));
             }
             case "message" -> {
                 String msg = require(arg, at, key, "a text");
@@ -128,7 +128,7 @@ final class Actions {
                 String id = require(arg, at, key, "a menu id");
                 yield go((c, in, r) -> {
                     r.navigated = true;
-                    String target = vars.fill(c, id, r.item, in).trim().toLowerCase();
+                    String target = vars.fillPlain(c, id, r.item, in).trim().toLowerCase();
                     Menus.Menu next = menus.apply(target);
                     if (next == null) {
                         c.player().sendMessage(Messages.active().get(c.player(), "menu.unknown", "id", target));
@@ -145,7 +145,7 @@ final class Actions {
                     throw at.error(key, "url: " + Feeds.problem(url));
                 }
                 yield go((c, in, r) -> {
-                    String target = vars.fill(c, url, r.item, in).trim();
+                    String target = vars.fillPlain(c, url, r.item, in).trim();
                     if (Feeds.problem(target) != null) {
                         c.player().sendMessage(Messages.active().get(c.player(), "url.invalid", "url", target));
                         return;
@@ -158,12 +158,13 @@ final class Actions {
             case "close" -> go((c, in, r) -> { r.navigated = true; c.close(); });
             case "refresh" -> go((c, in, r) -> { r.navigated = true; c.reopen(); });
             case "input" -> {
-                int bar = arg.indexOf('|');
+                // " | " with spaces, like require: a "|" inside a placeholder filter (%x|date%) is no separator
+                int bar = arg.indexOf(" | ");
                 if (bar < 0) {
-                    throw at.error(key, "input needs 'Title | action', e.g. 'input: Name? | player: msg %input% hi'");
+                    throw at.error(key, "input needs 'Title | action' (with spaces around |), e.g. 'input: Name? | player: msg %input% hi'");
                 }
                 String title = arg.substring(0, bar).trim();
-                Step then = one(arg.substring(bar + 1).trim(), at, key, menus, vars, forms);
+                Step then = one(arg.substring(bar + 3).trim(), at, key, menus, vars, forms);
                 // the prompt shows the menu again afterwards, so no extra redraw is needed
                 yield go((c, in, r) -> {
                     r.navigated = true;
@@ -176,7 +177,7 @@ final class Actions {
                 Condition cond = Condition.parse(bar < 0 ? require(arg, at, key, "a condition") : arg.substring(0, bar), at, key);
                 Step otherwise = bar < 0 ? null : one(arg.substring(bar + 3).trim(), at, key, menus, vars, forms);
                 yield (c, in, r) -> {
-                    if (cond.test(s -> vars.fill(c, s, r.item, in))) {
+                    if (cond.test(s -> vars.fillPlain(c, s, r.item, in))) {
                         return true;
                     }
                     if (otherwise != null) {
@@ -222,13 +223,13 @@ final class Actions {
                 String hi = max;
                 yield go((c, in, r) -> {
                     Double now = Condition.number(vars.get(c, name).trim());
-                    Double add = Condition.number(vars.fill(c, amount, r.item, in).trim());
+                    Double add = Condition.number(vars.fillPlain(c, amount, r.item, in).trim());
                     if (add == null) {
                         return;     // the placeholder was no number: change nothing
                     }
                     double v = (now == null ? 0 : now) + add;
-                    Double l = lo == null ? null : Condition.number(vars.fill(c, lo, r.item, in).trim());
-                    Double h = hi == null ? null : Condition.number(vars.fill(c, hi, r.item, in).trim());
+                    Double l = lo == null ? null : Condition.number(vars.fillPlain(c, lo, r.item, in).trim());
+                    Double h = hi == null ? null : Condition.number(vars.fillPlain(c, hi, r.item, in).trim());
                     if (l != null) {
                         v = Math.max(l, v);
                     }
@@ -251,7 +252,7 @@ final class Actions {
                 yield go((c, in, r) -> {
                     MenuTriggers t = MenuTriggers.active();
                     if (t != null && c.player() != null) {
-                        t.give(c.player(), vars.fill(c, id, r.item, in).trim().toLowerCase(), true);
+                        t.give(c.player(), vars.fillPlain(c, id, r.item, in).trim().toLowerCase(), true);
                     }
                 });
             }

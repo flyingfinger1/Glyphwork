@@ -30,12 +30,12 @@ reload.failed: "<red>Neu laden fehlgeschlagen: <error>"
 status.pack: "<gray>Theme '<theme>', Pack <sha1> (<hosting>)\n<url>"
 
 help.player: "<gray>/glyphwork \\<pack|darstellung>"
-help.admin: "<gray>/glyphwork \\<pack|darstellung|menu \\<id> [spieler]|item \\<menü> [spieler]|test [fallback]|status|reload>"
+help.admin: "<gray>/glyphwork \\<pack|darstellung|menu \\<id> [spieler]|item \\<menü> [spieler]|test [plain]|status|reload>"
 
 cmd.display: "darstellung"
 cmd.full: "voll"
 cmd.no-icons: "ohne-icons"
-cmd.simple: "einfach"
+cmd.plain: "einfach"
 
 display.usage: "<gray>/glyphwork darstellung \\<voll|ohne-icons|einfach>"
 display.set: "<green>Menü-Darstellung: <mode>"
@@ -43,10 +43,10 @@ display.title: "Menü-Darstellung"
 display.question: "Wie sollen Menüs angezeigt werden?"
 display.full: "Voll (mit Icons)"
 display.no-icons: "Ohne Icons"
-display.simple: "Einfach"
+display.plain: "Einfach"
 display.info-full: "<gray>Voll: Pixel-Menüs mit Item-Icons."
 display.info-no-icons: "<gray>Ohne Icons: falls dein Resource-Pack Item-Icons verschiebt."
-display.info-simple: "<gray>Einfach: normale Dialoge, falls dein Pack die Menüs zerreißt."
+display.info-plain: "<gray>Einfach: normale Dialoge, falls dein Pack die Menüs zerreißt."
 
 dialog.close: "Schließen"
 dialog.ok: "OK"
@@ -58,11 +58,10 @@ url.invalid: "<red>Kein gültiger Link: <url>"
 # Tooltip des Warn-Buttons neben Dialog-Titeln (leer = Minecrafts eigener Text).
 dialog.warning-tooltip: ""
 
-fallback.notice: "<gray>Vereinfachte Ansicht – Resource-Pack nicht geladen"
-fallback.previous: "◀ zurück"
-fallback.next: "weiter ▶"
+plain.notice: "<gray>Vereinfachte Ansicht – Resource-Pack nicht geladen"
+plain.previous: "◀ zurück"
+plain.next: "weiter ▶"
 
-commands.only-players: "Nur Spieler können Menüs öffnen."
 
 # /glyphwork test (demo)
 demo.panel-tip: "Panel-Hintergrund"

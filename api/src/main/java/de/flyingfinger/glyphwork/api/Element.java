@@ -1,6 +1,7 @@
 package de.flyingfinger.glyphwork.api;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A part of a {@link Scene}. Elements are drawn in the order they were added (later = on top);
@@ -14,5 +15,5 @@ public sealed interface Element permits Panel, Label, Button, Hitbox, Icon, List
     int y();
 
     /** Whether the element is shown for this view (default: always); set with {@code .visible(v -> ...)}. */
-    Function<View, Boolean> visible();
+    Predicate<View> visible();
 }

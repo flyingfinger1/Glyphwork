@@ -88,7 +88,7 @@ class MenusTest {
     void exampleMenusLoadAndAreClickable(@TempDir Path dir) throws Exception {
         Menus menus = examples(dir);
         assertEquals(List.of(), menus.errors());
-        assertEquals(2, menus.all().size());
+        assertEquals(2, menus.all().size(), menus.errors().toString());
         Menus.Menu main = menus.get("beispiel");
         assertNotNull(main);
         assertNull(main.command());
@@ -153,5 +153,49 @@ class MenusTest {
         assertEquals(List.of("g"), menus.get("GOOD").aliases());
         assertEquals(1, menus.errors().size());
         assertTrue(menus.errors().getFirst().startsWith("bad.yml"), menus.errors().getFirst());
+    }
+
+    @Test
+    void listsInTabsGetTheirOwnIdsAndPlaceholderIdsMayRepeat() throws Exception {
+        String pane = "{type: scroll, id: 'a-%menu_x%', x: 0, y: 30, width: 64, height: 48, elements: []}";
+        String list = "{type: list, x: 0, y: 0, items: [{text: one}, {text: two}]}";
+        Menus menus = new Menus();
+        Menus.Menu m = menus.parse("t", String.join("\n",
+            "background: none",
+            "elements:",
+            "  - type: tabs",
+            "    x: 0", "    y: 0", "    width: 160", "    height: 120",
+            "    tabs:",
+            "      - {id: a, title: A, elements: [" + list + ", " + pane + "]}",
+            "      - {id: b, title: B, elements: [" + list + ", " + pane + "]}", ""));
+        de.flyingfinger.glyphwork.api.Tabs tabs = (de.flyingfinger.glyphwork.api.Tabs) m.scene().elements().getFirst();
+        String first = ((de.flyingfinger.glyphwork.api.ListView<?>) tabs.tabs().get(0).elements().getFirst()).id();
+        String second = ((de.flyingfinger.glyphwork.api.ListView<?>) tabs.tabs().get(1).elements().getFirst()).id();
+        assertTrue(!first.equals(second), first + " / " + second);
+    }
+
+    @Test
+    void loadTimeChecks(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve("a.yml"), String.join("\n",
+            "command: shop", "aliases: [s]", "background: fancy",
+            "elements:",
+            "  - {type: button, x: 4, y: 4, width: 40, text: Go, actions: ['open: nowhere']}",
+            "  - {type: image, x: 4, y: 30, image: logo}",
+            "  - {type: button, x: 4, y: 50, width: 40, text: Back, actions: ['open: b']}", ""));
+        Files.writeString(dir.resolve("b.yml"), "command: s\n");
+        Files.writeString(dir.resolve("c.yml"), "title: '%item_x|dat%'\n");
+        Files.writeString(dir.resolve("d.yml"), "aliases: ['bad alias']\n");
+        Menus menus = Menus.load(dir);
+        assertEquals(2, menus.all().size(), menus.errors().toString());
+        assertTrue(menus.errors().stream().anyMatch(e -> e.startsWith("c.yml") && e.contains("unknown filter '|dat'")),
+            menus.errors().toString());
+        assertTrue(menus.errors().stream().anyMatch(e -> e.startsWith("d.yml") && e.contains("alias")),
+            menus.errors().toString());
+        assertTrue(menus.warnings().stream().anyMatch(w -> w.contains("/s is also used")), menus.warnings().toString());
+        List<String> refs = menus.refs().stream().map(r -> r.kind() + ":" + r.name()).toList();
+        assertEquals(List.of("frame:fancy", "menu:nowhere", "image:logo", "menu:b"), refs);
+        assertNotNull(renderer.unknown("frame", "fancy"));
+        assertNull(renderer.unknown("frame", "button"));
+        assertNotNull(renderer.unknown("image", "logo"));
     }
 }

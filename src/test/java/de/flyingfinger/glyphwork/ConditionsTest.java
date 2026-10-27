@@ -142,8 +142,8 @@ class ConditionsTest {
         Button b = (Button) s.elements().get(1);
         View lobby = new TestClick(s, player("Steve", "lobby", Set.of(), new ArrayList<>()));
         View nether = new TestClick(s, player("Steve", "nether", Set.of(), new ArrayList<>()));
-        assertTrue(b.enabled().apply(lobby));
-        assertFalse(b.enabled().apply(nether));
+        assertTrue(b.enabled().test(lobby));
+        assertFalse(b.enabled().test(nether));
         assertEquals("Hallo", PlainTextComponentSerializer.plainText().serialize(b.tooltip().apply(lobby)));
         assertEquals("Nicht in der Nether", PlainTextComponentSerializer.plainText().serialize(b.tooltip().apply(nether)));
         assertNull(layout(s, player("Steve", "nether", Set.of(), new ArrayList<>())).hit(20, 36)); // shown, not clickable
@@ -198,11 +198,11 @@ class ConditionsTest {
             """).scene();
         View big = new TestClick(s, player("x", "1,234.50", Set.of(), new ArrayList<>()));
         View small = new TestClick(s, player("x", "9", Set.of(), new ArrayList<>()));
-        assertTrue(s.elements().get(0).visible().apply(big));               // "1,234.50" is a number
-        assertFalse(s.elements().get(1).visible().apply(big));
-        assertTrue(s.elements().get(2).visible().apply(big));
-        assertFalse(s.elements().get(0).visible().apply(small));            // 9 < 100 (not as text: "9" > "100")
-        assertTrue(s.elements().get(1).visible().apply(small));
+        assertTrue(s.elements().get(0).visible().test(big));               // "1,234.50" is a number
+        assertFalse(s.elements().get(1).visible().test(big));
+        assertTrue(s.elements().get(2).visible().test(big));
+        assertFalse(s.elements().get(0).visible().test(small));            // 9 < 100 (not as text: "9" > "100")
+        assertTrue(s.elements().get(1).visible().test(small));
     }
 
     @Test

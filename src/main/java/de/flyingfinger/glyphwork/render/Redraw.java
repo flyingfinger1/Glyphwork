@@ -52,4 +52,15 @@ public final class Redraw implements Click {
         shown = true;
         click.form(form, onSubmit);
     }
+
+    @Override
+    public void openUrl(String url) {
+        shown = true;
+        click.openUrl(url);
+    }
+
+    @Override
+    public void redrawAfter(java.time.Duration delay) {
+        click.redrawAfter(delay);
+    }
 }

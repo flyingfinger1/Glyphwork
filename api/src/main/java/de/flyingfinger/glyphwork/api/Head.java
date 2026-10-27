@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A player's face, painted pixel by pixel from the skin: 8, 16, 24 or 32 px, at any position (unlike
@@ -12,9 +13,10 @@ import java.util.function.Function;
  * background; until it is there, the small client head stands in, and the scene is drawn again when
  * the face arrives. No pack change: works for every player, also ones who joined just now.
  */
+@org.jetbrains.annotations.ApiStatus.Experimental
 public final class Head implements Element {
 
-    private Function<View, Boolean> visible = v -> true;
+    private Predicate<View> visible = v -> true;
 
     private final int x;
     private final int y;
@@ -61,13 +63,13 @@ public final class Head implements Element {
     }
 
     /** Shown only while this returns true; hidden elements do not take clicks. */
-    public Head visible(Function<View, Boolean> visible) {
+    public Head visible(Predicate<View> visible) {
         this.visible = visible;
         return this;
     }
 
     @Override
-    public Function<View, Boolean> visible() {
+    public Predicate<View> visible() {
         return visible;
     }
 
@@ -81,23 +83,28 @@ public final class Head implements Element {
         return y;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public Function<View, @Nullable String> player() {
         return player;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public int size() {
         return size;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
     }
 
+    @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Consumer<Click> onClick() {
         return onClick;
     }
 
     /** A head size: 8, 16, 24 or 32. */
+    @org.jetbrains.annotations.ApiStatus.Internal
     public static int sizeOf(int size) {
         return Math.max(8, Math.min(32, size / 8 * 8));
     }

@@ -9,10 +9,11 @@ sends by itself. Everything is clickable exactly where it is drawn.
 ## For whom
 
 - **Server admins:** describe menus in YAML files (buttons that run commands, open other menus or
-  ask for input, PlaceholderAPI, a command per menu, conditions, templates, variables and lists of
-  online players or worlds) - no
-  coding. See the
-  [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md).
+  ask for input, sliders, checkboxes, choices and forms, PlaceholderAPI, a command per menu,
+  conditions, templates, variables, lists of online players or worlds, menus that refresh
+  themselves) - no coding. See the
+  [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md), or build them
+  with the mouse in the [menu designer](https://flyingfinger1.github.io/Glyphwork/designer.html).
 - **Plugin developers:** build screens with the Java API.
 
 ```yaml
@@ -34,15 +35,19 @@ elements:
 
 - **Scene API** for plugin developers: panels of any tile shape, labels, buttons, invisible
   hitboxes, lists and grids with automatic paging, tooltips, colors, per-player state, navigation
-  (open / back / reopen / close) and text input through a small native dialog.
+  (open / back / reopen / close), sliders, checkboxes and choice buttons drawn from the skin, and
+  text input or whole forms (text, slider, checkbox, choice) through small native dialogs.
 - **Item icons** for 1595 items in grids, buttons, lists and menus, drawn from the textures every
   client already has. Icons follow your server's resource pack: replaced textures are measured,
   and the pack's own items (`myserver:ruby`) work as icons. **Player heads** as small 8 x 8 icons
-  (`head:Steve`), e.g. in a list of online players.
+  (`head:Steve`), e.g. in a list of online players. Stack counts at the icon like in the inventory.
 - **Pixel-exact clicks**, also off the 9 px text grid.
 - **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. Three skins are
   built in (vanilla, dark, parchment); make your own with the browser-based
   [skin editor](https://flyingfinger1.github.io/Glyphwork/).
+- **Menu designer** in the browser: place elements with the mouse, edit forms and variables, try
+  the menu out and download the YAML file. With your own client jar loaded it shows the real item
+  icons and font (read only in your browser).
 - **Example plugin** to copy from: a small trader built against the API, attached to every release.
 - **Resource pack handled for you:** generated on start, stable hash (no re-downloads), served by
   a built-in web server or written to disk for your own web server / CDN.

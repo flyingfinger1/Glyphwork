@@ -1,20 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 – forms, menu controls and the menu designer
 
-- **English examples:** the example menus exist in English (`example*.yml`) and German
-  (`beispiel*.yml`); on first start the set of the server's language is exported (`language`, or
-  `fallback-language` when it is `auto`, default English). The demo (`/glyphwork test`) speaks the
-  player's language (keys `demo.*` in the language files), and the example plugin is in English
-  (`/trader`, `/haendler` still works).
-- **Skins renamed:** the built-in skins are now `dark` and `parchment` (were `dunkel` and
-  `pergament`).
 - **Menu designer** in the browser (https://flyingfinger1.github.io/Glyphwork/designer.html, next
   to the skin editor): place and resize elements with the mouse, edit their options, variables,
   forms and templates in side panels, try the menu out (actions, controls, forms work on preview
   variables) and download the `.yml` file. Load your own Minecraft client jar (read only in the
   browser) for real item icons and the real font; resource packs add their textures and items.
   Guide in docs/menu-designer.md.
+- **Forms:** several native input fields at once (text, multi-line text, slider, checkbox,
+  choice) in a dialog of their own with OK / Cancel; afterwards the menu is shown again. In YAML a
+  menu lists them under `forms:` and opens one with the action `form: name`; every field belongs to
+  a menu variable (starts with its value, OK writes it back), then the form's `actions` run. API:
+  `Click.form(Form, values -> ...)`; values are checked (length, range, step, known options).
+  New example `example-forms.yml`; the example trader picks its amount with a slider.
+- **Slider, checkbox and choice in the menu:** new elements drawn from the skin (`slider`,
+  `checkbox`, `choice` in YAML with `var:`; `Slider`, `Checkbox`, `Choice` in the API). A click on a
+  slider's track moves the knob there (hovering shows the value first), a checkbox toggles, a choice
+  button steps back (left half) or forward (right half). The variable is set, the element's
+  `actions` run and the menu redraws. The plain dialog offers them as buttons (one step down/up,
+  toggle, next option). `example-forms.yml` shows them next to a form.
 - **Counts on icons:** `count: 64` (YAML, also for list and grid items, placeholders allowed) and
   `Icon.count(...)`, `Grid.count(...)`, `ListView.count(...)` write a stack size at the bottom right
   of the icon, white with a shadow like in the inventory; `1` and empty show nothing. The plain
@@ -22,24 +27,19 @@
 - **Auto-refresh:** `refresh: 5` in a menu (or `Scene.Builder.refresh(Duration)`) redraws the open
   menu every few seconds, so placeholders and dynamic lists stay current. Clicks on the previous
   drawing still work; it stops when the player closes the menu (also with ESC), opens another one or
-  an inventory. `beispiel-spieler.yml` refreshes every 5 seconds and shows the players per world as
+  an inventory. `example-players.yml` refreshes every 5 seconds and shows the players per world as
   counts.
-- **Slider, checkbox and choice in the menu:** new elements drawn from the skin (`slider`,
-  `checkbox`, `choice` in YAML with `var:`; `Slider`, `Checkbox`, `Choice` in the API). A click on a
-  slider's track moves the knob there (hovering shows the value first), a checkbox toggles, a choice
-  button steps back (left half) or forward (right half). The variable is set, the element's
-  `actions` run and the menu redraws. The plain dialog offers them as buttons (one step down/up,
-  toggle, next option). `beispiel-formular.yml` shows them next to a form.
-- **Forms:** several native input fields at once (text, multi-line text, slider, checkbox,
-  choice) in a dialog of their own with OK / Cancel; afterwards the menu is shown again. In YAML a
-  menu lists them under `forms:` and opens one with the action `form: name`; every field belongs to
-  a menu variable (starts with its value, OK writes it back), then the form's `actions` run. API:
-  `Click.form(Form, values -> ...)`; values are checked (length, range, step, known options).
-  New example `beispiel-formular.yml`; the example trader picks its amount with a slider.
 - **Text shadows like in vanilla:** the text of buttons, lists, grid cells and the page arrows now
   has a drop shadow (before, all text was flat). Grayed-out buttons stay flat, and so do labels,
   like inventory titles; `shadow: true` (YAML) or `Label.shadow(true)` turns it on for a label.
   Arrows of a page button that cannot be used are gray now.
+- **English examples:** the example menus exist in English (`example*.yml`) and German
+  (`beispiel*.yml`); on first start the set of the server's language is exported (`language`, or
+  `fallback-language` when it is `auto`, default English). The demo (`/glyphwork test`) speaks the
+  player's language (keys `demo.*` in the language files), and the example plugin is in English
+  (`/trader`, `/haendler` still works).
+- **Skins renamed:** the built-in skins are now `dark` and `parchment` (were `dunkel` and
+  `pergament`).
 - List frames and the menu background are rounded **up** to whole tiles: rows of a list whose
   height is no multiple of 8 (2 rows of 18 px) stuck out of the frame, and content near the bottom
   of a menu with such a height sat on or past the edge. Other frames still round down.

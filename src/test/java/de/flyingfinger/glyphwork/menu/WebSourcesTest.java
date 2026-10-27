@@ -120,5 +120,16 @@ class WebSourcesTest {
         assertEquals("2", m.get("user.tags.length"));
         assertEquals("3", m.get("n"));
         assertEquals("", m.get(""));
+        assertEquals("", m.get("embeds.0.title"));                 // missing in this entry: empty
+    }
+
+    @Test
+    void hintsForRefusedRequests() {
+        String d = "https://discord.com/api/v10/channels/1/messages";
+        assertEquals(" (Discord needs the header Authorization: \"Bot <token>\")", Web.hint(401, d, Map.of("Authorization", "abc")));
+        assertEquals(" (the bot may not read this channel: View Channels + Read Message History)",
+            Web.hint(403, d, Map.of("Authorization", "Bot abc")));
+        assertEquals(" (no Authorization header set)", Web.hint(401, "https://e.org/x", Map.of()));
+        assertEquals("", Web.hint(404, d, Map.of()));
     }
 }

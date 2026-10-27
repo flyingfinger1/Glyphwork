@@ -310,6 +310,46 @@ the background (at most 1 MB, 10 s), the first time while the menu is open it dr
 when the data arrives; on errors the last data stays. A placeholder of a source that does not
 exist stays as it is, so typos are visible. `/glyphwork reload` loads everything again.
 
+**Filters** after a `|` change a value of `%item_...%`, `%menu_...%` or `%web_...%`:
+
+| filter | effect |
+|---|---|
+| `\|date` | a date (ISO 8601 like `2026-10-27T14:03:11+00:00`, RFC 1123, or Unix time in seconds or milliseconds) in the format of `feeds.date-format`, server time zone: `%item_timestamp\|date%` |
+| `\|discord` | Discord message markup made readable: mentions become `@user` / `#channel` / `@role`, custom emojis `:name:`, `<t:...>` a date; bold, italics, strikethrough, spoilers, code, headings, quotes and masked links lose their markers: `%item_content\|discord%` |
+
+**A Discord channel** is a web source with a bot token. Create an application with a bot in the
+[Discord Developer Portal](https://discord.com/developers/applications), switch on its *Message
+Content Intent* (otherwise the texts come empty), invite it with *View Channels* and *Read Message
+History*, and copy the channel id (developer mode, right-click on the channel). The bot does not
+need to run anything: Glyphwork only asks the API.
+
+```yaml
+# config.yml
+web:
+  discord:
+    url: "https://discord.com/api/v10/channels/<channel id>/messages?limit=20"
+    every: 1m
+    headers:
+      Authorization: "Bot <bot token>"
+```
+
+```yaml
+# a menu: newest messages first
+- type: list
+  x: 8
+  y: 8
+  width: 240
+  rows: 8
+  items-from: "web:discord"
+  item:
+    text: "%item_author.username%: %item_content|discord%"
+    tooltip: "%item_timestamp|date%"
+```
+
+Messages of bots often keep their text in an embed: `%item_embeds.0.title%` and
+`%item_embeds.0.description|discord%`. The token gives access to everything the bot may read, so
+keep `config.yml` private.
+
 ## Conditions
 
 A condition compares two values: `<left> <operator> <right>`, with spaces around the operator.
@@ -391,7 +431,7 @@ every entry, with the entry's values as `%item...%` placeholders. Fixed `items` 
 |---|---|
 | `online-players` | `%item%` / `%item_name%` (name), `%item_world%`, `%item_uuid%`, `%item_head%` / `%item_icon%` (the head, `head:<uuid>`) (sorted by name) |
 | `worlds` | `%item%` / `%item_name%`, `%item_players%` (count), `%item_environment%` (`normal`, `nether`, `the_end`), `%item_icon%` (grass_block, netherrack, end_stone) |
-| `"web:<name>.<path>"` | an array of a [web source](#placeholders) (`web:status.players.list`), or an object of objects (one entry each, `%item_key%` = its key): `%item_<key>%` for every value of an entry, nested ones with dots (`%item_user.name%`); `%item%` for arrays of plain values; at most 100 entries |
+| `"web:<name>.<path>"` | an array of a [web source](#placeholders) (`web:status.players.list`), or an object of objects (one entry each, `%item_key%` = its key): `%item_<key>%` for every value of an entry, nested ones with dots (`%item_user.name%`), a key missing in an entry is empty; `%item%` for arrays of plain values; at most 100 entries |
 | `"rss:https://..."` | an RSS or Atom feed: `%item%` / `%item_title%`, `%item_summary%` (one line without HTML, at most 300 characters), `%item_text%` (the whole text with its paragraphs, at most 4000 characters, for a detail view), `%item_date%`, `%item_link%`, `%item_author%`, `%item_feed%` (title of the feed); at most 50 entries |
 
 `item` takes the settings of `items` entries (`text`, `color`, `tint`, `tooltip`, `actions`,

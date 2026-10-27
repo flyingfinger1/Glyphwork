@@ -89,6 +89,22 @@ final class Web {
         return new Result<>(value, value == null && s.loading);
     }
 
+    /** What to check after "not allowed" answers (never shows the token itself). */
+    static String hint(int status, String url, Map<String, String> headers) {
+        if (status != 401 && status != 403) {
+            return "";
+        }
+        String auth = headers.entrySet().stream().filter(e -> e.getKey().equalsIgnoreCase("Authorization"))
+            .map(Map.Entry::getValue).findFirst().orElse(null);
+        if (url.contains("discord.com/") && (auth == null || !auth.startsWith("Bot "))) {
+            return " (Discord needs the header Authorization: \"Bot <token>\")";
+        }
+        if (status == 403 && url.contains("discord.com/")) {
+            return " (the bot may not read this channel: View Channels + Read Message History)";
+        }
+        return auth == null ? " (no Authorization header set)" : " (check the token in headers)";
+    }
+
     private static <T> void load(String url, Map<String, String> headers, String accept, String what, Parser<T> parser,
                                  State<T> s) {
         synchronized (s) {
@@ -109,7 +125,7 @@ final class Web {
                 }
                 try (InputStream in = resp.body()) {
                     if (resp.statusCode() / 100 != 2) {
-                        throw new IOException("HTTP " + resp.statusCode());
+                        throw new IOException("HTTP " + resp.statusCode() + hint(resp.statusCode(), url, headers));
                     }
                     byte[] data = in.readNBytes(MAX_BYTES + 1);
                     if (data.length > MAX_BYTES) {

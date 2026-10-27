@@ -56,6 +56,7 @@ public final class Feeds {
         Web.logger(logger);
         try {
             dateFormat = DateTimeFormatter.ofPattern(datePattern);
+            Filters.dateFormat(dateFormat);              // the same format for |date
         } catch (IllegalArgumentException e) {
             logger.warning("feeds.date-format '" + datePattern + "' is not valid: " + e.getMessage());
         }

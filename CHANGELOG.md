@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Fix:** a line break inside a value (chat messages, web data, PlaceholderAPI, `%input%`) no
+  longer breaks the layout of the whole menu; single-line text shows it as a space.
+- **Clearer web errors:** refused requests (401/403) say what to check, e.g. that Discord needs
+  `Authorization: "Bot <token>"`, without showing the token.
+- **Placeholder filters:** `|date` formats dates (ISO, RFC, Unix time) and `|discord` makes Discord
+  markup readable (mentions, emojis, timestamps, markdown), for `%item_...%`, `%menu_...%` and
+  `%web_...%`. docs/menus.md shows a Discord channel as a web source.
 - **JSON web sources:** `web:` in `config.yml` (url, `every`, optional headers) and
   `%web_<name>_<path>%` in any text (`%web_status_players.online%`, indexes and `length` for arrays);
   `items-from: "web:<name>.<path>"` turns a JSON array into list entries (`%item_<key>%`, nested keys

@@ -893,7 +893,7 @@ public final class Menus {
                        @Nullable String icon, @Nullable String count, Consumer<Click> onClick, boolean selected) {
     }
 
-    private static final java.util.regex.Pattern ITEM_KEY = java.util.regex.Pattern.compile("%item(?:_([a-z0-9_-]+))?%");
+    private static final java.util.regex.Pattern ITEM_KEY = java.util.regex.Pattern.compile("%item(?:_([a-z0-9_-]+))?(?:[|][a-z-]+)?%");
 
     private ItemDef itemDef(Node e, String defaultText) throws MenuException {
         e.only(Set.of("text", "color", "tint", "tooltip", "actions", "permission", "icon", "count", "show-if", "selected-if"));

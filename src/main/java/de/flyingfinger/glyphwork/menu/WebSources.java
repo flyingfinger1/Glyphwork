@@ -33,7 +33,7 @@ public final class WebSources {
 
     static final Pattern NAME = Pattern.compile("[a-z0-9-]+");
     /** %web_name_path%; the name has no '_', so the first one ends it. */
-    static final Pattern PLACEHOLDER = Pattern.compile("%web_([a-z0-9-]+)_([^%\\s]+)%");
+    static final Pattern PLACEHOLDER = Pattern.compile("%web_([a-z0-9-]+)_([^%\\s|]+)(?:[|]([a-z-]+))?%");
 
     private static final int MAX_ITEMS = 100;
     private static final int MAX_KEYS = 200;
@@ -111,6 +111,9 @@ public final class WebSources {
                     v.redrawAfter(Duration.ofMillis(500));
                 }
                 value = r.value() == null ? "" : format(at(r.value(), m.group(2)));
+                if (m.group(3) != null) {
+                    value = Filters.apply(m.group(3), value);
+                }
             }
             m.appendReplacement(sb, Matcher.quoteReplacement(value));
         }
@@ -203,9 +206,21 @@ public final class WebSources {
         return e.toString();
     }
 
+    /**
+     * An entry of a web list: entries of one array differ (one message has an embed, the next not),
+     * so a key that is missing here is empty instead of staying as %item_...%.
+     */
+    private static final class Entry extends LinkedHashMap<String, String> {
+        @Override
+        public String get(Object key) {
+            String v = super.get(key);
+            return v == null ? "" : v;
+        }
+    }
+
     /** Every value of an element under its dotted path ({@code user.name}); "" is a plain value itself. */
     static Map<String, String> flatten(JsonElement e) {
-        Map<String, String> out = new LinkedHashMap<>();
+        Map<String, String> out = new Entry();
         out.put("", e instanceof JsonPrimitive ? format(e) : "");
         flatten(e, "", out, 0);
         return out;

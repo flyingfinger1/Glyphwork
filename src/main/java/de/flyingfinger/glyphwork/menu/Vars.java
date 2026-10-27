@@ -19,8 +19,9 @@ import java.util.regex.Pattern;
 final class Vars {
 
     static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
-    private static final Pattern MENU_VAR = Pattern.compile("%menu_([a-z0-9_-]+)%");
-    private static final Pattern ITEM_VAR = Pattern.compile("%item(?:_([A-Za-z0-9_.-]+))?%");
+    // an optional filter after '|': %item_timestamp|date%
+    private static final Pattern MENU_VAR = Pattern.compile("%menu_([a-z0-9_-]+)(?:[|]([a-z-]+))?%");
+    private static final Pattern ITEM_VAR = Pattern.compile("%item(?:_([A-Za-z0-9_.-]+))?(?:[|]([a-z-]+))?%");
     private static final String KEY = "menu:var:";
 
     /** No variables (tests, menus without a "variables:" section). */
@@ -112,10 +113,10 @@ final class Vars {
         if (item != null) {
             s = replace(s, ITEM_VAR, m -> {
                 String value = item.get(m.group(1) == null ? "" : m.group(1));
-                return value != null ? value : m.group();
+                return value == null ? m.group() : m.group(2) == null ? value : Filters.apply(m.group(2), value);
             });
         }
-        s = replace(s, MENU_VAR, m -> get(v, m.group(1)));
+        s = replace(s, MENU_VAR, m -> m.group(2) == null ? get(v, m.group(1)) : Filters.apply(m.group(2), get(v, m.group(1))));
         s = WebSources.fill(v, s);
         return Placeholders.apply(v == null ? null : v.player(), s);
     }

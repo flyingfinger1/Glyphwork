@@ -185,5 +185,29 @@ for path in sorted(n for n in names if n.startswith("assets/minecraft/items/") a
     else:
         skipped.append(item)
 
-json.dump({"textures": textures, "items": items}, open(out_path, "w", encoding="utf-8"), separators=(",", ":"))
+# GUI sprites ("gui:hud/heart/full", "gui:mob_effect/speed"): small pictures of the gui atlas, drawn
+# at their own size (a 9 px heart stays 9 px) in the middle of the 16 x 16 icon place.
+GUI = [("gui/sprites/", "hud/heart/"), ("gui/sprites/", "hud/"), ("gui/sprites/", "icon/"),
+       ("gui/sprites/", "statistics/"), ("", "mob_effect/")]
+gui = 0
+for base, folder in GUI:
+    prefix = f"assets/minecraft/textures/{base}{folder}"
+    for path in sorted(n for n in names if n.startswith(prefix) and n.endswith(".png")):
+        sprite = path[len(f"assets/minecraft/textures/{base}"):-len(".png")]
+        if ("/" in sprite[len(folder):] or sprite.endswith("_blinking") or f"gui:{sprite}" in items
+                or any(s in sprite for s in ("crosshair", "hotbar_", "locator_bar", "statistics/header"))):
+            continue
+        idx = texture(f"minecraft:{base}{sprite}")
+        w, frame = textures[idx][1], textures[idx][2]
+        if w > 18 or frame > 18:
+            textures.pop()  # bars, hotbar, crosshair parts: too big for an icon
+            del tex_index[f"minecraft:{base}{sprite}"]
+            continue
+        if len(textures[idx]) == 5:
+            textures[idx].append(1)  # native size
+        items[f"gui:{sprite}"] = [[idx, None]]
+        gui += 1
+print(f"{gui} gui sprites")
+
+json.dump({"textures": textures, "items": items},open(out_path, "w", encoding="utf-8"), separators=(",", ":"))
 print(f"{len(items)} items, {len(textures)} textures, skipped {len(skipped)}: {skipped[:20]}")

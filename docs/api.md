@@ -75,7 +75,11 @@ frame visible around it, `frame("none")` draws no frame), `Button.icon("emerald"
 text, best with height 24) and `ListView.icon(...)`. Icons use the textures the client already
 has: flat items look like in the inventory, block items show one face (no 3D), and items drawn by
 special renderers (heads, chests, beds, banners, shields, shulker boxes) have no icon. Like text,
-icons are drawn above frames.
+icons are drawn above frames. GUI sprites work as icons too, drawn at their own size in the middle of
+the icon: `"gui:hud/heart/full"`, `"gui:mob_effect/speed"`, `"gui:statistics/item_crafted"`,
+`"gui:icon/checkmark"` (list in [menus.md](menus.md#elements)). Tooltips and titles are drawn by the
+client, so `<sprite:items:item/emerald>` and `<head:Steve>` (MiniMessage, or Adventure's
+`Component.object(...)`) work inside them.
 
 **Item tooltips** (experimental): `Icon.itemTooltip(true)` (also `Grid` / `ListView`) shows the vanilla tooltip of
 the icon's item when hovering. For enchantments, names and lore pass the item itself:

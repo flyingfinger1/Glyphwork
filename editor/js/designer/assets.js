@@ -12,7 +12,7 @@ const META = 'meta';
 let catalogPromise = null;
 let fontPromise = null;
 
-/** The plugin's icon table: {textures: [[id, w, frame, frames, advance]], items: {id: [[texture, tint]]}}. */
+/** The plugin's icon table: {textures: [[id, w, frame, frames, advance, native?]], items: {id: [[texture, tint]]}}. */
 export function catalog() {
   catalogPromise ??= fetch(new URL('../../data/item_icons.json', import.meta.url)).then((r) => r.json());
   return catalogPromise;
@@ -168,7 +168,8 @@ export async function clearStored() {
  * plugin's table; "ns:name" items of packs use their texture assets/ns/textures/item/name.png.
  */
 export function iconSource(cat, images) {
-  const tex = cat.textures.map((t) => ({ path: texturePath(t[0]), frame: t[2] }));
+  // t[5] === 1: a GUI sprite ("gui:hud/heart/full"), drawn at its own size
+  const tex = cat.textures.map((t) => ({ path: texturePath(t[0]), frame: t[2], native: t[5] === 1 }));
   return (item) => {
     let id = String(item).toLowerCase();
     if (id.startsWith('minecraft:')) id = id.slice(10);
@@ -178,7 +179,7 @@ export function iconSource(cat, images) {
       for (const [i, tint] of layers) {
         const img = images.get(tex[i].path);
         if (!img) return null;
-        out.push({ img, frame: tex[i].frame, tint });
+        out.push({ img, frame: tex[i].frame, native: tex[i].native, tint });
       }
       return out;
     }

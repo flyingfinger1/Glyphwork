@@ -31,7 +31,23 @@ public final class IconCatalog {
      * One referenced texture, registered as one glyph. {@code fromPack}: only the server's resource
      * pack has it (custom items), so it goes into its own fonts (see ShiftFonts).
      */
-    public record Texture(String file, int frameSize, int frames, int advance, char codepoint, boolean fromPack) {
+    public record Texture(String file, int frameSize, int frames, int advance, char codepoint, boolean fromPack,
+                          int width, boolean nativeSize) {
+
+        /** Drawn height: item textures fill the 16 px icon, GUI sprites keep their own size. */
+        public int height() {
+            return nativeSize ? frameSize : SIZE;
+        }
+
+        /** Offset from the icon's left edge (GUI sprites sit in the middle of the 16 x 16 place). */
+        public int dx() {
+            return nativeSize ? (SIZE - width) / 2 : 0;
+        }
+
+        /** Offset from the icon's top edge. */
+        public int dy() {
+            return nativeSize ? (SIZE - frameSize) / 2 : 0;
+        }
     }
 
     public record Layer(Texture texture, @Nullable TextColor tint) {
@@ -53,8 +69,9 @@ public final class IconCatalog {
             for (JsonElement e : root.getAsJsonArray("textures")) {
                 JsonArray t = e.getAsJsonArray();
                 int frame = t.get(2).getAsInt();
+                boolean nat = t.size() > 5 && t.get(5).getAsInt() == 1;
                 c.textures.add(new Texture(t.get(0).getAsString(), frame, t.get(3).getAsInt(),
-                    advance(t.get(4).getAsInt() - 1, frame), alloc.next(), false));
+                    advance(t.get(4).getAsInt() - 1, frame, nat), alloc.next(), false, t.get(1).getAsInt(), nat));
             }
             for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("items").entrySet()) {
                 List<Layer> layers = new ArrayList<>();
@@ -73,7 +90,11 @@ public final class IconCatalog {
 
     /** The client scales the cell to the font height and rounds the visible width, then adds 1. */
     static int advance(int visibleWidth, int frame) {
-        return (int) (0.5 + visibleWidth * (double) SIZE / frame) + 1;
+        return advance(visibleWidth, frame, false);
+    }
+
+    static int advance(int visibleWidth, int frame, boolean nativeSize) {
+        return nativeSize ? visibleWidth + 1 : (int) (0.5 + visibleWidth * (double) SIZE / frame) + 1;
     }
 
     /** What {@link #applyPack} changed. */
@@ -91,8 +112,8 @@ public final class IconCatalog {
             Texture t = textures.get(i);
             PackIcons.Measure m = pack.measure(t.file());
             if (m != null) {
-                Texture n = new Texture(t.file(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), t.codepoint(),
-                    t.fromPack());
+                Texture n = new Texture(t.file(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame(), t.nativeSize()),
+                    t.codepoint(), t.fromPack(), m.width(), t.nativeSize());
                 textures.set(i, n);
                 replaced.put(t.codepoint(), n);
                 remeasured++;
@@ -116,7 +137,8 @@ public final class IconCatalog {
                     if (m == null) {
                         continue; // texture neither in the pack nor a known vanilla texture
                     }
-                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next(), true);
+                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next(), true,
+                        m.width(), false);
                     textures.add(t);
                     byFile.put(t.file(), t);
                     newTextures++;
@@ -131,7 +153,10 @@ public final class IconCatalog {
         return new PackResult(remeasured, packItems, newTextures);
     }
 
-    /** Icon layers of an item ("diamond", "minecraft:diamond" or "myserver:ruby"), or null if it has none. */
+    /**
+     * Icon layers of an item ("diamond", "minecraft:diamond" or "myserver:ruby") or GUI sprite
+     * ("gui:hud/heart/full", "gui:mob_effect/speed"), or null if it has none.
+     */
     public @Nullable List<Layer> icon(String item) {
         String id = item.toLowerCase();
         if (id.startsWith("minecraft:")) {
@@ -170,8 +195,8 @@ public final class IconCatalog {
             JsonObject p = new JsonObject();
             p.addProperty("type", "bitmap");
             p.addProperty("file", t.file() + ".png");
-            p.addProperty("height", SIZE);
-            p.addProperty("ascent", 7 - shift);
+            p.addProperty("height", t.height());
+            p.addProperty("ascent", 7 - shift - t.dy());
             JsonArray chars = new JsonArray();
             chars.add(String.valueOf(t.codepoint()));
             for (int i = 1; i < t.frames(); i++) {

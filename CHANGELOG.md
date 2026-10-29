@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **GUI sprites as icons:** `icon: "gui:hud/heart/full"`, `gui:mob_effect/speed`,
+  `gui:statistics/item_crafted`, `gui:icon/checkmark` and about 100 more (hearts, food, armor, air,
+  every status effect, statistics, small icons) wherever an item id goes, in YAML and the API. Drawn
+  from the client's own textures at their own size in the middle of the icon place; sprites in the
+  plain dialog; the menu designer shows them after loading a client jar again.
+- Docs: `<sprite:...>` and `<head:...>` work in tooltips, titles and messages.
+
 ## 1.0.0 – stable API, tabs, scroll panes, feeds and Bedrock
 
 **1.0: the API, the menu format and `config.yml` are now stable** (see "Compatibility" in the

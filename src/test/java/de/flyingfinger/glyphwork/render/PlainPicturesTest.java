@@ -7,6 +7,7 @@ import net.kyori.adventure.text.TextComponent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,6 +36,12 @@ class PlainPicturesTest {
         assertTrue(item.toString().contains("minecraft:items") && item.toString().contains("item/diamond"), item.toString());
         assertTrue(block.toString().contains("minecraft:blocks"), block.toString());
         assertNull(FallbackRenderer.spriteOf("myserver:item/ruby"));       // only textures every client has
+        Component heart = FallbackRenderer.spriteOf("minecraft:gui/sprites/hud/heart/full");
+        assertTrue(heart.toString().contains("minecraft:gui") && heart.toString().contains("hud/heart/full")
+            && !heart.toString().contains("sprites/"), heart.toString());
+        assertTrue(FallbackRenderer.spriteOf("minecraft:mob_effect/speed").toString().contains("mob_effect/speed"));
+        assertEquals("Heart Full", FallbackRenderer.humanize("gui:hud/heart/full"));
+        assertEquals("Speed", FallbackRenderer.humanize("gui:mob_effect/speed"));
     }
 
     @Test

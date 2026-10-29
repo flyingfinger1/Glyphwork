@@ -417,14 +417,25 @@ public final class FallbackRenderer {
         return spriteOf(layers.getFirst().texture().file());
     }
 
-    /** "minecraft:item/diamond" -> the items atlas, "minecraft:block/stone" -> the blocks atlas. */
+    /**
+     * "minecraft:item/diamond" -> the items atlas, "minecraft:block/stone" -> the blocks atlas,
+     * "minecraft:gui/sprites/hud/heart/full" and "minecraft:mob_effect/speed" -> the gui atlas.
+     */
     static @Nullable Component spriteOf(String texture) {
         String file = texture.endsWith(".png") ? texture.substring(0, texture.length() - 4) : texture;
         int colon = file.indexOf(':');
         String ns = colon < 0 ? "minecraft" : file.substring(0, colon);
         String path = colon < 0 ? file : file.substring(colon + 1);
-        if (!"minecraft".equals(ns) || !(path.startsWith("item/") || path.startsWith("block/"))
-            || !path.matches("[a-z0-9_./-]+")) {
+        if (!"minecraft".equals(ns) || !path.matches("[a-z0-9_./-]+")) {
+            return null;
+        }
+        if (path.startsWith("gui/sprites/")) {
+            return MM.deserialize("<sprite:\"minecraft:gui\":" + path.substring("gui/sprites/".length()) + ">");
+        }
+        if (path.startsWith("mob_effect/")) {
+            return MM.deserialize("<sprite:\"minecraft:gui\":" + path + ">");
+        }
+        if (!path.startsWith("item/") && !path.startsWith("block/")) {
             return null;
         }
         String atlas = path.startsWith("block/") ? "minecraft:blocks" : "minecraft:items";
@@ -440,6 +451,10 @@ public final class FallbackRenderer {
             return item.substring(5).trim();
         }
         String id = item.contains(":") ? item.substring(item.indexOf(':') + 1) : item;
+        if (item.regionMatches(true, 0, "gui:", 0, 4)) {
+            // "gui:hud/heart/full" -> "Heart Full", "gui:mob_effect/speed" -> "Speed"
+            id = id.replaceFirst("^(hud|icon|statistics|mob_effect)/", "").replace('/', '_');
+        }
         StringBuilder sb = new StringBuilder();
         for (String part : id.split("_")) {
             if (!part.isEmpty()) {

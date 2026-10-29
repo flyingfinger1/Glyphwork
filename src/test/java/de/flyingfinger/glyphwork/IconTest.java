@@ -204,4 +204,32 @@ class IconTest {
             }
         }
     }
+
+    @Test
+    void guiSpritesKeepTheirSizeInTheMiddleOfTheIcon() {
+        IconCatalog.Texture heart = icons.icon("gui:hud/heart/full").getFirst().texture();
+        assertEquals(9, heart.height());
+        assertEquals(3, heart.dx());
+        assertEquals(3, heart.dy());
+        assertEquals(9, heart.advance());  // 8 visible columns, drawn 1:1
+        IconCatalog.Texture speed = icons.icon("GUI:mob_effect/speed").getFirst().texture();
+        assertEquals(18, speed.height());
+        assertEquals(-1, speed.dx());       // 18 px: one pixel over the 16 px place on each side
+        assertEquals(16, icons.icon("diamond").getFirst().texture().height());
+        assertEquals(0, icons.icon("diamond").getFirst().texture().dx());
+        assertNull(icons.icon("gui:hud/hotbar"));   // too big for an icon
+
+        com.google.gson.JsonArray providers = new com.google.gson.JsonArray();
+        icons.addProviders(providers, 2, false);
+        JsonObject p = providers.asList().stream().map(e -> e.getAsJsonObject())
+            .filter(o -> o.get("file").getAsString().equals("minecraft:gui/sprites/hud/heart/full.png"))
+            .findFirst().orElseThrow();
+        assertEquals(9, p.get("height").getAsInt());
+        assertEquals(7 - 2 - 3, p.get("ascent").getAsInt());
+
+        Scene s = Scene.builder("t", 80, 40).add(de.flyingfinger.glyphwork.api.Icon.of(40, 18, "gui:hud/heart/full")).build();
+        Layout l = layout(s, new TestClick(s));
+        assertEquals(1, l.icons.size());
+        assertEquals(43, l.icons.getFirst()[0]); // drawn 3 px in, so it sits in the middle
+    }
 }

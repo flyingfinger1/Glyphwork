@@ -116,6 +116,17 @@ beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `c
 Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icons.source-pack` in
 `config.yml`.
 
+**GUI sprites** go wherever an item id goes, with `gui:` and the sprite's name in the game's GUI
+atlas: hearts (`gui:hud/heart/full`, `half`, `container`, `poisoned_full`, `withered_full`,
+`frozen_full`, `absorbing_full`, `hardcore_full` ...), food (`gui:hud/food_full`, `food_half`,
+`food_empty`), armor (`gui:hud/armor_full`), air bubbles (`gui:hud/air`), every status effect
+(`gui:mob_effect/speed`, `regeneration`, `strength`, `night_vision` ...), statistics
+(`gui:statistics/item_crafted`, `block_mined`, `item_used`, `sort_up` ...) and small icons
+(`gui:icon/checkmark`, `search`, `news`, `language`, `link`, `ping_1`..`ping_5`). They
+come from the client like item icons, are drawn at their own size (a heart stays 9 x 9 px, crisp) in
+the middle of the 16 x 16 icon place, and show as sprites in the plain dialog too. Effect icons are
+18 px and stand out 1 px on each side.
+
 **Big heads:** `type: head` (and `head-size: 16`, `24` or `32` on lists and grids, for their
 `head:` icons) paints a player's face pixel by pixel in the colors of the skin: no pack change, so
 it works for every player, also ones who just joined, and at any position (no 9 px grid). The
@@ -143,6 +154,12 @@ tag beats the element's `color`). Bold text is 1 px wider per character, which c
 and wrapping take into account; underline and strikethrough are drawn as 1 px lines exactly under
 and through the letters. Other MiniMessage tags (gradients, click, hover) have no effect in pixel
 text. A `<` that is not a tag stays as it is; write `\<` for a `<` that would look like one.
+
+Tooltips, the dialog title, `message:` and the `disabled-` / `cooldown-tooltip` are drawn by the
+client, so every MiniMessage tag works there, also pictures in the text:
+`<sprite:items:item/emerald>` (any item or block texture, `<sprite:gui:hud/heart/full>` for GUI
+sprites) and `<head:Steve>` / `<head:%player%>` draw an 8 x 8 picture inside the line, e.g.
+`tooltip: "Costs 20 <sprite:items:item/emerald>"`. In pixel text use an `icon` element instead.
 
 **Text blocks:** a label with `width` and `wrap: true` breaks its text into lines at spaces; `\n`
 in the text (or a YAML block with `|`) always starts a new line, also without `wrap`. Lines are

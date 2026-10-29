@@ -368,6 +368,17 @@ function drawIcon(c, item, x, y, tintRgb = null) {
   if (layers) {
     for (const l of layers) {
       const tnt = l.tint == null ? null : (tintRgb ?? l.tint);
+      if (l.native) {
+        // GUI sprite: its own size, in the middle of the icon place (like the plugin)
+        const dx = Math.trunc((ICON - l.img.w) / 2), dy = Math.trunc((ICON - l.frame) / 2);
+        for (let yy = 0; yy < l.frame; yy++) {
+          for (let xx = 0; xx < l.img.w; xx++) {
+            const v = l.img.get(xx, yy);
+            if (v >>> 24) blend(c.pix, x + dx + xx, y + dy + yy, tnt == null ? v : tint(v, tnt));
+          }
+        }
+        continue;
+      }
       for (let yy = 0; yy < ICON; yy++) {
         for (let xx = 0; xx < ICON; xx++) {
           const v = l.img.get(Math.floor(xx * l.frame / ICON), Math.floor(yy * l.frame / ICON));

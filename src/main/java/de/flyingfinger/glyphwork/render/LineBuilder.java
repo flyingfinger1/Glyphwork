@@ -215,7 +215,7 @@ public final class LineBuilder {
         Line line = line(index);
         for (IconCatalog.Layer l : layers) {
             TextColor c = l.tint() == null ? NamedTextColor.WHITE : tint != null ? tint : l.tint();
-            line.draw(String.valueOf(l.texture().codepoint()), l.texture().advance(), x,
+            line.draw(String.valueOf(l.texture().codepoint()), l.texture().advance(), x + l.texture().dx(),
                 ShiftFonts.icon(y - index * ShiftFonts.LINE, l.texture().fromPack()), c, null, null);
         }
         return this;

@@ -31,7 +31,7 @@ export const FIELDS = {
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   bar: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'select', ['8', '16']], ['value', 'text'], ['max', 'text'],
     ['fill', 'color'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text']],
-  image: [['x', 'int'], ['y', 'int'], ['image', 'text'], ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
+  image: [['x', 'int'], ['y', 'int'], ['image', 'text'], ['width', 'int'], ['height', 'int'], ['scale', 'text'], ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   head: [['x', 'int'], ['y', 'int'], ['player', 'text'], ['size', 'select', ['8', '16', '24', '32']], ['tooltip', 'text'],
     ['actions', 'lines']],
   tabs: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['var', 'text'], ['frame', 'text'],

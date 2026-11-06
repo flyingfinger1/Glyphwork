@@ -100,7 +100,7 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
 | `head` | a player's face painted from the skin: `x`, `y`, `player` (name, UUID or placeholder, default `%player%`), `size` (8, 16, 24 or 32; default 32), `tooltip`, `actions` |
-| `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `tint`, `tooltip`, `actions` |
+| `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `width` / `height` or `scale` (another size), `tint`, `tooltip`, `actions` |
 | `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part), `text` (in the middle), `tooltip`, `frame` (`slot`) |
 | `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`; page buttons appear below when needed (+20 px) |
 | `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed |
@@ -142,6 +142,14 @@ download them once). Any size works: Glyphwork cuts pictures into tiles of at mo
 because the client cannot load bigger glyphs. Transparent parts stay transparent; `tint` multiplies
 the colors. A big player head, a logo, a banner or a rank badge are all just pictures. The plain
 dialog leaves pictures out (a clickable one becomes a button named by its tooltip).
+
+**Other sizes:** `width: 32` draws a picture 32 px wide (the height follows the aspect ratio),
+`width` and `height` together set both, `scale: 0.5` draws it at half its size. Glyphwork resizes
+the picture when it builds the pack (shrinking averages the pixels, enlarging keeps them hard), so
+every size the menus use is a picture of its own in the pack. With a placeholder in the name
+(`image: "ranks/%menu_rank%"`, `width: 16`) all pictures it may name get that size (here every
+picture in `ranks/`). Pictures stay sharp at whole multiples (`scale: 2`, `scale: 0.5` of an even
+size); other sizes smooth pixel art a little.
 
 **Item tooltips:** `item-tooltip: true` (on an `icon`, or on a `list` / `grid` for all its entries)
 shows the item's own tooltip when hovering, like in the inventory, instead of the text tooltip.

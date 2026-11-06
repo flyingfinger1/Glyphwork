@@ -16,7 +16,8 @@ are measured, and the pack's own items (`myserver:ruby`) work as icons. Player h
 (`head:Steve`) show as small 8 x 8 icons, e.g. in a list of online players. Icons can carry a
 stack count at the bottom right, like in the inventory. GUI sprites work the same way
 (`gui:hud/heart/full`, `gui:mob_effect/speed`, statistics and small icons), drawn at their own size. Your own pictures (PNG files in
-`plugins/Glyphwork/images/`, any size) can be placed like any element.
+`plugins/Glyphwork/images/`, any size) can be placed like any element, also smaller or bigger
+(`width`, `height`, `scale`).
 
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus, ask for input or show forms, PlaceholderAPI support, a
@@ -29,7 +30,8 @@ Players without the pack get a plain native dialog built from the same scene; Be
 (Geyser/Floodgate) always get it, as a Bedrock form. The pack is served by
 a built-in HTTP server or written to `plugins/Glyphwork/pack/<sha1>.zip` for your own web server
 (`pack.hosting: external`, `pack.url` with `{sha1}`), or merged into the pack your server or proxy
-sends (`pack.hosting: provided`). `/glyphwork reload` rebuilds theme and pack and
+sends (`pack.hosting: provided`). The other way round, `pack.include-source-pack: true` puts your
+server's pack into the Glyphwork pack, so players get a single pack. `/glyphwork reload` rebuilds theme and pack and
 sends it to everyone online; `/glyphwork status` shows who has it. See `config.yml`.
 
 **Skin editor:** https://flyingfinger1.github.io/Glyphwork/ ([guide](docs/skin-editor.md))
@@ -70,7 +72,7 @@ Then build scenes as shown in [docs/api.md](docs/api.md). Changes: [CHANGELOG.md
 **Compatibility:** from 1.0 on the API keeps working across minor versions (1.x); breaking changes
 come only with 2.0. Two exceptions are marked in the code: `@ApiStatus.Experimental` (may still
 change in a minor version: tabs, scroll panes, big heads, text styles, item tooltips, the own plain
-view, `redrawAfter`) and `@ApiStatus.Internal` (getters Glyphwork's renderer reads; do not call
+view, `redrawAfter`, picture sizes) and `@ApiStatus.Internal` (getters Glyphwork's renderer reads; do not call
 them). New element types, form fields and display modes may be added, so give a `switch` over
 them a default branch. The same promise holds for the YAML menu format and `config.yml`; renamed
 keys keep working with a hint in the log.

@@ -57,7 +57,7 @@ const T = {
     picturesLoaded: '{n} Bild(er): {ids}',
     f_wrap: 'Umbrechen', f_lineHeight: 'Zeilenabstand', f_itemTooltip: 'Item-Tooltip (wie im Inventar)', f_value: 'Wert',
     // fields
-    f_x: 'x', f_y: 'y', f_text: 'Text', f_color: 'Farbe', f_width: 'Breite', f_height: 'Höhe', f_align: 'Ausrichtung',
+    f_x: 'x', f_y: 'y', f_text: 'Text', f_color: 'Farbe', f_width: 'Breite', f_height: 'Höhe', f_scale: 'Skalierung (z. B. 0.5)', f_align: 'Ausrichtung',
     f_shadow: 'Schatten', f_tint: 'Tönung', f_textColor: 'Textfarbe', f_inactiveTint: 'Farbe inaktiver Reiter', f_fill: 'Füllfarbe', f_tooltip: 'Tooltip', f_actions: 'Aktionen (eine pro Zeile)',
     f_permission: 'Recht', f_frame: 'Rahmen', f_icon: 'Icon (Item-ID, gui:Sprite oder head:Name)', f_enabledIf: 'Aktiv wenn (eine pro Zeile)',
     f_disabledTooltip: 'Tooltip wenn inaktiv', f_showIf: 'Sichtbar wenn (eine pro Zeile)', f_shape: 'Form (# = Kachel, eine Zeile pro Reihe)',
@@ -119,7 +119,7 @@ const T = {
     picturesNone: 'Load pictures from plugins/Glyphwork/images/ here so the preview shows them (they stay in the browser).',
     picturesLoaded: '{n} picture(s): {ids}',
     f_wrap: 'Wrap', f_lineHeight: 'Line height', f_itemTooltip: 'Item tooltip (like in the inventory)', f_value: 'Value',
-    f_x: 'x', f_y: 'y', f_text: 'Text', f_color: 'Color', f_width: 'Width', f_height: 'Height', f_align: 'Align',
+    f_x: 'x', f_y: 'y', f_text: 'Text', f_color: 'Color', f_width: 'Width', f_height: 'Height', f_scale: 'Scale (e.g. 0.5)', f_align: 'Align',
     f_shadow: 'Shadow', f_tint: 'Tint', f_textColor: 'Text color', f_inactiveTint: 'Inactive tab color', f_fill: 'Fill color', f_tooltip: 'Tooltip', f_actions: 'Actions (one per line)',
     f_permission: 'Permission', f_frame: 'Frame', f_icon: 'Icon (item id, gui:sprite or head:Name)', f_enabledIf: 'Enabled if (one per line)',
     f_disabledTooltip: 'Tooltip when disabled', f_showIf: 'Shown if (one per line)', f_shape: 'Shape (# = tile, one line per row)',

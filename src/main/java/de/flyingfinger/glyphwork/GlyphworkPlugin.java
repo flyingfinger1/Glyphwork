@@ -54,6 +54,10 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     private Menus menus = new Menus();
     private de.flyingfinger.glyphwork.menu.MenuTriggers triggers;
     private MenuCommands menuCommands;
+    /** Picture sizes other plugins asked for (Glyphwork#imageSize); kept across reloads. */
+    private final List<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> apiSizes =
+        new java.util.concurrent.CopyOnWriteArrayList<>();
+    private boolean sizeRebuildPending;
 
     /** Everything that depends on config + theme. */
     private record Build(Settings settings, int height, String themeName, SceneRenderer renderer, byte[] zip, String sha1) {
@@ -88,6 +92,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             apply(b);
             service = new GlyphworkService(this, b.renderer(), b.height(), b.settings().plainDialog(),
                 packs::hasPack, packs::send, packs::hasServerPack);
+            service.onImageSize(this::imageSizeAsked);
         } catch (IOException e) {
             getLogger().severe("Pack could not be published: " + e);
             getServer().getPluginManager().disablePlugin(this);
@@ -208,16 +213,26 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
         IconCatalog icons = s.icons() ? IconCatalog.load(alloc) : null;
-        if (icons != null) {
-            applySourcePack(icons, s, alloc);
+        boolean include = s.includeSourcePack() && !s.provided();
+        if (s.includeSourcePack() && s.provided()) {
+            getLogger().warning("config.yml: pack.include-source-pack is left out with pack.hosting: provided");
+        }
+        Path source = icons != null || include
+            ? de.flyingfinger.glyphwork.pack.SourcePack.resolve(s.iconSourcePack(), getDataFolder().toPath(), getLogger())
+            : null;
+        if (icons != null && source != null) {
+            applySourcePack(icons, source, alloc);
         }
         // web sources first: menus that use them are checked against them
         de.flyingfinger.glyphwork.menu.WebSources.configure(
             de.flyingfinger.glyphwork.menu.WebSources.read(getConfig().getConfigurationSection("web"), getLogger()));
         // tall menus get the fonts they need: they scroll in the dialog, frames included
         exportExampleMenus();
-        List<Integer> heights = Menus.load(getDataFolder().toPath().resolve("menus")).all().stream()
-            .map(m -> m.scene().height()).toList();
+        Menus forPack = Menus.load(getDataFolder().toPath().resolve("menus"));
+        List<Integer> heights = forPack.all().stream().map(m -> m.scene().height()).toList();
+        // picture sizes: from the menus, then from plugins (Glyphwork#imageSize)
+        List<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> imageSizes = new ArrayList<>(forPack.imageSizes());
+        imageSizes.addAll(apiSizes);
         int height = packHeight(s.minHeight(), heights, getLogger());
         ShiftFonts.write(pack, sheets, height, text, icons);
         de.flyingfinger.glyphwork.render.FallbackRenderer.icons(icons);
@@ -227,7 +242,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         } catch (IOException e) {
             getLogger().warning("Could not create images/: " + e.getMessage());
         }
-        de.flyingfinger.glyphwork.font.ImageCatalog images = de.flyingfinger.glyphwork.font.ImageCatalog.load(imageDir, alloc, getLogger());
+        de.flyingfinger.glyphwork.font.ImageCatalog images = de.flyingfinger.glyphwork.font.ImageCatalog.load(imageDir, alloc, getLogger(), imageSizes);
         images.write(pack);
         Path langDir = getDataFolder().toPath().resolve("lang");
         try {
@@ -238,7 +253,11 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         de.flyingfinger.glyphwork.pack.DialogWarning.write(pack, s.warningIcon(), s.warningIconHover(), images,
             Messages.load(langDir, s.language(), s.fallbackLanguage(), getLogger()), getLogger());
         if (images.size() > 0) {
-            getLogger().info(images.size() + " picture(s) from images/: " + String.join(", ", images.ids()));
+            getLogger().info(images.size() + " picture(s) from images/: " + String.join(", ", images.ids())
+                + (images.sizes() > 0 ? " (+" + images.sizes() + " other size(s))" : ""));
+        }
+        if (include) {
+            includeSourcePack(pack, source);
         }
         byte[] zip = pack.toZip();
         SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), height, getLogger(), icons).fills(fills).images(images)
@@ -247,11 +266,28 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
     }
 
     /** Adapts icons to the server's resource pack (icon-source-pack). */
-    private void applySourcePack(IconCatalog icons, Settings s, GlyphAllocator alloc) {
-        Path zip = de.flyingfinger.glyphwork.pack.SourcePack.resolve(s.iconSourcePack(), getDataFolder().toPath(), getLogger());
+    /** pack.include-source-pack: the server's pack goes into the Glyphwork pack (one pack for the client). */
+    private void includeSourcePack(PackFiles pack, @org.jspecify.annotations.Nullable Path zip) {
         if (zip == null) {
+            getLogger().warning("pack.include-source-pack: there is no server pack to include (icons.source-pack)");
             return;
         }
+        String own = getServer().getResourcePack();
+        if (own != null && !own.isBlank()) {
+            getLogger().warning("pack.include-source-pack: server.properties still sends its pack (resource-pack=), so"
+                + " players get it twice. Empty resource-pack= and set icons.source-pack to the zip file or its URL.");
+        }
+        try (java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip.toFile())) {
+            de.flyingfinger.glyphwork.pack.IncludedPack.Result r =
+                de.flyingfinger.glyphwork.pack.IncludedPack.include(pack, z, getLogger());
+            getLogger().info("Included " + zip.getFileName() + " in the pack: " + r.files() + " file(s)"
+                + (r.skipped() > 0 ? ", " + r.skipped() + " left out (Glyphwork's own)" : ""));
+        } catch (IOException | RuntimeException e) {
+            getLogger().warning("pack.include-source-pack: " + zip + " could not be read: " + e.getMessage());
+        }
+    }
+
+    private void applySourcePack(IconCatalog icons, Path zip, GlyphAllocator alloc) {
         try (java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip.toFile())) {
             IconCatalog.PackResult r = icons.applyPack(new de.flyingfinger.glyphwork.font.PackIcons(z), alloc);
             getLogger().info("Icons matched to " + zip.getFileName() + ": " + r.remeasured() + " textures measured, "
@@ -313,6 +349,38 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             getLogger().warning("Theme '" + id + "' not loaded (" + e.getMessage() + "), using the built-in skin");
             return Theme.builtin(alloc);
         }
+    }
+
+    /**
+     * A plugin asked for a picture size: the pack is built again one tick later (several requests
+     * in one tick, e.g. from onEnable, give one build). Usually before anyone is online.
+     */
+    private void imageSizeAsked(de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest r) {
+        if (apiSizes.contains(r)) {
+            return;
+        }
+        apiSizes.add(r);
+        if (sizeRebuildPending) {
+            return;
+        }
+        sizeRebuildPending = true;
+        getServer().getScheduler().runTask(this, () -> {
+            sizeRebuildPending = false;
+            try {
+                Build b = build();
+                boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
+                apply(b);
+                service.reconfigure(b.renderer(), b.height(), b.settings().plainDialog());
+                if (changed && settings.provided()) {
+                    getLogger().warning("Picture sizes from plugins changed the pack: merge "
+                        + getDataFolder().toPath().resolve("pack").resolve("glyphwork.zip") + " into your pack again");
+                } else if (changed) {
+                    packs.sendToAll();
+                }
+            } catch (IOException | RuntimeException e) {
+                getLogger().warning("Pack with the new picture sizes failed: " + e);
+            }
+        });
     }
 
     /** /glyphwork reload: config, theme and pack; players get the new pack if it changed. */

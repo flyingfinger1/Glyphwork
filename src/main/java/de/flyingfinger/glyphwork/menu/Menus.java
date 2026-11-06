@@ -453,6 +453,52 @@ public final class Menus {
         return List.copyOf(refs);
     }
 
+    private final List<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> imageSizes = new ArrayList<>();
+
+    /** Picture sizes the menus draw (width/height/scale of image elements), for the pack. */
+    public List<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> imageSizes() {
+        return List.copyOf(imageSizes);
+    }
+
+    /**
+     * width / height (0 or missing = from the aspect ratio) or scale of an image element; the size
+     * goes into the pack for the picture named (placeholders match any picture: "ranks/%rank%").
+     */
+    private void imageSize(de.flyingfinger.glyphwork.api.Image im, Node n) throws MenuException {
+        boolean sized = n.has("width") || n.has("height");
+        if (n.has("scale")) {
+            if (sized) {
+                throw n.error("scale", "use either scale or width/height");
+            }
+            double scale;
+            try {
+                scale = Double.parseDouble(n.string("scale").trim().replace(',', '.'));
+            } catch (NumberFormatException e) {
+                throw n.error("scale", "number expected, e.g. 0.5");
+            }
+            if (!(scale > 0) || scale > 16) {
+                throw n.error("scale", "between 0 and 16 expected, got " + scale);
+            }
+            im.scale(scale);
+            imageSizes.add(de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest.scale(pattern(n.string("image")), scale));
+        } else if (sized) {
+            int w = n.optInt("width", 0);
+            int h = n.optInt("height", 0);
+            if (w < 0 || h < 0 || w > de.flyingfinger.glyphwork.font.ImageCatalog.MAX_SIZE
+                || h > de.flyingfinger.glyphwork.font.ImageCatalog.MAX_SIZE || w == 0 && h == 0) {
+                throw n.error(n.has("width") ? "width" : "height", "1 to " + de.flyingfinger.glyphwork.font.ImageCatalog.MAX_SIZE
+                    + " expected (leave one out to keep the aspect ratio)");
+            }
+            im.size(w, h);
+            imageSizes.add(de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest.size(pattern(n.string("image")), w, h));
+        }
+    }
+
+    /** "ranks/%menu_rank%" -> "ranks/*" (any picture the placeholder may name). */
+    private static String pattern(String image) {
+        return image.replaceAll("%[^%]*%", "*");
+    }
+
     /** Two menus with the same command or alias: only one of them can be opened with it. */
     private void checkCommands() {
         Map<String, String> used = new LinkedHashMap<>();
@@ -832,10 +878,12 @@ public final class Menus {
                 b.accept(hd);
             }
             case "image" -> {
-                n.only(with("type", "x", "y", "image", "tint", "tooltip", "actions", "cooldown", "cooldown-key", "cooldown-message"));
+                n.only(with("type", "x", "y", "image", "width", "height", "scale", "tint", "tooltip", "actions",
+                    "cooldown", "cooldown-key", "cooldown-message"));
                 TextColor tint = n.optColor("tint", null);
                 de.flyingfinger.glyphwork.api.Image im = de.flyingfinger.glyphwork.api.Image.of(n.integer("x"), n.integer("y"),
                     text(n.string("image"))).tint(v -> tint);   // placeholders: image: "ranks/%menu_rank%"
+                imageSize(im, n);
                 if (tooltip(n) != null) {
                     im.tooltip(tooltip(n));
                 }

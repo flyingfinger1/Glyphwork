@@ -27,6 +27,9 @@ import java.util.stream.Stream;
  * 128 x 128 px, because the client puts every glyph into a 256 x 256 font texture and a larger one
  * shows as a missing-character box. Tiles live in 9 fonts {@code glyphwork:m<S>}, like item icons:
  * drawn on the text line they fall into, S px below it, so pictures sit at any pixel and above frames.
+ *
+ * <p>Other sizes of a picture ({@link SizeRequest}) are pictures of their own, resized when the pack
+ * is built and added after all originals, so a pack without sizes stays exactly as before.
  */
 public final class ImageCatalog {
 
@@ -40,7 +43,73 @@ public final class ImageCatalog {
     public record Picture(String id, int width, int height, List<Tile> tiles) {
     }
 
+    /** Largest side of a resized picture. */
+    public static final int MAX_SIZE = 1024;
+
+    /**
+     * A size wanted for the pictures matching {@code pattern} ({@code *} = any text): width and
+     * height (0 = from the aspect ratio), or a scale.
+     */
+    public record SizeRequest(String pattern, int width, int height, double scale) {
+
+        public SizeRequest {
+            pattern = pattern.trim().toLowerCase();
+            if (pattern.endsWith(".png")) {
+                pattern = pattern.substring(0, pattern.length() - 4);
+            }
+        }
+
+        public static SizeRequest size(String pattern, int width, int height) {
+            return new SizeRequest(pattern, width, height, 0);
+        }
+
+        public static SizeRequest scale(String pattern, double scale) {
+            return new SizeRequest(pattern, 0, 0, scale);
+        }
+
+        public boolean matches(String id) {
+            StringBuilder re = new StringBuilder();
+            String[] parts = pattern.split("\\*", -1);
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) {
+                    re.append(".*");
+                }
+                re.append(java.util.regex.Pattern.quote(parts[i]));
+            }
+            return id.matches(re.toString());
+        }
+
+        /** Width and height for a picture of this size, or null if nothing is asked. */
+        public int @Nullable [] dims(int w, int h) {
+            return ImageCatalog.dims(w, h, width, height, scale);
+        }
+
+        @Override
+        public String toString() {
+            return "'" + pattern + "' " + (scale > 0 ? "scale " + scale : width + " x " + height);
+        }
+    }
+
+    /** Size of a w x h picture drawn with the asked width/height (0 = keep ratio) or scale; null = own size. */
+    public static int @Nullable [] dims(int w, int h, int width, int height, double scale) {
+        if (scale > 0) {
+            return new int[] {Math.max(1, (int) Math.round(w * scale)), Math.max(1, (int) Math.round(h * scale))};
+        }
+        if (width > 0 && height > 0) {
+            return new int[] {width, height};
+        }
+        if (width > 0) {
+            return new int[] {width, Math.max(1, (int) Math.round(h * (double) width / w))};
+        }
+        if (height > 0) {
+            return new int[] {Math.max(1, (int) Math.round(w * (double) height / h)), height};
+        }
+        return null;
+    }
+
     private final Map<String, Picture> pictures = new LinkedHashMap<>();
+    /** Other sizes, by "id@WxH". */
+    private final Map<String, Picture> sized = new LinkedHashMap<>();
     private final Map<String, BufferedImage> sources = new LinkedHashMap<>();
     private final Map<String, byte[]> textures = new LinkedHashMap<>();
 
@@ -51,6 +120,17 @@ public final class ImageCatalog {
 
     /** Reads every PNG under {@code dir}; files that cannot be used are reported and skipped. */
     public static ImageCatalog load(Path dir, GlyphAllocator alloc, Logger log) {
+        return load(dir, alloc, log, List.of());
+    }
+
+    /** Like {@link #load(Path, GlyphAllocator, Logger)}, plus the sizes asked for. */
+    public static ImageCatalog load(Path dir, GlyphAllocator alloc, Logger log, List<SizeRequest> sizes) {
+        ImageCatalog c = loadOriginals(dir, alloc, log);
+        c.addSizes(sizes, alloc, log);
+        return c;
+    }
+
+    private static ImageCatalog loadOriginals(Path dir, GlyphAllocator alloc, Logger log) {
         ImageCatalog c = new ImageCatalog();
         if (!Files.isDirectory(dir)) {
             return c;
@@ -87,6 +167,49 @@ public final class ImageCatalog {
     public void add(String id, BufferedImage source, GlyphAllocator alloc) {
         BufferedImage img = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
         img.getGraphics().drawImage(source, 0, 0, null);
+        pictures.put(id, cut(id, id, img, alloc));
+        sources.put(id, img);
+    }
+
+    /**
+     * Adds the asked sizes of the pictures loaded so far (in a fixed order, after all originals).
+     * A request that matches no picture, or a size above {@link #MAX_SIZE}, is reported.
+     */
+    public void addSizes(List<SizeRequest> requests, GlyphAllocator alloc, Logger log) {
+        java.util.Set<String> reported = new java.util.HashSet<>();
+        for (SizeRequest r : requests) {
+            if (pictures.keySet().stream().noneMatch(r::matches) && reported.add("none:" + r.pattern())) {
+                log.warning("Picture size " + r + ": no matching picture in images/");
+            }
+        }
+        for (Picture p : List.copyOf(pictures.values())) {
+            for (SizeRequest r : requests) {
+                if (!r.matches(p.id())) {
+                    continue;
+                }
+                int[] d = r.dims(p.width(), p.height());
+                if (d == null || d[0] == p.width() && d[1] == p.height() || sized.containsKey(key(p.id(), d[0], d[1]))) {
+                    continue;
+                }
+                if (d[0] > MAX_SIZE || d[1] > MAX_SIZE) {
+                    if (reported.add("big:" + p.id() + "@" + d[0] + "x" + d[1])) {
+                        log.warning("Picture '" + p.id() + "' at " + d[0] + " x " + d[1] + ": larger than "
+                            + MAX_SIZE + " px (left out)");
+                    }
+                    continue;
+                }
+                BufferedImage img = resize(sources.get(p.id()), d[0], d[1]);
+                sized.put(key(p.id(), d[0], d[1]), cut(p.id(), "_size/" + d[0] + "x" + d[1] + "/" + p.id(), img, alloc));
+            }
+        }
+    }
+
+    private static String key(String id, int w, int h) {
+        return id + "@" + w + "x" + h;
+    }
+
+    /** Cuts a picture into tiles; their textures are named after {@code textureBase}. */
+    private Picture cut(String id, String textureBase, BufferedImage img, GlyphAllocator alloc) {
         List<Tile> tiles = new ArrayList<>();
         for (int ty = 0; ty < img.getHeight(); ty += TILE) {
             for (int tx = 0; tx < img.getWidth(); tx += TILE) {
@@ -99,13 +222,79 @@ public final class ImageCatalog {
                 if (visible == 0) {
                     continue; // fully transparent tile: nothing to draw
                 }
-                String texture = id + "_" + tx / TILE + "_" + ty / TILE;
+                String texture = textureBase + "_" + tx / TILE + "_" + ty / TILE;
                 textures.put("assets/glyphwork/textures/image/" + texture + ".png", png(cell));
                 tiles.add(new Tile(alloc.next(), tx, ty, cell.getHeight(), visible + 1, texture));
             }
         }
-        pictures.put(id, new Picture(id, img.getWidth(), img.getHeight(), List.copyOf(tiles)));
-        sources.put(id, img);
+        return new Picture(id, img.getWidth(), img.getHeight(), List.copyOf(tiles));
+    }
+
+    /**
+     * The picture at the asked size (width/height with 0 = keep ratio, or scale); the picture itself
+     * when nothing is asked. Null if that size is not in the pack.
+     */
+    public @Nullable Picture sized(Picture base, int width, int height, double scale) {
+        int[] d = dims(base.width(), base.height(), width, height, scale);
+        if (d == null || d[0] == base.width() && d[1] == base.height()) {
+            return base;
+        }
+        return sized.get(key(base.id(), d[0], d[1]));
+    }
+
+    /**
+     * Resizes by the area each target pixel covers (premultiplied, so transparent pixels do not
+     * darken the edges); enlarging keeps hard pixels (nearest neighbour).
+     */
+    static BufferedImage resize(BufferedImage src, int w, int h) {
+        int sw = src.getWidth();
+        int sh = src.getHeight();
+        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        double fx = (double) sw / w;
+        double fy = (double) sh / h;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                if (fx <= 1 && fy <= 1) {
+                    out.setRGB(x, y, src.getRGB(Math.min(sw - 1, (int) ((x + 0.5) * fx)),
+                        Math.min(sh - 1, (int) ((y + 0.5) * fy))));
+                    continue;
+                }
+                double x0 = x * fx;
+                double x1 = (x + 1) * fx;
+                double y0 = y * fy;
+                double y1 = (y + 1) * fy;
+                double sa = 0;
+                double sr = 0;
+                double sg = 0;
+                double sb = 0;
+                double sum = 0;
+                for (int sy = (int) y0; sy < Math.min(sh, Math.ceil(y1)); sy++) {
+                    double wy = Math.min(y1, sy + 1) - Math.max(y0, sy);
+                    for (int sx = (int) x0; sx < Math.min(sw, Math.ceil(x1)); sx++) {
+                        double wgt = wy * (Math.min(x1, sx + 1) - Math.max(x0, sx));
+                        if (wgt <= 0) {
+                            continue;
+                        }
+                        int argb = src.getRGB(sx, sy);
+                        double a = (argb >>> 24) / 255.0 * wgt;
+                        sa += a;
+                        sr += ((argb >> 16) & 0xFF) * a;
+                        sg += ((argb >> 8) & 0xFF) * a;
+                        sb += (argb & 0xFF) * a;
+                        sum += wgt;
+                    }
+                }
+                int a = sum <= 0 ? 0 : (int) Math.round(sa / sum * 255);
+                if (a == 0) {
+                    continue;
+                }
+                int r = (int) Math.round(sr / sa);
+                int g = (int) Math.round(sg / sa);
+                int b = (int) Math.round(sb / sa);
+                out.setRGB(x, y, a << 24 | r << 16 | g << 8 | b);
+            }
+        }
+        return out;
     }
 
     public @Nullable Picture get(String id) {
@@ -141,7 +330,7 @@ public final class ImageCatalog {
         for (int s = 0; s < ShiftFonts.LINE; s++) {
             JsonArray providers = new JsonArray();
             providers.add(SpaceFont.provider());
-            for (Picture p : pictures.values()) {
+            for (Picture p : allPictures()) {
                 for (Tile t : p.tiles()) {
                     JsonObject o = new JsonObject();
                     o.addProperty("type", "bitmap");
@@ -158,6 +347,17 @@ public final class ImageCatalog {
             font.add("providers", providers);
             pack.put("assets/glyphwork/font/m" + s + ".json", GSON.toJson(font));
         }
+    }
+
+    private List<Picture> allPictures() {
+        List<Picture> all = new ArrayList<>(pictures.values());
+        all.addAll(sized.values());
+        return all;
+    }
+
+    /** Number of extra sizes in the pack. */
+    public int sizes() {
+        return sized.size();
     }
 
     private static byte[] png(BufferedImage img) {

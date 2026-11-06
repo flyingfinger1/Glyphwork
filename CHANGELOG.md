@@ -8,6 +8,16 @@
   from the client's own textures at their own size in the middle of the icon place; sprites in the
   plain dialog; the menu designer shows them after loading a client jar again.
 - Docs: `<sprite:...>` and `<head:...>` work in tooltips, titles and messages.
+- **Pictures in other sizes:** `width` / `height` (the other side follows the aspect ratio) or
+  `scale` on an `image` element. Glyphwork resizes the picture when it builds the pack and adds it
+  as an extra picture; YAML menus add their sizes by themselves, plugins announce theirs with
+  `Glyphwork.get().imageSize("logo", 32, 0)` / `imageScale(...)` and draw them with
+  `Image.size(w, h)` / `.scale(s)` (experimental). The menu designer shows the size. Without sizes
+  the pack stays exactly as before.
+- **One pack for the client:** `pack.include-source-pack: true` puts the server's own resource pack
+  (`icons.source-pack`) into the Glyphwork pack; its pack.mcmeta and pack.png are kept, Glyphwork's
+  own files win. Empty `resource-pack=` in server.properties then. Helps with client mods that keep
+  only the last server pack, and saves merging by hand as with `hosting: provided`.
 
 ## 1.0.0 – stable API, tabs, scroll panes, feeds and Bedrock
 

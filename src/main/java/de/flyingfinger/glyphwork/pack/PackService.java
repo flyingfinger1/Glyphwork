@@ -188,6 +188,9 @@ public final class PackService {
         if (settings != null && settings.provided() && settings.providedAlways()) {
             return true;                            // a pack everyone has (e.g. required on the proxy)
         }
+        if (settings != null && settings.includeSourcePack() && !settings.provided()) {
+            return hasPack(player);                 // the server pack is part of the Glyphwork pack
+        }
         return serverPack.contains(player.getUniqueId());
     }
 }

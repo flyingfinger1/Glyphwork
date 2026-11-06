@@ -455,10 +455,21 @@ public final class SceneRenderer {
         if (id == null || id.isBlank()) {
             return;
         }
-        de.flyingfinger.glyphwork.font.ImageCatalog.Picture p = images.get(id);
-        if (p == null) {
+        de.flyingfinger.glyphwork.font.ImageCatalog.Picture base = images.get(id);
+        if (base == null) {
             warnOnce("image:" + id, "No picture '" + id + "' in plugins/Glyphwork/images/ (known: "
                 + (images.size() == 0 ? "none" : String.join(", ", images.ids())) + ")");
+            return;
+        }
+        de.flyingfinger.glyphwork.font.ImageCatalog.Picture p = images.sized(base, im.width(), im.height(), im.scale());
+        if (p == null) {
+            // the size is not in the pack: keep the place (and the click) free, draw nothing
+            int[] d = de.flyingfinger.glyphwork.font.ImageCatalog.dims(base.width(), base.height(), im.width(), im.height(), im.scale());
+            warnOnce("image-size:" + base.id() + "@" + d[0] + "x" + d[1], "Picture '" + base.id() + "' at " + d[0] + " x "
+                + d[1] + " is not in the pack: call Glyphwork.get().imageSize(\"" + base.id() + "\", " + d[0] + ", "
+                + d[1] + ") in onEnable (YAML menus add their sizes by themselves)");
+            hitbox(line, im.x(), im.y(), d[0], d[1],
+                im.onClick() == null ? null : binder.bind(name, im.onClick()), tooltip(im.tooltip(), view));
             return;
         }
         line.image(p, im.x(), im.y(), im.tint() == null ? null : im.tint().apply(view));

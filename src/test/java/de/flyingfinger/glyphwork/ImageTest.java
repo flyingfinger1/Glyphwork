@@ -181,4 +181,96 @@ class ImageTest {
         assertEquals("menu:t#0", l.hit(140, 38));
         assertNull(l.hit(150, 25));
     }
+
+    @Test
+    void resizeAveragesWithoutDarkEdgesAndKeepsHardPixelsWhenEnlarging() throws Exception {
+        BufferedImage src = picture(4, 4, 0);
+        for (int y = 0; y < 4; y++) {
+            src.setRGB(0, y, 0xFFFF0000);                                 // left column red, rest transparent
+        }
+        java.lang.reflect.Method resize = ImageCatalog.class.getDeclaredMethod("resize", BufferedImage.class, int.class, int.class);
+        resize.setAccessible(true);
+        BufferedImage half = (BufferedImage) resize.invoke(null, src, 2, 2);
+        int px = half.getRGB(0, 0);
+        assertEquals(0xFF0000, px & 0xFFFFFF);                            // still pure red, not darkened
+        assertEquals(128, px >>> 24, 1);                                  // half covered -> half alpha
+        assertEquals(0, half.getRGB(1, 0) >>> 24);
+        BufferedImage twice = (BufferedImage) resize.invoke(null, src, 8, 8);
+        assertEquals(0xFFFF0000, twice.getRGB(1, 5));
+        assertEquals(0, twice.getRGB(2, 5) >>> 24);                       // no soft edge
+    }
+
+    @Test
+    void sizesAreExtraPicturesAfterTheOriginals(@TempDir Path dir) throws Exception {
+        Files.createDirectories(dir.resolve("ranks"));
+        ImageIO.write(picture(40, 20, 0xFFFFD700), "png", dir.resolve("logo.png").toFile());
+        ImageIO.write(picture(16, 16, 0xFFFFD700), "png", dir.resolve("ranks/gold.png").toFile());
+        ImageIO.write(picture(16, 16, 0xFFC0C0C0), "png", dir.resolve("ranks/silver.png").toFile());
+        Logger log = Logger.getLogger("test");
+        ImageCatalog plain = ImageCatalog.load(dir, new GlyphAllocator(), log);
+        ImageCatalog c = ImageCatalog.load(dir, new GlyphAllocator(), log, List.of(
+            ImageCatalog.SizeRequest.size("logo", 20, 0),               // height from the aspect ratio
+            ImageCatalog.SizeRequest.size("ranks/*", 8, 8),
+            ImageCatalog.SizeRequest.scale("logo", 0.5),                // same size as above: made once
+            ImageCatalog.SizeRequest.size("logo", 40, 20)));            // its own size: nothing extra
+        assertEquals(3, c.sizes());
+        for (String id : List.of("logo", "ranks/gold", "ranks/silver")) { // originals keep their glyphs
+            assertEquals(plain.get(id), c.get(id));
+        }
+        ImageCatalog.Picture logo = c.get("logo");
+        ImageCatalog.Picture small = c.sized(logo, 20, 0, 0);
+        assertNotNull(small);
+        assertEquals(List.of(20, 10), List.of(small.width(), small.height()));
+        assertEquals(small, c.sized(logo, 0, 0, 0.5));
+        assertEquals(logo, c.sized(logo, 0, 0, 0));
+        assertNull(c.sized(logo, 30, 0, 0));                              // not asked for -> not in the pack
+        assertNotNull(c.sized(c.get("ranks/silver"), 8, 8, 0));
+        PackFiles pack = new PackFiles();
+        c.write(pack);
+        Map<String, byte[]> files = new HashMap<>();
+        try (ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(pack.toZip()))) {
+            for (ZipEntry e; (e = in.getNextEntry()) != null; ) {
+                files.put(e.getName(), in.readAllBytes());
+            }
+        }
+        assertTrue(files.containsKey("assets/glyphwork/textures/image/_size/20x10/logo_0_0.png"), files.keySet().toString());
+        assertTrue(files.containsKey("assets/glyphwork/textures/image/_size/8x8/ranks/gold_0_0.png"));
+    }
+
+    @Test
+    void yamlImageSizeIsDrawnAndAskedForThePack() throws MenuException {
+        GlyphAllocator alloc = new GlyphAllocator();
+        Theme theme = Theme.builtin(alloc);
+        Sheet hit = Sheet.invisible(alloc);
+        ImageCatalog images = ImageCatalog.empty();
+        images.add("logo", picture(64, 32, 0xFF00AAFF), alloc);
+        Menus menus = new Menus();
+        Scene s = menus.parse("t", """
+            background: none
+            elements:
+              - { type: image, x: 4, y: 20, image: logo, width: 32, actions: ["close"] }
+              - { type: image, x: 4, y: 80, image: "%menu_logo%", scale: 0.25 }
+            """).scene();
+        assertEquals(List.of(ImageCatalog.SizeRequest.size("logo", 32, 0), ImageCatalog.SizeRequest.scale("*", 0.25)),
+            menus.imageSizes());
+        images.addSizes(menus.imageSizes(), alloc, Logger.getLogger("test"));
+        SceneRenderer r = new SceneRenderer(VanillaText.load(), theme, hit.glyph(), 256, Logger.getLogger("test")).images(images);
+        Component msg = r.render(s, new TestClick(s), (name, action) -> ClickEvent.runCommand(name)).build(s.height());
+        List<String> glyphs = new ArrayList<>();
+        pictureGlyphs(msg, glyphs, new int[] {0});
+        ImageCatalog.Picture small = images.sized(images.get("logo"), 32, 0, 0);
+        assertEquals("2:m2:" + Integer.toHexString(small.tiles().getFirst().codepoint()), glyphs.getFirst());
+        Layout l = new Layout(msg, List.of(hit), VanillaText.load());
+        assertEquals("menu:t#0", l.hit(30, 30));
+        assertNull(l.hit(40, 30));                                        // 32 px wide now, not 64
+    }
+
+    @Test
+    void yamlRejectsScaleTogetherWithWidth() {
+        MenuException e = org.junit.jupiter.api.Assertions.assertThrows(MenuException.class, () -> new Menus().parse("t", """
+            elements:
+              - { type: image, x: 4, y: 20, image: logo, width: 32, scale: 0.5 }
+            """));
+        assertTrue(e.getMessage().contains("scale"), e.getMessage());
+    }
 }

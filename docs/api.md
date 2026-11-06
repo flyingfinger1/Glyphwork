@@ -59,7 +59,7 @@ Glyphwork.get().open(player, settings);
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onClick`, `.selected` (or `.selectedIf((v, item) -> ...)`), `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short text; `.text`, `.color`, `.tint`, `.selected` / `.selectedIf`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
 | `Head.of(x, y, "Steve")` | (experimental) a face painted from the skin, `.size(8/16/24/32)`, also `v -> name`; `.tooltip`, `.onClick`. `Grid` / `ListView`: `.headSize(16)` for their `head:` icons |
-| `Image.of(x, y, "logo")` | a picture from `plugins/Glyphwork/images/` (also `v -> "ranks/" + rank(v)`); `.tint`, `.tooltip`, `.onClick` |
+| `Image.of(x, y, "logo")` | a picture from `plugins/Glyphwork/images/` (also `v -> "ranks/" + rank(v)`); `.tint`, `.tooltip`, `.onClick`, `.size(w, h)` / `.scale(s)` (another size, see below) |
 | `Scroll.of(id, x, y, w, h, elements...)` | (experimental) a window onto its elements with a scroll bar on the right; `.step(18)`, `.frame("slot")`, `.position(v -> "article-" + id(v))` (own position per content); the elements use scene coordinates as if unscrolled, only what fits completely into the window is drawn |
 | `Tabs.of(id, x, y, w, h)` | (experimental) tabs on a panel, the active one joined with it; `.tab(id, title, elements...)` (or with an icon), `.selected(v -> id)` + `.onChange((click, id) -> ...)` to keep the active tab yourself (otherwise Glyphwork keeps it), `.frame`, `.inactiveTint`; the elements of a tab use scene coordinates, the panel starts `Tabs.HEADER` (16) px below `y` |
 | `Bar.of(x, y, w)` | progress bar, 8 or 16 px high; `.value(v -> ...)`, `.max(...)`, `.fill` (color), `.text`, `.tooltip`: fills pixel exact |
@@ -108,9 +108,25 @@ If the server sends its own resource pack (`resource-pack=` in server.properties
 it on start (`icons.source-pack: auto`): textures it replaces are measured so icons line up, and the
 pack's own items work as icons, e.g. `Icon.of(x, y, "myserver:ruby")` for
 `assets/myserver/items/ruby.json`. Players see those only with the server pack loaded; for players
-who declined it they are left out (a grid cell shows a short name instead). Like in the inventory,
+who declined it they are left out (a grid cell shows a short name instead). With
+`pack.include-source-pack: true` the server pack is part of the Glyphwork pack, so whoever has the
+Glyphwork pack has both. Like in the inventory,
 the whole 16×16 texture is drawn at a fixed spot, so art that the pack draws off-center stays
 off-center.
+
+**Picture sizes:** `Image.of(x, y, "logo").size(32, 0)` (0 = from the aspect ratio) or
+`.scale(0.5)` draws a picture smaller or bigger. Each size is a picture of its own in the pack, so
+announce the sizes your plugin draws once, in `onEnable`:
+
+```java
+Glyphwork.get().imageSize("logo", 32, 0);
+Glyphwork.get().imageSize("ranks/*", 16, 16);   // * = any text: every picture in ranks/
+Glyphwork.get().imageScale("banner", 0.5);
+```
+
+Glyphwork then builds the pack again one tick later, before players join. A size that is not in the
+pack draws nothing (its place still takes clicks) and is logged once with the call that adds it.
+YAML menus add their sizes by themselves.
 
 `y` of a label is the top of the glyphs; capitals are 7 px high, so text centered in a 16 px
 button starts 4 px below the button's top.

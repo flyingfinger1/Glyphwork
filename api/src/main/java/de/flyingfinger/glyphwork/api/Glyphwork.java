@@ -54,4 +54,17 @@ public interface Glyphwork {
 
     /** Sends the Glyphwork resource pack to the player (again), e.g. from your own command. */
     void sendPack(Player player);
+
+    /**
+     * Puts a size of a picture into the pack, for {@link Image#size(int, int)}. 0 for one side keeps
+     * the aspect ratio; {@code *} in the name matches any text ({@code "ranks/*"}). Call it in your
+     * {@code onEnable}: a new size makes Glyphwork build the pack again one tick later, before
+     * players join. Later calls work too, but players then download the pack again.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    void imageSize(String image, int width, int height);
+
+    /** Like {@link #imageSize(String, int, int)}, for {@link Image#scale(double)}. */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    void imageScale(String image, double scale);
 }

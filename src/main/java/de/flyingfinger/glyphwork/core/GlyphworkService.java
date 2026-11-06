@@ -197,6 +197,29 @@ public final class GlyphworkService implements Glyphwork {
         sendPack.accept(player);
     }
 
+    /** Where {@link #imageSize} and {@link #imageScale} go (the plugin adds them to the pack). */
+    private volatile Consumer<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> imageSizes = r -> { };
+
+    public void onImageSize(Consumer<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> imageSizes) {
+        this.imageSizes = imageSizes;
+    }
+
+    @Override
+    public void imageSize(String image, int width, int height) {
+        if (image == null || image.isBlank() || width < 0 || height < 0 || width == 0 && height == 0) {
+            throw new IllegalArgumentException("imageSize(" + image + ", " + width + ", " + height + "): name and at least one side");
+        }
+        imageSizes.accept(de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest.size(image, width, height));
+    }
+
+    @Override
+    public void imageScale(String image, double scale) {
+        if (image == null || image.isBlank() || !(scale > 0)) {
+            throw new IllegalArgumentException("imageScale(" + image + ", " + scale + "): name and a scale above 0");
+        }
+        imageSizes.accept(de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest.scale(image, scale));
+    }
+
     private void show(Player player, Session s) {
         show(player, s, false);
     }

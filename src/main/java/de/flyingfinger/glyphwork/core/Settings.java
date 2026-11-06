@@ -23,7 +23,8 @@ public record Settings(
     java.time.Duration feedCache,
     String dateFormat,
     boolean provided,
-    boolean providedAlways) {
+    boolean providedAlways,
+    boolean includeSourcePack) {
 
     /** Version of the config layout; config.yml files without one are from before 1.0. */
     public static final int CONFIG_VERSION = 1;
@@ -38,7 +39,7 @@ public record Settings(
         // read with a hint, from before 1.0
         "max-height", "fallback", "icon-source-pack");
     private static final java.util.Set<String> PACK = java.util.Set.of("hosting", "url", "send-on-join", "required",
-        "provided-loaded", "min-height", "prompt");
+        "provided-loaded", "min-height", "prompt", "include-source-pack");
 
     /** Reads config.yml; keys from before 1.0 still work, {@code warn} gets a hint for each, and for unknown keys. */
     public static Settings read(FileConfiguration c, java.util.function.Consumer<String> warn) {
@@ -112,7 +113,8 @@ public record Settings(
             duration(c.getString("feeds.cache", "10m"), java.time.Duration.ofMinutes(10), "feeds.cache", warn),
             dates,
             hosting.equals("provided"),
-            loaded.equals("always"));
+            loaded.equals("always"),
+            c.getBoolean("pack.include-source-pack", false));
     }
 
     /** True if a key from before 1.0 is there (with a hint to the new one). */

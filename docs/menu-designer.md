@@ -22,7 +22,8 @@ After that icons, tints and text look like in game, including the text widths th
 
 Your own pictures (`plugins/Glyphwork/images/`) show as a box with their name until you load them
 under *Own pictures*: single PNGs, or the whole `images` folder (sub folders keep their path,
-`ranks/gold`). They also stay in the browser only.
+`ranks/gold`). They also stay in the browser only. With `width`, `height` or `scale` the preview
+resizes them the way the plugin does.
 
 Resource packs (ZIP) loaded afterwards replace textures of the jar, like in game, and items of their
 own (`myserver:ruby` from `assets/myserver/textures/item/ruby.png`) work as icons. Player heads stay

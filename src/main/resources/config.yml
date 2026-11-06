@@ -26,6 +26,11 @@ pack:
   # Only for hosting: provided. Who has the pack? always = everyone (a required pack, e.g. sent by
   # the proxy); server-pack = players who loaded the pack of server.properties (resource-pack=).
   provided-loaded: always
+  # true = your server's resource pack (icons.source-pack below) becomes part of the Glyphwork pack,
+  # so players get one pack. Then empty resource-pack= in server.properties (else they get it twice)
+  # and set icons.source-pack to the zip file or its URL. /glyphwork reload after the pack changed.
+  # Not with hosting: provided.
+  include-source-pack: false
   # URL the client downloads from; {sha1} is replaced by the pack hash. It must be reachable from the
   # players' machines (not 127.0.0.1 on a real server).
   url: "http://127.0.0.1:8765/{sha1}.zip"

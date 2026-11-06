@@ -44,6 +44,68 @@ const num = (v, d) => {
 };
 const list = (v) => (v == null ? [] : Array.isArray(v) ? v.map(String) : [String(v)]);
 
+/** Size of a w x h picture with width/height (0 = keep ratio) or scale, like ImageCatalog.dims; null = own size. */
+export function pictureDims(w, h, width, height, scale) {
+  if (scale > 0) return [Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale))];
+  if (width > 0 && height > 0) return [width, height];
+  if (width > 0) return [width, Math.max(1, Math.round(h * width / w))];
+  if (height > 0) return [Math.max(1, Math.round(w * height / h)), height];
+  return null;
+}
+
+/**
+ * Resizes like the plugin (ImageCatalog.resize): area average with premultiplied alpha when
+ * shrinking, hard pixels when enlarging.
+ */
+export function resizePix(src, w, h) {
+  const out = new Pix(w, h);
+  const fx = src.w / w;
+  const fy = src.h / h;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (fx <= 1 && fy <= 1) {
+        out.set(x, y, src.get(Math.min(src.w - 1, Math.floor((x + 0.5) * fx)), Math.min(src.h - 1, Math.floor((y + 0.5) * fy))));
+        continue;
+      }
+      const x0 = x * fx, x1 = (x + 1) * fx, y0 = y * fy, y1 = (y + 1) * fy;
+      let sa = 0, sr = 0, sg = 0, sb = 0, sum = 0;
+      for (let sy = Math.floor(y0); sy < Math.min(src.h, Math.ceil(y1)); sy++) {
+        const wy = Math.min(y1, sy + 1) - Math.max(y0, sy);
+        for (let sx = Math.floor(x0); sx < Math.min(src.w, Math.ceil(x1)); sx++) {
+          const wgt = wy * (Math.min(x1, sx + 1) - Math.max(x0, sx));
+          if (wgt <= 0) continue;
+          const v = src.get(sx, sy);
+          const a = (v >>> 24) / 255 * wgt;
+          sa += a;
+          sr += ((v >> 16) & 0xff) * a;
+          sg += ((v >> 8) & 0xff) * a;
+          sb += (v & 0xff) * a;
+          sum += wgt;
+        }
+      }
+      const a = sum <= 0 ? 0 : Math.round(sa / sum * 255);
+      if (a === 0) continue;
+      out.set(x, y, ((a << 24) | (Math.round(sr / sa) << 16) | (Math.round(sg / sa) << 8) | Math.round(sb / sa)) >>> 0);
+    }
+  }
+  return out;
+}
+
+const sizedCache = new Map();
+
+/** The picture at the asked size (cached per picture and size). */
+function sizedPicture(id, pic, width, height, scale) {
+  const d = pictureDims(pic.w, pic.h, width, height, scale);
+  if (!d || (d[0] === pic.w && d[1] === pic.h)) return pic;
+  const key = id + '@' + d[0] + 'x' + d[1];
+  let hit = sizedCache.get(key);
+  if (!hit || hit.src !== pic) {
+    hit = { src: pic, out: resizePix(pic, d[0], d[1]) };
+    sizedCache.set(key, hit);
+  }
+  return hit.out;
+}
+
 /** Sample entries for dynamic lists (items-from), keys like Sources.java. */
 export const SAMPLES = {
   'online-players': [
@@ -576,7 +638,8 @@ export function renderMenu(menu, skin, ctx = {}) {
         }
         case 'image': {
           const id = f(el.image ?? '').trim().toLowerCase().replace(/\.png$/, '');
-          const pic = ctx.pictures?.get(id);
+          const own = ctx.pictures?.get(id);
+          const pic = own ? sizedPicture(id, own, int(el.width, 0), int(el.height, 0), num(el.scale, 0)) : null;
           if (pic) {
             const tnt = color(el.tint);
             for (let yy = 0; yy < pic.h; yy++) {

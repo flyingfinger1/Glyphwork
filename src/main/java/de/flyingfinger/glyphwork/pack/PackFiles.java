@@ -24,6 +24,10 @@ public final class PackFiles {
         files.put(path, data);
     }
 
+    public boolean has(String path) {
+        return files.containsKey(path);
+    }
+
     public void put(String path, String text) {
         put(path, text.getBytes(StandardCharsets.UTF_8));
     }

@@ -41,6 +41,8 @@ class M2Test {
         assertEquals("https://x.org/p/abc.zip", settings("pack: {url: 'https://x.org/p'}").url("abc"));
         Settings d = settings("");
         assertFalse(d.external());
+        assertFalse(d.includeSourcePack());
+        assertTrue(settings("pack: {include-source-pack: true}").includeSourcePack());
         assertEquals("http://127.0.0.1:8765/abc.zip", d.url("abc"));
         assertTrue(d.plainDialog());
         assertEquals(256, d.minHeight());

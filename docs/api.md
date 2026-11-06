@@ -3,6 +3,9 @@
 Build clickable screens from code. They show up as a vanilla dialog; players only need the
 resource pack, which Glyphwork generates and sends itself.
 
+Methods and settings marked *(since 1.1)* need at least that Glyphwork version (compile against
+its API jar); everything else works since 1.0.
+
 ## Setup
 
 - `plugin.yml`: `depend: [Glyphwork]`
@@ -75,7 +78,7 @@ frame visible around it, `frame("none")` draws no frame), `Button.icon("emerald"
 text, best with height 24) and `ListView.icon(...)`. Icons use the textures the client already
 has: flat items look like in the inventory, block items show one face (no 3D), and items drawn by
 special renderers (heads, chests, beds, banners, shields, shulker boxes) have no icon. Like text,
-icons are drawn above frames. GUI sprites work as icons too, drawn at their own size in the middle of
+icons are drawn above frames. GUI sprites *(since 1.1)* work as icons too, drawn at their own size in the middle of
 the icon: `"gui:hud/heart/full"`, `"gui:mob_effect/speed"`, `"gui:statistics/item_crafted"`,
 `"gui:icon/checkmark"` (list in [menus.md](menus.md#elements)). Tooltips and titles are drawn by the
 client, so `<sprite:items:item/emerald>` and `<head:Steve>` (MiniMessage, or Adventure's
@@ -109,12 +112,12 @@ it on start (`icons.source-pack: auto`): textures it replaces are measured so ic
 pack's own items work as icons, e.g. `Icon.of(x, y, "myserver:ruby")` for
 `assets/myserver/items/ruby.json`. Players see those only with the server pack loaded; for players
 who declined it they are left out (a grid cell shows a short name instead). With
-`pack.include-source-pack: true` the server pack is part of the Glyphwork pack, so whoever has the
+`pack.include-source-pack: true` *(since 1.1)* the server pack is part of the Glyphwork pack, so whoever has the
 Glyphwork pack has both. Like in the inventory,
 the whole 16×16 texture is drawn at a fixed spot, so art that the pack draws off-center stays
 off-center.
 
-**Picture sizes:** `Image.of(x, y, "logo").size(32, 0)` (0 = from the aspect ratio) or
+**Picture sizes** *(since 1.1)*: `Image.of(x, y, "logo").size(32, 0)` (0 = from the aspect ratio) or
 `.scale(0.5)` draws a picture smaller or bigger. Each size is a picture of its own in the pack, so
 announce the sizes your plugin draws once, in `onEnable`:
 

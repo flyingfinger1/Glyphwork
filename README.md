@@ -30,7 +30,7 @@ Players without the pack get a plain native dialog built from the same scene; Be
 (Geyser/Floodgate) always get it, as a Bedrock form. The pack is served by
 a built-in HTTP server or written to `plugins/Glyphwork/pack/<sha1>.zip` for your own web server
 (`pack.hosting: external`, `pack.url` with `{sha1}`), or merged into the pack your server or proxy
-sends (`pack.hosting: provided`). The other way round, `pack.include-source-pack: true` puts your
+sends (`pack.hosting: provided`). The other way round, `pack.include-source-pack: true` (since 1.1) puts your
 server's pack into the Glyphwork pack, so players get a single pack. `/glyphwork reload` rebuilds theme and pack and
 sends it to everyone online; `/glyphwork status` shows who has it. See `config.yml`.
 
@@ -63,7 +63,7 @@ release (do not shade it; the classes come with the Glyphwork plugin), e.g. with
 
 ```groovy
 dependencies {
-    compileOnly files('libs/glyphwork-api-1.0.0.jar')
+    compileOnly files('libs/glyphwork-api-1.1.0.jar')
 }
 ```
 
@@ -75,7 +75,8 @@ change in a minor version: tabs, scroll panes, big heads, text styles, item tool
 view, `redrawAfter`, picture sizes) and `@ApiStatus.Internal` (getters Glyphwork's renderer reads; do not call
 them). New element types, form fields and display modes may be added, so give a `switch` over
 them a default branch. The same promise holds for the YAML menu format and `config.yml`; renamed
-keys keep working with a hint in the log.
+keys keep working with a hint in the log. Features added after 1.0 are marked *since 1.x* in the
+docs, and the menu designer can be set to the version your server runs.
 
 A complete example plugin is in [example/](example/): `/trader` opens a small trader with item
 icons, amount buttons, a text prompt, a buy button that is only active when the player can pay, and

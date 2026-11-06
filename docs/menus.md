@@ -1,5 +1,8 @@
 # Menus without code
 
+Settings marked *(since 1.1)* need at least that Glyphwork version; everything else works since 1.0.
+An older server rejects them with the exact place in the log (`unknown key`).
+
 Every `*.yml` file in `plugins/Glyphwork/menus/` is a menu; the file name is its id. Files whose
 name starts with `_` hold [templates](#templates) instead. On first start Glyphwork puts examples
 there, in the server's language (`language`, or `fallback-language` when it is `auto`): `example.yml`,
@@ -100,7 +103,7 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
 | `head` | a player's face painted from the skin: `x`, `y`, `player` (name, UUID or placeholder, default `%player%`), `size` (8, 16, 24 or 32; default 32), `tooltip`, `actions` |
-| `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `width` / `height` or `scale` (another size), `tint`, `tooltip`, `actions` |
+| `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `width` / `height` or `scale` (another size, *since 1.1*), `tint`, `tooltip`, `actions` |
 | `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part), `text` (in the middle), `tooltip`, `frame` (`slot`) |
 | `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`; page buttons appear below when needed (+20 px) |
 | `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed |
@@ -116,7 +119,7 @@ beds, banners, shields, shulker boxes) have no icon. For a shop-like grid use `c
 Items of your server's resource pack work too (`icon: "myserver:ruby"`), see `icons.source-pack` in
 `config.yml`.
 
-**GUI sprites** go wherever an item id goes, with `gui:` and the sprite's name in the game's GUI
+**GUI sprites** *(since 1.1)* go wherever an item id goes, with `gui:` and the sprite's name in the game's GUI
 atlas: hearts (`gui:hud/heart/full`, `half`, `container`, `poisoned_full`, `withered_full`,
 `frozen_full`, `absorbing_full`, `hardcore_full` ...), food (`gui:hud/food_full`, `food_half`,
 `food_empty`), armor (`gui:hud/armor_full`), air bubbles (`gui:hud/air`), every status effect
@@ -143,7 +146,7 @@ because the client cannot load bigger glyphs. Transparent parts stay transparent
 the colors. A big player head, a logo, a banner or a rank badge are all just pictures. The plain
 dialog leaves pictures out (a clickable one becomes a button named by its tooltip).
 
-**Other sizes:** `width: 32` draws a picture 32 px wide (the height follows the aspect ratio),
+**Other sizes** *(since 1.1)*: `width: 32` draws a picture 32 px wide (the height follows the aspect ratio),
 `width` and `height` together set both, `scale: 0.5` draws it at half its size. Glyphwork resizes
 the picture when it builds the pack (shrinking averages the pixels, enlarging keeps them hard), so
 every size the menus use is a picture of its own in the pack. With a placeholder in the name
@@ -166,7 +169,7 @@ text. A `<` that is not a tag stays as it is; write `\<` for a `<` that would lo
 Tooltips, the dialog title, `message:` and the `disabled-` / `cooldown-tooltip` are drawn by the
 client, so every MiniMessage tag works there, also pictures in the text:
 `<sprite:items:item/emerald>` (any item or block texture, `<sprite:gui:hud/heart/full>` for GUI
-sprites) and `<head:Steve>` / `<head:%player%>` draw an 8 x 8 picture inside the line, e.g.
+sprites; this works since 1.0, it is drawn by the client) and `<head:Steve>` / `<head:%player%>` draw an 8 x 8 picture inside the line, e.g.
 `tooltip: "Costs 20 <sprite:items:item/emerald>"`. In pixel text use an `icon` element instead.
 
 **Text blocks:** a label with `width` and `wrap: true` breaks its text into lines at spaces; `\n`

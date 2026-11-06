@@ -29,6 +29,13 @@ Resource packs (ZIP) loaded afterwards replace textures of the jar, like in game
 own (`myserver:ruby` from `assets/myserver/textures/item/ruby.png`) work as icons. Player heads stay
 placeholders (skins come from Mojang's servers). *Remove* deletes the stored textures.
 
+## Glyphwork version
+
+*For Glyphwork version* (left, below the skin) sets the version your server runs. Settings that
+need a newer one are hidden in the forms; ones the menu already has stay, marked "from 1.1", and the
+list below the preview names every place that needs a newer version (also values like
+`icon: "gui:..."`). The choice stays in the browser; it starts at the newest version.
+
 ## Workflow
 
 1. **Start or open.** *New* starts a small menu, *Open* loads a `.yml` file, *Paste YAML* takes a

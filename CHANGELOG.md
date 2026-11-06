@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 – GUI sprites, picture sizes and one pack for the client
+
+Everything here is new; menus, configs and plugins made for 1.0 keep working unchanged.
 
 - **GUI sprites as icons:** `icon: "gui:hud/heart/full"`, `gui:mob_effect/speed`,
   `gui:statistics/item_crafted`, `gui:icon/checkmark` and about 100 more (hearts, food, armor, air,
@@ -18,6 +20,9 @@
   (`icons.source-pack`) into the Glyphwork pack; its pack.mcmeta and pack.png are kept, Glyphwork's
   own files win. Empty `resource-pack=` in server.properties then. Helps with client mods that keep
   only the last server pack, and saves merging by hand as with `hosting: provided`.
+- **Menu designer: Glyphwork version.** Pick the version your server runs: newer settings are hidden
+  or marked, and the check list names everything that needs a newer version. The docs mark what
+  came after 1.0 with *since 1.1*.
 
 ## 1.0.0 – stable API, tabs, scroll panes, feeds and Bedrock
 

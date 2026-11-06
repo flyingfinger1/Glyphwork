@@ -43,17 +43,22 @@ elements:
   client already has. Icons follow your server's resource pack: replaced textures are measured,
   and the pack's own items (`myserver:ruby`) work as icons. **Player heads** as small 8 x 8 icons
   (`head:Steve`), e.g. in a list of online players. Stack counts at the icon like in the inventory.
+  **GUI sprites** too: hearts, food, armor, every status effect, statistics and small icons
+  (`gui:hud/heart/full`, `gui:mob_effect/speed`).
+- **Own pictures** (PNG, any size) placed like any element, also smaller or bigger (`width`,
+  `height`, `scale`).
 - **Pixel-exact clicks**, also off the 9 px text grid.
 - **Skins:** frames are autotiled from tiny sheets, so any shape joins seamlessly. Three skins are
   built in (vanilla, dark, parchment); make your own with the browser-based
   [skin editor](https://flyingfinger1.github.io/Glyphwork/).
 - **Menu designer** in the browser: place elements with the mouse, edit forms and variables, try
-  the menu out and download the YAML file. With your own client jar loaded it shows the real item
+  the menu out and download the YAML file, for the Glyphwork version your server runs. With your own client jar loaded it shows the real item
   icons and font (read only in your browser).
 - **Example plugin** to copy from: a small trader built against the API, attached to every release.
 - **Resource pack handled for you:** generated on start, stable hash (no re-downloads), served by
   a built-in web server, written to disk for your own web server / CDN, or merged into the pack
-  your server or proxy sends.
+  your server or proxy sends. Or the other way round: your server's pack goes into the Glyphwork
+  pack, so players get a single pack.
 - **Plain dialog:** players who decline the pack, and Bedrock players through Geyser, get a native
   dialog built from the same screen (or an own plain view of the menu).
 - **Display mode per player** (full / without icons / plain) for players whose own resource pack

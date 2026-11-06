@@ -6,7 +6,7 @@ import { toImageData } from '../pix.js';
 import { SKINS, a2FromStyle } from '../style.js';
 import { Theme } from '../model.js';
 import { renderMenu, fill, varValue, allHold, plain, optionsOf, SAMPLES } from './menu-render.js';
-import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField } from './schema.js';
+import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField, VERSIONS, LATEST, sinceOf, newerThan, compareVersions } from './schema.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
 import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, importPictures } from './assets.js';
 import { useMinecraftFont, minecraftFont } from '../font.js';
@@ -38,6 +38,13 @@ let mode = 'edit';
 let last = null;           // last render result
 let icons = null;          // item -> texture layers, when Minecraft textures are loaded
 let pictures = new Map();  // the server's own pictures loaded into the designer (id -> Pix)
+// the Glyphwork version the menu is for: newer settings are hidden or marked (kept per browser)
+const TARGET_STORE = 'glyphwork-designer-target';
+let target = LATEST;
+try {
+  const v = localStorage.getItem(TARGET_STORE);
+  if (VERSIONS.includes(v)) target = v;
+} catch { /* storage unavailable */ }
 const undoStack = [];
 const redoStack = [];
 let lastMerge = null;
@@ -392,6 +399,12 @@ function showProblems() {
     d.textContent = `⚠ ${er.top >= 0 ? '#' + (er.top + 1) + ': ' : ''}${er.text}`;
     box.append(d);
   }
+  for (const n of newerThan(menu, target)) {
+    const d = document.createElement('div');
+    d.className = 'newer';
+    d.textContent = `⬆ ${n.top >= 0 ? '#' + (n.top + 1) + ': ' : ''}${t('newerUse', { key: n.key, v: n.since, target })}`;
+    box.append(d);
+  }
 }
 
 // ------------------------------------------------------------------ keyboard
@@ -682,7 +695,15 @@ function refreshProps() {
     if (kind === 'use') { box.append(field('use', 'select', templateNames(), get('use'), put('use'), 'el' + selected)); continue; }
     if (kind === 'values') { box.append(valuesEditor()); continue; }
     if (kind === 'yaml') { box.append(yamlField(key)); continue; }
+    // settings newer than the chosen version: hidden, or marked when the menu already has them
+    const since = sinceOf(k, key);
+    const newer = since && compareVersions(since, target) > 0;
+    if (newer && el[key] === undefined) continue;
     const f = field(key, kind, extra, get(key), put(key), 'el' + selected);
+    if (newer) {
+      f.classList.add('newer');
+      f.dataset.since = t('sinceTag', { v: since });
+    }
     // x/y and width/height side by side
     if (['x', 'width', 'cols', 'min'].includes(key)) {
       pairOpen = document.createElement('div');
@@ -1395,6 +1416,15 @@ function init() {
   skinSel.add(new Option(t('skinFromEditor'), 'editor'));
   skinSel.value = skinKey;
   skinSel.onchange = () => { skinKey = skinSel.value; skinCache = null; changed(false); };
+
+  const targetSel = $('target');
+  for (const v of [...VERSIONS].reverse()) targetSel.add(new Option(v === LATEST ? t('targetLatest', { v }) : v, v));
+  targetSel.value = target;
+  targetSel.onchange = () => {
+    target = targetSel.value;
+    try { localStorage.setItem(TARGET_STORE, target); } catch { /* ignore */ }
+    changed(true);
+  };
 
   for (const type of TYPES) {
     const b = document.createElement('button');

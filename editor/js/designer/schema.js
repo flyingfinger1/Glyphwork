@@ -63,7 +63,7 @@ export const TYPES = ['label', 'button', 'panel', 'hitbox', 'icon', 'list', 'gri
 
 /** Field names that map to i18n keys (f_...). */
 export const FIELD_KEY = {
-  x: 'f_x', y: 'f_y', text: 'f_text', color: 'f_color', width: 'f_width', height: 'f_height', align: 'f_align',
+  x: 'f_x', y: 'f_y', text: 'f_text', color: 'f_color', width: 'f_width', height: 'f_height', scale: 'f_scale', align: 'f_align',
   shadow: 'f_shadow', tint: 'f_tint', 'text-color': 'f_textColor', 'inactive-tint': 'f_inactiveTint', fill: 'f_fill', tooltip: 'f_tooltip', actions: 'f_actions',
   permission: 'f_permission', frame: 'f_frame', icon: 'f_icon', 'enabled-if': 'f_enabledIf',
   'disabled-tooltip': 'f_disabledTooltip', 'show-if': 'f_showIf', shape: 'f_shape', item: 'f_item', count: 'f_count',
@@ -132,5 +132,73 @@ export function setField(el, key, value) {
   const out = {};
   for (const k of order) if (k in next) out[k] = next[k];
   for (const k of Object.keys(next)) if (!(k in out)) out[k] = next[k];
+  return out;
+}
+
+// ------------------------------------------------------------------ Glyphwork versions
+
+/** Glyphwork versions the designer can write menus for (oldest first); the last one is the newest. */
+export const VERSIONS = ['1.0', '1.1'];
+export const LATEST = VERSIONS[VERSIONS.length - 1];
+
+/** Settings that came after 1.0: "type.key" -> version. Everything else works since 1.0. */
+export const SINCE = {
+  'image.width': '1.1',
+  'image.height': '1.1',
+  'image.scale': '1.1',
+};
+
+/** Values that came after 1.0: icons from the GUI atlas ("gui:hud/heart/full"). */
+const VALUE_SINCE = [
+  { keys: ['icon', 'item'], test: (v) => /^\s*gui:/i.test(v), since: '1.1', what: 'gui:' },
+];
+
+/** -1, 0 or 1 like a comparator ("1.10" is newer than "1.9"). */
+export function compareVersions(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return Math.sign(d);
+  }
+  return 0;
+}
+
+/** The version a setting of this element type needs, or null if it works since 1.0. */
+export function sinceOf(type, key) {
+  return SINCE[`${type}.${key}`] || null;
+}
+
+/**
+ * Everything in the menu that needs a newer Glyphwork than target: [{ top, key, since }], top =
+ * index of the element at the top level (nested elements of scroll panes and tabs count to theirs).
+ */
+export function newerThan(menu, target) {
+  const out = [];
+  const seen = new Set();
+  const note = (top, key, since) => {
+    const k = `${top}|${key}|${since}`;
+    if (compareVersions(since, target) > 0 && !seen.has(k)) {
+      seen.add(k);
+      out.push({ top, key, since });
+    }
+  };
+  const visit = (node, top, type) => {
+    if (Array.isArray(node)) { node.forEach((n) => visit(n, top, type)); return; }
+    if (!node || typeof node !== 'object') return;
+    const t = typeof node.type === 'string' ? node.type.toLowerCase() : type;
+    for (const [k, v] of Object.entries(node)) {
+      const s = node.type ? sinceOf(t, k) : null;
+      if (s) note(top, k, s);
+      if (typeof v === 'string') {
+        for (const r of VALUE_SINCE) if (r.keys.includes(k) && r.test(v)) note(top, `${k}: ${r.what}`, r.since);
+      } else {
+        visit(v, top, k === 'elements' || k === 'tabs' ? null : t);
+      }
+    }
+  };
+  (menu?.elements || []).forEach((el, i) => visit(el, i, null));
+  // templates and forms are shared by all elements
+  for (const key of ['templates', 'forms']) if (menu?.[key]) visit(menu[key], -1, null);
   return out;
 }

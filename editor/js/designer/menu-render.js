@@ -456,8 +456,18 @@ function drawIcon(c, item, x, y, tintRgb = null) {
   c.fillRect(x + 1, y + 14, 14, 1, 0x55000000);
   const n = shortName(item).slice(0, 2);
   c.centered(n, x, ICON, y + 4, 0x303030);
+  if (c.missingIn && c.missingIn(item)) {
+    // newer than the loaded client jar: empty in the game; a red frame so it can be found
+    c.fillRect(x, y, ICON, 1, MISSING_RED);
+    c.fillRect(x, y + ICON - 1, ICON, 1, MISSING_RED);
+    c.fillRect(x, y + 1, 1, ICON - 2, MISSING_RED);
+    c.fillRect(x + ICON - 1, y + 1, 1, ICON - 2, MISSING_RED);
+    c.notIn?.add(String(item).toLowerCase().replace(/^minecraft:/, ''));
+  }
   return true;
 }
+
+const MISSING_RED = 0xffe0303a;
 
 function drawCount(c, count, x, y, bottom = Infinity) {
   const s = count == null ? '' : String(count).trim();
@@ -470,15 +480,17 @@ function drawCount(c, count, x, y, bottom = Infinity) {
 /**
  * @param menu   parsed YAML menu
  * @param skin   { frames: Map(name -> A2 Pix), tileSize, text (ARGB) }
- * @param ctx    { vars: {name: value}, pages: {id: n}, player, online, shared (templates), maxHeight }
- * @returns {pix, boxes: [{top, x, y, w, h}], regions: [{x, y, w, h, tip, act}], hints: [{top, text}],
- *           errors: [{top, text}]}
+ * @param ctx    { vars: {name: value}, pages: {id: n}, player, online, shared (templates), maxHeight,
+ *                 missingIn: item -> true when the loaded client jar lacks its textures }
+ * @returns {pix, boxes: [{top, x, y, w, h}], regions: [{x, y, w, h, tip, act}],
+ *           hints: [{top, text} | {top, notIn: item}], errors: [{top, text}]}
  *   act: {type:'actions', list, item} | {type:'set', var, value, then} | {type:'page', id, page}
  */
 export function renderMenu(menu, skin, ctx = {}) {
   const W = int(menu.width, 176), H = int(menu.height, 96);
   const c = new Canvas(W, H, skin.frames, skin.tileSize, skin.text);
   c.icons = ctx.icons || null;
+  c.missingIn = ctx.missingIn || null;
   const skinText = (rgb) => (rgb === DARK ? (skin.text & 0xffffff) : rgb);
   ctx = { ...ctx, menu };
   const boxes = [], regions = [], hints = [];
@@ -493,6 +505,7 @@ export function renderMenu(menu, skin, ctx = {}) {
   const active = {};
   for (const { el, top, inTab } of items) {
     if (inTab && inTab.some((m) => active[m.key] !== m.id)) continue;
+    c.notIn = new Set();
     const f = (s, item) => fill(s, ctx, item);
     const type = String(el.type ?? '').toLowerCase();
     if (type === '_missing') {
@@ -751,6 +764,7 @@ export function renderMenu(menu, skin, ctx = {}) {
             if (ry >= y && ry + r.h <= y + h) regions.push({ ...r, x: r.x + x, y: ry });
           }
           for (const e of sub.errors) errors.push({ top, text: e.text });
+          for (const hn of sub.hints) if (hn.notIn) c.notIn.add(hn.notIn);
           if (max > 0) {
             const bx = x + w - 8;
             const go = (v) => ({ type: 'page', id: 'scroll:' + key, page: v });
@@ -808,6 +822,7 @@ export function renderMenu(menu, skin, ctx = {}) {
     } catch (e) {
       errors.push({ top, text: String(e?.message ?? e) });
     }
+    for (const item of c.notIn) hints.push({ top, notIn: item });
   }
   // page buttons would cover other elements once a list gets more entries
   for (const r of boxes.filter((b) => b.reserve)) {

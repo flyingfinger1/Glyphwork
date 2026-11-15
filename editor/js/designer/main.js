@@ -8,7 +8,7 @@ import { Theme } from '../model.js';
 import { renderMenu, fill, varValue, allHold, plain, optionsOf, SAMPLES } from './menu-render.js';
 import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField, VERSIONS, LATEST, sinceOf, newerThan, compareVersions, unreleased } from './schema.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
-import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, importPictures } from './assets.js';
+import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, missingIcons, importPictures } from './assets.js';
 import { useMinecraftFont, minecraftFont } from '../font.js';
 
 const $ = (id) => document.getElementById(id);
@@ -37,6 +37,8 @@ let skinKey = 'vanilla';
 let mode = 'edit';
 let last = null;           // last render result
 let icons = null;          // item -> texture layers, when Minecraft textures are loaded
+let missingIn = null;      // item -> true when the loaded client jar lacks its textures
+let mcVersion = null;      // Minecraft version of the loaded client jar
 let pictures = new Map();  // the server's own pictures loaded into the designer (id -> Pix)
 // the Glyphwork version the menu is for: newer settings are hidden or marked (kept per browser)
 const TARGET_STORE = 'glyphwork-designer-target';
@@ -172,7 +174,7 @@ let drag = null;
 let hoverRegion = null;
 
 function draw() {
-  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, pictures, target });
+  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, missingIn, pictures, target });
   const { pix } = last;
   off.width = pix.w;
   off.height = pix.h;
@@ -397,6 +399,17 @@ function showProblems() {
     const d = document.createElement('div');
     d.className = 'err';
     d.textContent = `⚠ ${er.top >= 0 ? '#' + (er.top + 1) + ': ' : ''}${er.text}`;
+    box.append(d);
+  }
+  const notIn = new Map();   // element -> items the loaded Minecraft version lacks
+  for (const h of (last?.hints || []).filter((x) => x.notIn)) {
+    if (!notIn.has(h.top)) notIn.set(h.top, []);
+    notIn.get(h.top).push(h.notIn);
+  }
+  for (const [top, items] of notIn) {
+    const d = document.createElement('div');
+    d.className = 'notIn';
+    d.textContent = `ℹ #${top + 1}: ${t(items.length > 1 ? 'iconsNotIn' : 'iconNotIn', { item: items.join(', '), v: mcVersion })}`;
     box.append(d);
   }
   for (const n of newerThan(menu, target)) {
@@ -666,7 +679,8 @@ function refreshProps() {
   for (const h of (last?.hints || []).filter((x) => x.top === selected)) {
     const d = document.createElement('div');
     d.className = 'hintLine';
-    d.textContent = 'ℹ ' + (h.pagerOver ? t('pagerOverlap', { n: h.pagerOver }) : h.text);
+    d.textContent = 'ℹ ' + (h.notIn ? t('iconNotIn', { item: h.notIn, v: mcVersion })
+      : h.pagerOver ? t('pagerOverlap', { n: h.pagerOver }) : h.text);
     box.append(d);
   }
   const put = (key) => (v) => replaceSelected(setField(current(), key, v));
@@ -1373,7 +1387,9 @@ function loadMenu(text, id) {
 // ------------------------------------------------------------------ Minecraft textures
 
 async function loadTextures() {
-  const { sources, images, pictures: pics } = await loadStored();
+  const { sources, images, pictures: pics, minecraft } = await loadStored();
+  mcVersion = images.size ? minecraft : null;
+  missingIn = null;
   pictures = pics || new Map();
   $('picStatus').textContent = pictures.size
     ? t('picturesLoaded', { n: pictures.size, ids: [...pictures.keys()].slice(0, 12).join(', ') + (pictures.size > 12 ? ' …' : '') })
@@ -1387,8 +1403,10 @@ async function loadTextures() {
   }
   const [cat, table] = await Promise.all([catalog(), fontTable()]);
   icons = iconSource(cat, images);
+  if (mcVersion) missingIn = missingIcons(cat, images);
   const font = useMinecraftFont(table, images);
-  $('mcStatus').textContent = t('mcLoaded', { sources: sources.join(', '), n: images.size, font: font ? t('mcYes') : t('mcNo') });
+  $('mcStatus').textContent = t('mcLoaded', { sources: sources.join(', '), n: images.size, font: font ? t('mcYes') : t('mcNo') })
+    + (mcVersion ? ' ' + t('mcVersion', { v: mcVersion }) : '');
   $('iconNote').textContent = t(font ? 'iconNoteHeads' : 'iconNoteFont');
 }
 

@@ -251,6 +251,11 @@ More modes may be added later. Players choose it with `/glyphwork display` (Germ
   the pack height by themselves (up to 2048 px); plugins with taller scenes set `pack.min-height`.
 - Text uses the Minecraft font; bold, italics, underline and strikethrough work, other fonts and
   sizes do not.
+- The server learns of clicks only: not where the mouse is (no hover, apart from the tooltips the
+  client shows by itself), not which mouse button, and not which keys are held. While a dialog is
+  open the client sends no movement input either (`getCurrentInput()` reads "nothing pressed",
+  also with Shift held). So there is no right click or shift click: use a mode button (open / flag
+  in a minesweeper) or a first click as preview and a second one to confirm.
 - Players without the pack (declined, failed, still loading, or a client that ignores server packs)
   and Bedrock players get the plain dialog built from the same scene, if `plain-dialog: true`
   (default): labels become

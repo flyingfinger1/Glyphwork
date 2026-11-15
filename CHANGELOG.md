@@ -1,27 +1,32 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 – screens for several players, big heads on buttons
+
+Found by building small games (Minesweeper, Tic-Tac-Toe and Battleship for two players) with the
+API. Menus, configs and plugins made for 1.0 and 1.1 keep working; one drawing detail changed (big
+elements with a player head, see below).
 
 - **Other players' screens:** `Glyphwork.get().redraw(player)` draws a player's open screen again
   (state, pages and history stay), `redraw(sceneId)` does it for everyone who has that scene open,
-  `openScene(player)` tells which scene a player has open. Found while building small test games:
-  a move in a two-player game had to reopen the other player's screen.
+  `openScene(player)` tells which scene a player has open. Before, a move in a two-player game had
+  to reopen the other player's screen.
+- **Why a screen closed:** `onClose((click, reason) -> ...)` gets `PLAYER`, `REPLACED` or
+  `CLOSED_BY_CODE`; the old `onClose(click -> ...)` works as before.
+- **Big elements keep their place with a player head:** buttons, list rows and grid cells 24 px
+  high or more no longer move to put the head on the client's 9 px text grid; the head moves
+  instead (at most 4 px from the middle). A board of big buttons with heads looked uneven before.
 - **Big heads on buttons:** `Button.headSize(16|24|32)` / `head-size:` paints the face of a `head:`
   icon from the skin, in the middle of the button (without text) or at its left; like on lists and
   grids it sits at any pixel, not on the 9 px text grid.
-- **Hint for labels that run into buttons:** a label without a width whose text runs into a button
-  next to it is logged once, with the width that would fit (the button covered the end of the
-  text, easy to miss).
-- **Menu designer:** the next version shows up as "not released yet" (never the default), and the
-  preview draws like the chosen version where the behavior changed.
 - **Preloading heads (optional):** `Glyphwork.get().preloadHeads(names...)` loads skins for big
   heads ahead and completes when they are there, so a screen can open with the faces in place
   instead of the small stand-in head being replaced a moment later.
-- **Big elements keep their place with a player head:** buttons, list rows and grid cells 24 px
-  high or more no longer move to put the head on the client's 9 px text grid; the head moves
-  instead (at most 4 px from the middle). A board of big buttons with heads stayed uneven before.
-- **Why a screen closed:** `onClose((click, reason) -> ...)` gets `PLAYER`, `REPLACED` or
-  `CLOSED_BY_CODE`; the old `onClose(click -> ...)` works as before.
+- **Hint for labels that run into buttons:** a label without a width whose text runs into a button
+  next to it is logged once, with the width that would fit.
+- **Menu designer:** the next version shows up as "not released yet" (never the default), and the
+  preview draws like the chosen version where the behavior changed. New: `head-size` on buttons.
+- Not possible in dialogs, now documented by trying: the server learns of clicks only, not of the
+  mouse position, the mouse button or keys held while the dialog is open.
 
 ## 1.1.0 – GUI sprites, picture sizes and one pack for the client
 

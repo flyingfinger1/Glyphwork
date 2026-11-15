@@ -38,7 +38,9 @@ elements:
   (open / back / reopen / close), tabs, scroll panes, progress bars, own pictures, big player
   heads, text with bold / italics / underline, sliders, checkboxes and choice buttons drawn from
   the skin, and text input or whole forms (text, slider, checkbox, choice) through small native
-  dialogs. Stable from 1.0 on: no breaking changes within 1.x.
+  dialogs. Screens shared by several players (games, lobbies, auctions): redraw another
+  player's open screen, ask which scene is open, know why a screen closed. Stable from 1.0 on: no
+  breaking changes within 1.x.
 - **Item icons** for 1595 items in grids, buttons, lists and menus, drawn from the textures every
   client already has. Icons follow your server's resource pack: replaced textures are measured,
   and the pack's own items (`myserver:ruby`) work as icons. **Player heads** as small 8 x 8 icons

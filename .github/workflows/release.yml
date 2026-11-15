@@ -67,6 +67,8 @@ jobs:
           changelog: ${{ github.event.release.body }}
           loaders: paper purpur
           game-versions: |
+            26.1
+            26.1.1
             26.1.2
             26.2
             26.3

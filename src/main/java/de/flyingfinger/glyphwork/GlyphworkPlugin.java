@@ -213,6 +213,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         pack.put("pack.mcmeta", """
             {"pack":{"description":"Glyphwork","min_format":97,"max_format":97}}
             """);
+        faces().diskCache(getDataFolder().toPath().resolve("cache").resolve("faces.json"), s.skinCache());
         IconCatalog icons = s.icons() ? IconCatalog.load(alloc) : null;
         boolean include = s.includeSourcePack() && !s.provided();
         if (s.includeSourcePack() && s.provided()) {

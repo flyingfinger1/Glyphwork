@@ -201,6 +201,32 @@ class BigHeadTest {
     }
 
     @Test
+    void skinCacheKeepsFacesAndSettingDefaultsToOff() throws Exception {
+        int[] face = new int[64];
+        for (int i = 0; i < 64; i++) {
+            face[i] = 0xFF000000 | i * 0x030507;
+        }
+        var enc = SkinFaces.class.getDeclaredMethod("encode", int[].class);
+        var dec = SkinFaces.class.getDeclaredMethod("decode", String.class);
+        enc.setAccessible(true);
+        dec.setAccessible(true);
+        String hex = (String) enc.invoke(null, (Object) face);
+        assertArrayEquals(face, (int[]) dec.invoke(null, hex));
+        assertNull(dec.invoke(null, "zu kurz"));
+
+        var cache = de.flyingfinger.glyphwork.core.Settings.class.getDeclaredMethod("skinCache", String.class, Consumer.class);
+        cache.setAccessible(true);
+        List<String> warnings = new ArrayList<>();
+        Consumer<String> warn = warnings::add;
+        assertEquals(java.time.Duration.ZERO, cache.invoke(null, "0", warn));
+        assertEquals(java.time.Duration.ZERO, cache.invoke(null, null, warn));
+        assertEquals(java.time.Duration.ofDays(7), cache.invoke(null, "7d", warn));
+        assertTrue(warnings.isEmpty());
+        assertEquals(java.time.Duration.ZERO, cache.invoke(null, "bald", warn));
+        assertEquals(1, warnings.size());
+    }
+
+    @Test
     void faceOfASkinWithHat() {
         BufferedImage skin = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
         for (int y = 8; y < 16; y++) {

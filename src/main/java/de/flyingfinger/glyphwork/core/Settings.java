@@ -24,7 +24,8 @@ public record Settings(
     String dateFormat,
     boolean provided,
     boolean providedAlways,
-    boolean includeSourcePack) {
+    boolean includeSourcePack,
+    java.time.Duration skinCache) {
 
     /** Version of the config layout; config.yml files without one are from before 1.0. */
     public static final int CONFIG_VERSION = 1;
@@ -35,7 +36,7 @@ public record Settings(
     }
 
     private static final java.util.Set<String> TOP = java.util.Set.of("config-version", "language", "fallback-language",
-        "theme", "pack", "pack-server", "plain-dialog", "icons", "dialog-warning", "players", "date-format", "feeds", "web",
+        "theme", "pack", "pack-server", "plain-dialog", "icons", "dialog-warning", "players", "date-format", "feeds", "web", "heads",
         // read with a hint, from before 1.0
         "max-height", "fallback", "icon-source-pack");
     private static final java.util.Set<String> PACK = java.util.Set.of("hosting", "url", "send-on-join", "required",
@@ -114,7 +115,8 @@ public record Settings(
             dates,
             hosting.equals("provided"),
             loaded.equals("always"),
-            c.getBoolean("pack.include-source-pack", false));
+            c.getBoolean("pack.include-source-pack", false),
+            skinCache(c.getString("heads.skin-cache", "0"), warn));
     }
 
     /** True if a key from before 1.0 is there (with a hint to the new one). */
@@ -124,6 +126,14 @@ public record Settings(
         }
         warn.accept("config.yml: '" + old + "' is now '" + now + "' (still read)");
         return true;
+    }
+
+    /** heads.skin-cache: how long faces are kept on disk; 0 (the default) keeps none. */
+    static java.time.Duration skinCache(@org.jspecify.annotations.Nullable String s, java.util.function.Consumer<String> warn) {
+        if (s == null || s.isBlank() || s.trim().equals("0")) {
+            return java.time.Duration.ZERO;
+        }
+        return duration(s, java.time.Duration.ZERO, "heads.skin-cache", warn);
     }
 
     /** A duration of config.yml (at least 10 s); {@code fallback} with a hint if it is none. */

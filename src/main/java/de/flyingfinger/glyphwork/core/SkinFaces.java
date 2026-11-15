@@ -29,7 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Faces for big heads, taken from the players' skins. Online players carry their skin address in
  * their profile; other names and UUIDs are looked up through Paper (Mojang). The skin PNG is
  * fetched in the background, the 8 x 8 face plus hat is kept in memory. A failed lookup is retried
- * after a few minutes.
+ * after a few minutes. With a cache time ({@code heads.skin-cache}) the faces are also written to
+ * cache/faces.json, so a restart does not ask Mojang again until they are older than that.
  */
 public final class SkinFaces implements FaceSource {
 
@@ -45,8 +46,104 @@ public final class SkinFaces implements FaceSource {
     /** Lookups that are running, completed when they end (with or without a face). */
     private final Map<String, CompletableFuture<Void>> pending = new ConcurrentHashMap<>();
 
+    private java.nio.file.@Nullable Path cacheFile;
+    private long cacheMillis;
+    /** When each face was fetched (for the disk cache). */
+    private final Map<String, Long> fetched = new ConcurrentHashMap<>();
+
     public SkinFaces(Plugin plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Keeps faces on disk for {@code ttl} (0: no disk cache; an existing file is deleted). Reads the
+     * faces of the file that are still fresh.
+     */
+    public void diskCache(java.nio.file.Path file, Duration ttl) {
+        cacheMillis = ttl.toMillis();
+        if (cacheMillis <= 0) {
+            cacheFile = null;
+            try {
+                java.nio.file.Files.deleteIfExists(file);
+            } catch (IOException e) {
+                plugin.getLogger().warning("Could not delete " + file + ": " + e.getMessage());
+            }
+            return;
+        }
+        cacheFile = file;
+        long now = System.currentTimeMillis();
+        int read = 0;
+        if (java.nio.file.Files.isRegularFile(file)) {
+            try {
+                com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(
+                    java.nio.file.Files.readString(file)).getAsJsonObject();
+                for (Map.Entry<String, com.google.gson.JsonElement> e : root.entrySet()) {
+                    com.google.gson.JsonObject o = e.getValue().getAsJsonObject();
+                    long t = o.get("t").getAsLong();
+                    int[] face = decode(o.get("face").getAsString());
+                    if (face != null && now - t < cacheMillis && !faces.containsKey(e.getKey())) {
+                        faces.put(e.getKey(), face);
+                        fetched.put(e.getKey(), t);
+                        read++;
+                    }
+                }
+            } catch (IOException | RuntimeException e) {
+                plugin.getLogger().warning("Could not read " + file + ": " + e.getMessage());
+            }
+        }
+        if (read > 0) {
+            plugin.getLogger().info(read + " big head face(s) from the skin cache");
+        }
+    }
+
+    private synchronized void writeCache() {
+        java.nio.file.Path file = cacheFile;
+        if (file == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        com.google.gson.JsonObject root = new com.google.gson.JsonObject();
+        faces.forEach((key, face) -> {
+            long t = fetched.getOrDefault(key, now);
+            if (now - t < cacheMillis) {
+                com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+                o.addProperty("t", t);
+                o.addProperty("face", encode(face));
+                root.add(key, o);
+            }
+        });
+        try {
+            java.nio.file.Files.createDirectories(file.getParent());
+            java.nio.file.Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+            java.nio.file.Files.writeString(tmp, root.toString());
+            java.nio.file.Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Could not write " + file + ": " + e.getMessage());
+        }
+    }
+
+    /** 64 RGB pixels as hex (the faces are opaque). */
+    static String encode(int[] face) {
+        StringBuilder b = new StringBuilder(face.length * 6);
+        for (int p : face) {
+            b.append(String.format("%06x", p & 0xFFFFFF));
+        }
+        return b.toString();
+    }
+
+    static int @Nullable [] decode(String hex) {
+        if (hex.length() != 64 * 6) {
+            return null;
+        }
+        int[] face = new int[64];
+        try {
+            for (int i = 0; i < 64; i++) {
+                face[i] = 0xFF000000 | Integer.parseInt(hex, i * 6, i * 6 + 6, 16);
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return face;
     }
 
     @Override
@@ -171,7 +268,11 @@ public final class SkinFaces implements FaceSource {
         CompletableFuture<Void> ended = pending.remove(key);
         if (face != null) {
             faces.put(key, face);
+            fetched.put(key, System.currentTimeMillis());
             failed.remove(key);
+            if (cacheFile != null) {
+                writeCache();
+            }
         } else {
             failed.put(key, System.currentTimeMillis());
         }

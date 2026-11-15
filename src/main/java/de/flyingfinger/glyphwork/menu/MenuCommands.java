@@ -19,6 +19,7 @@ public final class MenuCommands {
 
     private final Plugin plugin;
     private final List<Command> registered = new ArrayList<>();
+    private boolean updatePending;
 
     public MenuCommands(Plugin plugin) {
         this.plugin = plugin;
@@ -58,7 +59,7 @@ public final class MenuCommands {
 
     /** Replaces the registered menu commands with those of {@code menus}. */
     public void register(Menus menus, BiConsumer<Player, String> open) {
-        unregister();
+        remove();
         CommandMap map = Bukkit.getServer().getCommandMap();
         Logger log = plugin.getLogger();
         String prefix = plugin.getName().toLowerCase();
@@ -75,12 +76,18 @@ public final class MenuCommands {
             map.register(m.command(), prefix, cmd);
             registered.add(cmd);
         }
-        Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
+        updateCommands();
     }
 
     public void unregister() {
+        if (remove()) {
+            updateCommands();
+        }
+    }
+
+    private boolean remove() {
         if (registered.isEmpty()) {
-            return;
+            return false;
         }
         CommandMap map = Bukkit.getServer().getCommandMap();
         Map<String, Command> known = map.getKnownCommands();
@@ -89,6 +96,27 @@ public final class MenuCommands {
             c.unregister(map);
         }
         registered.clear();
-        Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
+        return true;
+    }
+
+    /**
+     * Sends the command tree to the online players once, a tick later. Paper builds that tree on
+     * another thread; changing the command map while it is built (a reload removes and adds commands
+     * right after asking for an update) throws a ConcurrentModificationException there. While the
+     * plugin is disabled no task can run, so the update happens at once.
+     */
+    public void updateCommands() {
+        if (!plugin.isEnabled()) {
+            Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
+            return;
+        }
+        if (updatePending) {
+            return;
+        }
+        updatePending = true;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            updatePending = false;
+            Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
+        });
     }
 }

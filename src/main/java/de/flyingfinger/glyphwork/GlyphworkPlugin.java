@@ -315,7 +315,11 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         org.bukkit.command.PluginCommand cmd = getCommand("glyphwork");
         if (cmd != null) {
             cmd.setPermission(settings.playerCommands() ? null : ADMIN);
-            getServer().getOnlinePlayers().forEach(Player::updateCommands);
+            if (menuCommands != null) {
+                menuCommands.updateCommands();
+            } else {
+                getServer().getOnlinePlayers().forEach(Player::updateCommands);
+            }
         }
         getLogger().info("Theme '" + themeName + "', pack " + b.sha1() + " (" + b.zip().length / 1024 + " KB, height "
             + b.height() + " px, " + settings.hosting() + ")" + (settings.provided() ? "" : " at " + packs.url()));

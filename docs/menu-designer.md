@@ -34,7 +34,10 @@ placeholders (skins come from Mojang's servers). *Remove* deletes the stored tex
 *For Glyphwork version* (left, below the skin) sets the version your server runs. Settings that
 need a newer one are hidden in the forms; ones the menu already has stay, marked "from 1.1", and the
 list below the preview names every place that needs a newer version (also values like
-`icon: "gui:..."`). The choice stays in the browser; it starts at the newest version.
+`icon: "gui:..."`). The preview also draws like the chosen version where the behavior changed.
+The choice stays in the browser; it starts at the newest released version. A version marked
+"not released yet" shows what is already done for the next release: menus that use it need a
+server with that version.
 
 ## Workflow
 

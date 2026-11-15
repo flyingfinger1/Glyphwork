@@ -6,6 +6,7 @@
 import { Pix, tint } from '../pix.js';
 import { tiles, renderShape } from '../autotile.js';
 import { drawText, textWidth, blend } from '../font.js';
+import { behaves } from './schema.js';
 
 
 export const LINE = 9;
@@ -555,7 +556,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           // painted heads (head-size 16..32) sit anywhere; buttons 24 px high or more keep their place
           const hsize = headSizeOf(el['head-size']);
           const painted = isHead(icon) && hsize > HEAD;
-          if (isHead(icon) && !painted && h < 24) {
+          if (isHead(icon) && !painted && !(h >= 24 && behaves(ctx.target, 'keepPlace'))) {
             const dy = headShift(y + Math.floor((h - HEAD) / 2));
             if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
             by += dy;
@@ -902,7 +903,7 @@ function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
   const itemIcons = shown.some((r) => r.icon && !isHead(r.icon));
   const wide = heads && itemIcons;
   let ly = y;
-  if (heads && rh < 24) {   // rows 24 px or higher keep their place (the head moves)
+  if (heads && !(rh >= 24 && behaves(ctx.target, 'keepPlace'))) {   // from 1.2 rows of 24 px or more keep their place
     const dy = headShift(y + Math.floor((rh - HEAD) / 2));
     if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
     if (rh % LINE) hints.push({ top, text: `row-height ${rh}: 9 / 18` });
@@ -953,7 +954,7 @@ function gridEl(c, el, top, ctx, boxes, regions, hints) {
   const shown = all.slice(page * per, page * per + per);
   let gy = y;
   const hsize = headSizeOf(el['head-size']);
-  if (hsize <= 8 && size < 24 && shown.some((r) => isHead(r.icon))) {   // cells 24 px or more keep their place
+  if (hsize <= 8 && !(size >= 24 && behaves(ctx.target, 'keepPlace')) && shown.some((r) => isHead(r.icon))) {   // from 1.2 cells of 24 px or more keep their place
     const dy = headShift(y + Math.floor((size - HEAD) / 2));
     if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
     gy += dy;

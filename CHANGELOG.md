@@ -9,6 +9,8 @@
 - **Big heads on buttons:** `Button.headSize(16|24|32)` / `head-size:` paints the face of a `head:`
   icon from the skin, in the middle of the button (without text) or at its left; like on lists and
   grids it sits at any pixel, not on the 9 px text grid.
+- **Menu designer:** the next version shows up as "not released yet" (never the default), and the
+  preview draws like the chosen version where the behavior changed.
 - **Preloading heads (optional):** `Glyphwork.get().preloadHeads(names...)` loads skins for big
   heads ahead and completes when they are there, so a screen can open with the faces in place
   instead of the small stand-in head being replaced a moment later.

@@ -6,7 +6,7 @@ import { toImageData } from '../pix.js';
 import { SKINS, a2FromStyle } from '../style.js';
 import { Theme } from '../model.js';
 import { renderMenu, fill, varValue, allHold, plain, optionsOf, SAMPLES } from './menu-render.js';
-import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField, VERSIONS, LATEST, sinceOf, newerThan, compareVersions } from './schema.js';
+import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField, VERSIONS, LATEST, sinceOf, newerThan, compareVersions, unreleased } from './schema.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
 import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, importPictures } from './assets.js';
 import { useMinecraftFont, minecraftFont } from '../font.js';
@@ -172,7 +172,7 @@ let drag = null;
 let hoverRegion = null;
 
 function draw() {
-  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, pictures });
+  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, pictures, target });
   const { pix } = last;
   off.width = pix.w;
   off.height = pix.h;
@@ -1418,7 +1418,10 @@ function init() {
   skinSel.onchange = () => { skinKey = skinSel.value; skinCache = null; changed(false); };
 
   const targetSel = $('target');
-  for (const v of [...VERSIONS].reverse()) targetSel.add(new Option(v === LATEST ? t('targetLatest', { v }) : v, v));
+  for (const v of [...VERSIONS].reverse()) {
+    const label = v === LATEST ? t('targetLatest', { v }) : unreleased(v) ? t('targetUnreleased', { v }) : v;
+    targetSel.add(new Option(label, v));
+  }
   targetSel.value = target;
   targetSel.onchange = () => {
     target = targetSel.value;

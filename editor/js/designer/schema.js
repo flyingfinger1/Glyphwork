@@ -137,9 +137,31 @@ export function setField(el, key, value) {
 
 // ------------------------------------------------------------------ Glyphwork versions
 
-/** Glyphwork versions the designer can write menus for (oldest first); the last one is the newest. */
-export const VERSIONS = ['1.0', '1.1'];
-export const LATEST = VERSIONS[VERSIONS.length - 1];
+/**
+ * Glyphwork versions the designer can write menus for (oldest first). Versions after RELEASED are
+ * in the works: what is already on main goes live here on every push, so it is shown as
+ * "not released yet" and is never the default. On a release, set RELEASED to it (and add the next
+ * version once something new for it is committed).
+ */
+export const VERSIONS = ['1.0', '1.1', '1.2'];
+export const RELEASED = '1.1';
+export const LATEST = RELEASED;
+
+/** Whether a version is not released yet. */
+export const unreleased = (v) => compareVersions(v, RELEASED) > 0;
+
+/**
+ * Changed behavior (not settings) and the version it came with, for the preview: with an older
+ * version chosen it draws like that version did.
+ */
+export const BEHAVIOR = {
+  keepPlace: '1.2',   // elements 24 px or higher keep their place with a player head
+};
+
+/** Whether the chosen version has this behavior (no version given: the newest). */
+export function behaves(target, what) {
+  return target == null || compareVersions(target, BEHAVIOR[what]) >= 0;
+}
 
 /** Settings that came after 1.0: "type.key" -> version. Everything else works since 1.0. */
 export const SINCE = {

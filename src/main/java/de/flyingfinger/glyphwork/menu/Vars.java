@@ -9,12 +9,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Fills a menu text for one viewer, in this order: {@code %input%} (inside input actions), the
- * entry of a dynamic list ({@code %item%}, {@code %item_world%} ...), menu variables
- * ({@code %menu_tab%}), then {@code %player%}, {@code %world%}, {@code %online%} and PlaceholderAPI.
+ * Fills a menu text for one viewer: first {@code %player%}, {@code %world%}, {@code %online%} and
+ * PlaceholderAPI on the text itself, then in one pass the menu's own placeholders: menu variables
+ * ({@code %menu_tab%}), the entry of a dynamic list ({@code %item%}, {@code %item_world%} ...), web
+ * values and {@code %input%} (inside input actions). Values put in are not read again.
  *
  * <p>Menu variables live in the viewer's state of this menu (set by the {@code set}/{@code toggle}
  * actions) and keep their value until the player leaves; {@code variables:} gives the defaults.
+ * A default comes from the menu file, so its {@code %player%} and PlaceholderAPI placeholders are
+ * filled when it is read (a nickname that starts as the player's name).
  */
 final class Vars {
 
@@ -94,7 +97,12 @@ final class Vars {
         if (value == null && v != null && persist.contains(name)) {
             value = PlayerData.get(v.player(), dataKey(name));
         }
-        return value != null ? value : defaults.getOrDefault(name, "");
+        if (value != null) {
+            return value;                           // set by the menu or typed: used as it is
+        }
+        String d = defaults.getOrDefault(name, "");
+        // the menu file's own text: its placeholders count like everywhere else in the file
+        return d.indexOf('%') < 0 ? d : Placeholders.apply(v == null ? null : v.player(), d);
     }
 
     /** {@code value} null = back to the default (also for saved variables). */

@@ -117,6 +117,21 @@ class DynamicMenusTest {
     }
 
     @Test
+    void defaultsFillTheirPlaceholders() throws MenuException {
+        Scene s = new Menus().parse("t", """
+            variables: { nick: "%player%", place: "in %world%" }
+            elements:
+              - { type: label, x: 0, y: 0, text: "Nick: %menu_nick%, %menu_place%" }
+              - { type: button, x: 0, y: 20, text: Set, actions: ["set: nick Zoe"] }
+            """).scene();
+        TestClick c = new TestClick(s, "Steve", new ArrayList<>());
+        Label l = (Label) s.elements().get(1);
+        assertEquals("Nick: Steve, in world", l.text().apply(c));   // the default starts as the player's name
+        button(s, 2).onClick().accept(c);
+        assertEquals("Nick: Zoe, in world", l.text().apply(c));
+    }
+
+    @Test
     void dynamicListsFillFilterAndAct() throws MenuException {
         Menus menus = new Menus();
         menus.sources(src -> src.equals("online-players")

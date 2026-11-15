@@ -17,6 +17,24 @@ target 26.3. Menus, configs and plugins work as on 26.3.
 - **Fixed:** `/glyphwork reload` could throw a ConcurrentModificationException while Paper built
   the command tree.
 
+## 1.2.1 – skin cache, icons with older clients
+
+Menus, configs and plugins made for 1.0 to 1.2 keep working.
+
+- **Skin cache (optional):** `heads.skin-cache` in `config.yml` (e.g. `7d`, default `0` = off)
+  keeps the faces of big heads in `plugins/Glyphwork/cache/faces.json`, so restarts and reloads do
+  not ask Mojang again and run into its rate limit (then big heads show the small stand-in head).
+- **Icons with older clients:** vanilla textures newer than Minecraft 1.21.11 get fonts of their
+  own. A client drops a whole font when one of its textures is missing, so a 1.21.11 client lost
+  every icon before; now only the 66 newer ones stay empty.
+- **Fixed:** `/glyphwork reload` could throw a ConcurrentModificationException while Paper built
+  the command tree.
+- **Paper 1.21.11:** a separate build, `1.2.1-mc1.21.11`, is on the GitHub releases (branch
+  `mc/1.21.11`, Java 21).
+- **Menu designer** (online already): it reads the Minecraft version of the loaded client jar and
+  frames icons in red that this version lacks; another client jar replaces everything loaded before.
+- Example plugin: the options text names the plain mode by its current name.
+
 ## 1.2.0 – screens for several players, big heads on buttons
 
 Found by building small games (Minesweeper, Tic-Tac-Toe and Battleship for two players) with the

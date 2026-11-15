@@ -136,7 +136,7 @@ the middle of the 16 x 16 icon place, and show as sprites in the plain dialog to
 *since 1.2*, for their `head:` icons; a button without text shows the face in its middle) paints a player's face pixel by pixel in the colors of the skin: no pack change, so
 it works for every player, also ones who just joined, and at any position (no 9 px grid). The
 server fetches the skin in the background (online players carry it, other names are looked up at
-Mojang) and keeps the faces in memory; `heads.skin-cache` in `config.yml` (e.g. `7d`, default `0` = off)
+Mojang) and keeps the faces in memory; `heads.skin-cache` in `config.yml` (*since 1.2.1*; e.g. `7d`, default `0` = off)
 also keeps them on disk across restarts, since Mojang limits lookups per IP. Until a face is there, the small client head stands in, and
 the open menu is drawn again when it arrives. A big head is 64 colored glyphs, so a list with many
 of them makes the dialog bigger; that is fine for a few dozen.

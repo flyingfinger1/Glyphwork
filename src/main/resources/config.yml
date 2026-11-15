@@ -87,7 +87,7 @@ feeds:
   cache: 10m            # 30s, 5m, 1h, 1h 30m ...
 
 # Big heads (head-size above 8) are painted from the players' skins, which Glyphwork looks up at
-# Mojang (on offline-mode servers by name). Faces are kept in memory until a restart.
+# Mojang (on offline-mode servers by name). Faces are kept in memory until a restart. (since 1.2.1)
 heads:
   # Also keep them in plugins/Glyphwork/cache/faces.json for this long, so restarts do not ask
   # Mojang again (it limits lookups per IP): e.g. 1h, 1d, 7d. 0 = no disk cache (the file is deleted).

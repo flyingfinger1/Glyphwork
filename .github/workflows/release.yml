@@ -1,6 +1,6 @@
 # Branch mc/1.21.11: on a published GitHub release (tag vX.Y.Z-mc1.21.11, made from this branch):
-# build with that version, run all checks and attach the plugin jar and the API jars to the release.
-# No Modrinth upload from this branch.
+# build with that version, run all checks, attach the plugin jar and the API jars to the release and
+# publish the plugin jar to Modrinth for 1.21.11. Requires the MODRINTH_TOKEN repo secret.
 name: Release
 
 on:
@@ -54,3 +54,16 @@ jobs:
             "example/build/libs/glyphwork-example-$VERSION.jar" \
             --clobber
 
+      - name: Publish to Modrinth
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: Hf28Ysow
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: build/libs/Glyphwork-${{ env.VERSION }}.jar
+          name: Glyphwork ${{ env.VERSION }}
+          version: ${{ env.VERSION }}
+          version-type: release
+          changelog: ${{ github.event.release.body }}
+          loaders: paper purpur
+          game-versions: "1.21.11"
+          java: "21"

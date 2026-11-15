@@ -7,9 +7,11 @@ serves it from an embedded HTTP server and sends it on join. See
 [How it works](#how-it-works-as-verified-against-the-263-client).
 
 > **Branch `mc/1.21.11`:** this branch builds Glyphwork for **Paper 1.21.11** (Java 21, resource
-> pack format 75). `main` targets 26.3. Clickable dialog text needs a 1.21.11 client: 1.21.8 has
-> none, and 1.21.9/1.21.10 miss clicks after a negative shift. Icons of the 66 textures newer than
-> 1.21.11 stay empty; all other icons work. The rest of this README describes 26.3 but applies here too.
+> pack format 75); its releases end in `-mc1.21.11` (GitHub and Modrinth). `main` targets Paper 26.1
+> to 26.3 (Java 25); fixes from `main` are merged into this branch, so both have the same features.
+> Clickable dialog text needs a 1.21.11 client: 1.21.8 has none, and 1.21.9/1.21.10 miss clicks
+> after a negative shift. Icons of the 66 textures newer than 1.21.11 stay empty; all other icons
+> work. The rest of this README describes the 26.x build but applies here too.
 
 **Status:** stable since 1.0 (see [Compatibility](#use-it-from-your-plugin)): autotiled skins with
 an editor, a public scene API, YAML menus with a designer, item icons and an example plugin. Other
@@ -49,8 +51,9 @@ and download the `.yml` file.
 ## Install
 
 1. Download `Glyphwork-<version>.jar` from the [releases](https://github.com/flyingfinger1/Glyphwork/releases)
-   into `plugins/` of a Paper 26.1 to 26.3 server (Java 25) and start it. On this branch: a `-mc1.21.11`
-   release (e.g. `Glyphwork-1.3.0-mc1.21.11.jar`) on a Paper 1.21.11 server (Java 21).
+   (or [Modrinth](https://modrinth.com/plugin/glyphwork)) into `plugins/` of a Paper 26.1 to 26.3
+   server (Java 25) and start it. On this branch: a `-mc1.21.11` version (e.g.
+   `Glyphwork-1.3.0-mc1.21.11.jar`) on a Paper 1.21.11 server (Java 21).
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
    built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
    web server with `pack.hosting: external`. Then `/glyphwork reload`.

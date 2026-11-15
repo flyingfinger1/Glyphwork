@@ -62,7 +62,7 @@ Glyphwork.get().open(player, settings);
 
 ## Limits
 
-- Paper 26.1 to 26.3, players with 26.1 to 26.3 clients (a build for Paper 1.21.11 is on the GitHub releases). Parts marked experimental (tabs, scroll panes, web sources, the own plain view, Bedrock behaviour) may still change in a minor version.
+- Paper 26.1 to 26.3, players with 26.1 to 26.3 clients (for Paper 1.21.11 take the `-mc1.21.11` versions). Parts marked experimental (tabs, scroll panes, web sources, the own plain view, Bedrock behaviour) may still change in a minor version.
 - Dialogs report clicks only: no hover, no right click, no keys held while a dialog is open. Glyphwork's answer is a mode button or a first click as preview.
 - Text and icons are always drawn on top of frames; blocks show one face (no 3D), items drawn by special renderers (chests, beds, banners, shields) have no icon; small player heads are 8 x 8 and sit on the 9 px text grid (small elements with a head move by up to 4 px, big ones keep their place); painted heads sit anywhere.
 

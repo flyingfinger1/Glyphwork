@@ -168,7 +168,7 @@ public final class Trader {
 
     private static Scene buildOptions() {
         // the display mode belongs to Glyphwork and applies to every Glyphwork screen;
-        // one button per mode, the active one is marked (also readable in the plain "Simple" dialog)
+        // one button per mode, the active one is marked (also readable in the plain dialog)
         return Scene.builder("example:trader-options", 176, 136)
             .title(Component.text("Trader - options"))
             .background()
@@ -177,7 +177,7 @@ public final class Trader {
             .add(modeButton(DisplayMode.FULL, 34))
             .add(modeButton(DisplayMode.NO_ICONS, 52))
             .add(modeButton(DisplayMode.PLAIN, 70))
-            .add(Label.of(8, 92, "Icons or text out of place? Then pick \"No icons\" or \"Simple\".")
+            .add(Label.of(8, 92, "Icons or text out of place? Then pick \"No icons\" or \"Plain\".")
                 .width(160).wrap(true))                     // breaks into lines at spaces
             .add(Button.of(8, 114, 64, 16).text("< Back").onClick(Click::back))
             .build();

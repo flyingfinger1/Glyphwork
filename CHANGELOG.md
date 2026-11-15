@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2.1-mc1.21.11 – Paper 1.21.11
+
+A build for **Paper 1.21.11** (Java 21) from the branch `mc/1.21.11`; `main` and the other releases
+target 26.3. Menus, configs and plugins work as on 26.3.
+
+- **Paper 1.21.11:** compiled against paper-api 1.21.11 with Java 21, resource pack format 75.
+  Clicks need a 1.21.11 client (1.21.9 and 1.21.10 miss clicks after a negative shift, 1.21.8 has
+  no clickable dialog text).
+- **Icons with older clients:** vanilla textures newer than 1.21.11 get fonts of their own (a
+  client drops a whole font when one texture is missing), so all other icons load; the 66 newer
+  ones stay empty on 1.21.11.
+- **Skin cache (optional):** `heads.skin-cache` (e.g. `7d`, default `0` = off) keeps the faces of
+  big heads in `plugins/Glyphwork/cache/faces.json`, so restarts and reloads do not ask Mojang
+  again and run into its rate limit.
+- **Fixed:** `/glyphwork reload` could throw a ConcurrentModificationException while Paper built
+  the command tree.
+
 ## 1.2.0 – screens for several players, big heads on buttons
 
 Found by building small games (Minesweeper, Tic-Tac-Toe and Battleship for two players) with the

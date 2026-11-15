@@ -48,8 +48,8 @@ and download the `.yml` file.
 ## Install
 
 1. Download `Glyphwork-<version>.jar` from the [releases](https://github.com/flyingfinger1/Glyphwork/releases)
-   into `plugins/` of a Paper 26.3 server (Java 25) and start it. On this branch: a jar built from
-   it, on a Paper 1.21.11 server (Java 21).
+   into `plugins/` of a Paper 26.3 server (Java 25) and start it. On this branch: a `-mc1.21.11`
+   release (e.g. `Glyphwork-1.2.1-mc1.21.11.jar`) on a Paper 1.21.11 server (Java 21).
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
    built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
    web server with `pack.hosting: external`. Then `/glyphwork reload`.

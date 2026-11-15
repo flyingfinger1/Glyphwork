@@ -9,6 +9,9 @@
 - **Big heads on buttons:** `Button.headSize(16|24|32)` / `head-size:` paints the face of a `head:`
   icon from the skin, in the middle of the button (without text) or at its left; like on lists and
   grids it sits at any pixel, not on the 9 px text grid.
+- **Hint for labels that run into buttons:** a label without a width whose text runs into a button
+  next to it is logged once, with the width that would fit (the button covered the end of the
+  text, easy to miss).
 - **Menu designer:** the next version shows up as "not released yet" (never the default), and the
   preview draws like the chosen version where the behavior changed.
 - **Preloading heads (optional):** `Glyphwork.get().preloadHeads(names...)` loads skins for big

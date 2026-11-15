@@ -14,6 +14,8 @@ get the same as `beispiel.yml`, `beispiel-regeln.yml`, `beispiel-warps.yml`, `_b
 place (`warps.yml.elements[2].x: number expected, got 'abc'`), and broken files are skipped.
 Hints follow in yellow: a frame the skin does not have, a picture missing in `images/`, an `open:`
 or `give-item:` target without a menu, a command or alias used by two menus, a renamed setting.
+When a menu is drawn, a label without `width` that runs into a button next to it is logged once
+*(since 1.2)*, with the width that would fit.
 
 Prefer the mouse? The [menu designer](menu-designer.md) builds these files in the browser.
 

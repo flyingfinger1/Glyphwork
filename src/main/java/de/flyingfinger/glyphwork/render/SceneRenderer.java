@@ -187,7 +187,7 @@ public final class SceneRenderer {
             }
             switch (e) {
                 case Panel p -> panel(line, p, view, binder, name, scene);
-                case Label l -> label(line, l, view);
+                case Label l -> label(line, l, view, name, scene);
                 case Button b -> button(line, b, view, binder, name);
                 case Hitbox h -> hitbox(line, h.x(), h.y(), h.width(), h.height(),
                     h.onClick() == null ? null : binder.bind(name, h.onClick()), tooltip(h.tooltip(), view));
@@ -683,7 +683,7 @@ public final class SceneRenderer {
         }
     }
 
-    private void label(LineBuilder line, Label l, View view) {
+    private void label(LineBuilder line, Label l, View view, String name, Scene scene) {
         String s = l.text().apply(view);
         if (s == null || s.isEmpty()) {
             return;
@@ -709,6 +709,40 @@ public final class SceneRenderer {
                 case RIGHT -> l.width() - w;
             });
             rich(line, part, lx, l.y() + i * l.lineHeight(), color, l.shadow());
+        }
+        if (l.width() <= 0) {
+            checkOverlap(l, lines, view, name, scene);
+        }
+    }
+
+    /**
+     * A label without a width that runs into a button next to it is a layout slip that is easy to
+     * miss (the button covers the end of the text): logged once per label and button. Only labels
+     * at the top level, compared with the buttons there (scroll panes and tabs have their own space).
+     */
+    private void checkOverlap(Label l, List<List<RichText.Span>> lines, View view, String name, Scene scene) {
+        List<Element> top = scene.elements();
+        if (top.stream().noneMatch(e -> e == l)) {
+            return;
+        }
+        int w = 0;
+        for (List<RichText.Span> part : lines) {
+            w = Math.max(w, RichText.visibleWidth(text, part));
+        }
+        int h = (lines.size() - 1) * l.lineHeight() + 8;
+        for (int i = 0; i < top.size(); i++) {
+            if (!(top.get(i) instanceof Button b) || !Boolean.TRUE.equals(b.visible().test(view))) {
+                continue;
+            }
+            boolean overlaps = l.x() < b.x() + b.width() && b.x() < l.x() + w
+                && l.y() < b.y() + b.height() && b.y() < l.y() + h;
+            if (overlaps && l.x() < b.x()) {         // text that starts left of the button and runs in
+                String shown = lines.isEmpty() ? "" : RichText.plainText(lines.getFirst());
+                warnOnce("label-over:" + name + ":" + i, "Label " + name + " ('" + (shown.length() > 30
+                    ? shown.substring(0, 30) + "..." : shown) + "' at x=" + l.x() + ", y=" + l.y() + ") is " + w
+                    + " px wide and runs into button " + scene.id() + "#" + i + " at x=" + b.x() + ", y=" + b.y()
+                    + ": give the label a width (" + (b.x() - l.x() - 2) + " fits; longer text is cut) or move one of them");
+            }
         }
     }
 

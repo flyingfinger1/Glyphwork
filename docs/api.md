@@ -93,6 +93,9 @@ the icon's item when hovering. For enchantments, names and lore pass the item it
 `ItemStack` is a `HoverEventSource`). Item ids the client does not know are dropped, because the
 client would reject the whole screen.
 
+A label without a width that runs into a button next to it is logged once *(since 1.2)*, with the
+width that fits: `.width(n)` cuts the text there.
+
 **Text blocks:** `Label.of(x, y, longText).width(160).wrap(true)` breaks at spaces; `.lineHeight(10)`;
 `"\n"` starts a new line.
 

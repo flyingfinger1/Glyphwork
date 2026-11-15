@@ -456,7 +456,7 @@ elements:
 - `%menu_<name>%` works in every text, tooltip, condition and action; a variable without a value
   and without a default is empty.
 - Defaults may use `%player%`, `%world%` and PlaceholderAPI placeholders, e.g. `nick: "%player%"`
-  starts as the player's name *(fixed after 1.2.1; before, the placeholder showed as text)*. Values set
+  starts as the player's name *(since 1.3; before, the placeholder showed as text)*. Values set
   later (`set:`, forms, input) are used as they are.
 - Values are kept per player and menu until the player leaves (also when the menu is closed and
   opened again).

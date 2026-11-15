@@ -113,6 +113,24 @@ class HeadsTest {
     }
 
     @Test
+    void bigButtonsKeepTheirPlaceAndTheHeadMovesInstead() {
+        // a board of 40 px buttons on a 46 px pitch (not a multiple of 9): no button may move
+        for (int y : new int[] {24, 70, 116}) {
+            Scene s = Scene.builder("t", 64, 180)
+                .add(Button.of(8, y, 40, 40).icon("head:Steve").text("X").onClick(c -> { }))
+                .build();
+            Layout l = layout(s);
+            assertEquals("t#0", l.hit(20, y), "button still starts at y=" + y);
+            assertEquals(null, l.hit(20, y - 1));
+            int[] h = l.heads.getFirst();
+            onGrid(h);
+            int middle = y + (40 - 8) / 2;
+            assertTrue(Math.abs(h[1] - middle) <= 4, "head " + h[1] + " near the middle " + middle);
+            assertTrue(h[1] >= y + 4 && h[1] + 8 <= y + 40 - 4, "head inside the button");
+        }
+    }
+
+    @Test
     void mixedListsShareOneIconColumnAndButtonsCenterOnTheDrawnHeight() {
         Scene s = Scene.builder("t", 176, 120)
             .add(ListView.of("p", 8, 12, 120, 2, v -> List.of("head:Steve", "diamond")).icon(i -> i).text(i -> "x")

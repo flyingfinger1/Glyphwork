@@ -9,8 +9,8 @@ export const FIELDS = {
     ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool'], ['wrap', 'bool'], ['line-height', 'int'],
     ['bold', 'bool'], ['italic', 'bool'], ['underline', 'bool'], ['strikethrough', 'bool']],
   button: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['text', 'text'], ['tint', 'color'],
-    ['color', 'color'], ['icon', 'text'], ['tooltip', 'text'], ['actions', 'lines'], ['permission', 'text'],
-    ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text']],
+    ['color', 'color'], ['icon', 'text'], ['head-size', 'select', ['8', '16', '24', '32']], ['tooltip', 'text'],
+    ['actions', 'lines'], ['permission', 'text'], ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text']],
   panel: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['shape', 'shape'], ['frame', 'text'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   hitbox: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['tooltip', 'text'], ['actions', 'lines'],
@@ -146,6 +146,7 @@ export const SINCE = {
   'image.width': '1.1',
   'image.height': '1.1',
   'image.scale': '1.1',
+  'button.head-size': '1.2',
 };
 
 /** Values that came after 1.0: icons from the GUI atlas ("gui:hud/heart/full"). */

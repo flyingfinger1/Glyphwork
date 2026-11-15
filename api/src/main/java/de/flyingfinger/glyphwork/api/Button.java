@@ -33,6 +33,7 @@ public final class Button implements Element {
     private Predicate<View> enabled = v -> true;
     private @Nullable Consumer<Click> onClick;
     private @Nullable Function<View, @Nullable String> icon;
+    private int headSize = 8;
 
     private Button(int x, int y, int w, int h) {
         this.x = x;
@@ -108,6 +109,23 @@ public final class Button implements Element {
     public Button icon(Function<View, @Nullable String> item) {
         this.icon = item;
         return this;
+    }
+
+    /**
+     * Size of a player head icon ({@code "head:Name"}): 8 (default) is the client's own head, which
+     * only fits the 9 px text grid; 16, 24 or 32 paint the face from the skin, exactly in the middle
+     * (alone) or at the left (with text). Like {@link Head}: shown with the pack only, skins of
+     * players who were never online load a moment later.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Button headSize(int size) {
+        this.headSize = Head.sizeOf(size);
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public int headSize() {
+        return headSize;
     }
 
     @org.jetbrains.annotations.ApiStatus.Internal

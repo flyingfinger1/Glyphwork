@@ -42,6 +42,8 @@ public final class SkinFaces implements FaceSource {
     private final Map<String, Long> failed = new ConcurrentHashMap<>();
     private final Set<String> loading = ConcurrentHashMap.newKeySet();
     private final Map<String, List<Runnable>> waiting = new ConcurrentHashMap<>();
+    /** Lookups that are running, completed when they end (with or without a face). */
+    private final Map<String, CompletableFuture<Void>> pending = new ConcurrentHashMap<>();
 
     public SkinFaces(Plugin plugin) {
         this.plugin = plugin;
@@ -59,6 +61,27 @@ public final class SkinFaces implements FaceSource {
             start(key, who.trim());
         }
         return null;
+    }
+
+    /**
+     * Starts the lookups of faces that are not there yet; the future completes when all of them
+     * have ended (a name that failed a short while ago is not looked up again and counts as ended).
+     */
+    public CompletableFuture<Void> preload(java.util.Collection<String> who) {
+        List<CompletableFuture<Void>> all = new ArrayList<>();
+        for (String w : who) {
+            if (w == null || w.isBlank()) {
+                continue;
+            }
+            String key = FaceSource.key(w);
+            if (face(w) == null) {                  // starts the lookup when needed
+                CompletableFuture<Void> running = pending.get(key);
+                if (running != null) {
+                    all.add(running);
+                }
+            }
+        }
+        return CompletableFuture.allOf(all.toArray(CompletableFuture[]::new));
     }
 
     @Override
@@ -89,6 +112,7 @@ public final class SkinFaces implements FaceSource {
         if (!loading.add(key)) {
             return;
         }
+        pending.put(key, new CompletableFuture<>());
         PlayerProfile profile;
         String name;
         try {
@@ -144,6 +168,7 @@ public final class SkinFaces implements FaceSource {
 
     private void done(String key, int @Nullable [] face) {
         loading.remove(key);
+        CompletableFuture<Void> ended = pending.remove(key);
         if (face != null) {
             faces.put(key, face);
             failed.remove(key);
@@ -153,6 +178,9 @@ public final class SkinFaces implements FaceSource {
         List<Runnable> then = waiting.remove(key);
         if (then != null && face != null && plugin.isEnabled()) {
             Bukkit.getScheduler().runTask(plugin, () -> then.forEach(Runnable::run));
+        }
+        if (ended != null) {
+            ended.complete(null);
         }
     }
 

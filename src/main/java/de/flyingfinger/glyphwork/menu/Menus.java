@@ -670,9 +670,10 @@ public final class Menus {
             }
             case "button" -> {
                 n.only(with("type", "x", "y", "width", "height", "text", "tint", "color", "text-color", "tooltip",
-                    "actions", "permission", "frame", "icon", "enabled-if", "disabled-tooltip", "cooldown", "cooldown-key",
-                    "cooldown-tooltip", "cooldown-message"));
+                    "actions", "permission", "frame", "icon", "head-size", "enabled-if", "disabled-tooltip", "cooldown",
+                    "cooldown-key", "cooldown-tooltip", "cooldown-message"));
                 Button bt = Button.of(n.integer("x"), n.integer("y"), n.optInt("width", 64), n.optInt("height", 16))
+                    .headSize(n.optInt("head-size", 8))
                     .text(text(n.optString("text", "")))
                     .markup(true)
                     .tint(n.optColor("tint", Button.GRAY))

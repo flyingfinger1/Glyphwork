@@ -99,7 +99,7 @@ Documentation: [API](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/a
   plain view, Bedrock behaviour) may still change in a minor version.
 - Text and icons are always drawn on top of frames; blocks show one face (no 3D), items drawn by
   special renderers (chests, beds, banners, shields) have no icon; player heads are 8 x 8 and sit on
-  the 9 px text grid (elements with a head move by up to 4 px).
+  the 9 px text grid (small elements with a head move by up to 4 px, big ones keep their place).
 
 The technique goes back to a public description by the developer of the HugoSMP server; Glyphwork
 is an independent, MIT-licensed implementation.

@@ -276,6 +276,17 @@ public final class SceneRenderer {
         return dy;
     }
 
+    /**
+     * Elements at least this high keep their place when they show a player head: the head moves
+     * instead (at most 4 px from the middle, so it stays inside), which in a big button or cell is
+     * barely seen, while moved frames make a board look uneven. Smaller ones move with the head.
+     */
+    static final int KEEP_PLACE = 24;
+
+    static boolean keepsPlace(int height) {
+        return height >= KEEP_PLACE;
+    }
+
     /** Elements already reported by {@link #headShift}. */
     private final java.util.Set<String> hinted = new java.util.HashSet<>();
 
@@ -756,7 +767,8 @@ public final class SceneRenderer {
         Component bHead = headOf(bIcon);
         // frames are whole tiles: a 20 px button is drawn 16 px high, so center on what is drawn
         int h = f == null ? b.height() : Math.max(f.tileSize(), b.height() / f.tileSize() * f.tileSize());
-        int y = b.y() + (bHead != null ? headShift("Button", name, b.y(), b.y() + (h - LineBuilder.HEAD) / 2) : 0);
+        boolean painted = bHead != null && b.headSize() > LineBuilder.HEAD;    // painted heads sit anywhere
+        int y = b.y() + (bHead != null && !painted && !keepsPlace(h) ? headShift("Button", name, b.y(), b.y() + (h - LineBuilder.HEAD) / 2) : 0);
         if (f != null) {
             line.frame(f, b.x(), y, b.width(), b.height(), enabled ? b.tint().apply(view) : Button.DISABLED,
                 click, tooltip(b.tooltip(), view));
@@ -765,7 +777,18 @@ public final class SceneRenderer {
         // like the height: a 22 px button is drawn 16 px wide, so center on what is drawn
         int textW = f == null ? b.width() : Math.max(f.tileSize(), b.width() / f.tileSize() * f.tileSize());
         int textY = y + (h - 7) / 2;
-        if (bHead != null) {
+        String label = b.text().apply(view);
+        if (painted) {
+            // a face of headSize px (at most what fits): alone in the middle, or at the left before the text
+            int hs = Math.min(b.headSize(), Math.min(h, textW) - 4) / 8 * 8;
+            boolean alone = label == null || label.isEmpty();
+            int hx = alone ? b.x() + (textW - hs) / 2 : b.x() + 4;
+            if (hs >= 8) {
+                bigHead(line, headName(bIcon), hx, y + (h - hs) / 2, hs);
+                textX += hs + 6;
+                textW -= hs + 6;
+            }
+        } else if (bHead != null) {
             line.head(bHead, b.x() + 4, y + (h - LineBuilder.HEAD) / 2);
             textX += LineBuilder.HEAD + 4;
             textW -= LineBuilder.HEAD + 4;
@@ -773,7 +796,7 @@ public final class SceneRenderer {
             textX += IconCatalog.SIZE + 4;
             textW -= IconCatalog.SIZE + 4;
         }
-        String s = b.text().apply(view);
+        String s = label;
         if (s != null && !s.isEmpty()) {
             TextColor color = enabled ? b.color().apply(view) : TextColor.color(0xA0A0A0);
             if (b.markup() && enabled) {
@@ -825,7 +848,7 @@ public final class SceneRenderer {
             warnOnce("headrows:" + name, "List " + name + " shows player heads with row height " + l.rowHeight()
                 + "; heads sit on the 9 px text grid, so rows only look even with a row height of 9 or 18");
         }
-        int ly = l.y() + (heads ? headShift("List", name, l.y(), l.y() + (l.rowHeight() - LineBuilder.HEAD) / 2) : 0);
+        int ly = l.y() + (heads && !keepsPlace(l.rowHeight()) ? headShift("List", name, l.y(), l.y() + (l.rowHeight() - LineBuilder.HEAD) / 2) : 0);
         Frame bg = frame(l.frame());
         int frameHeight = height;
         if (bg != null) {
@@ -897,7 +920,7 @@ public final class SceneRenderer {
             warnOnce("headcells:" + name, "Grid " + name + " shows player heads with a cell pitch of " + g.cellPitch()
                 + "; heads sit on the 9 px text grid, so rows only look even with a pitch of 18 or 27");
         }
-        int gy = g.y() + (heads ? headShift("Grid", name, g.y(), g.y() + (g.cellSize() - LineBuilder.HEAD) / 2) : 0);
+        int gy = g.y() + (heads && !keepsPlace(g.cellSize()) ? headShift("Grid", name, g.y(), g.y() + (g.cellSize() - LineBuilder.HEAD) / 2) : 0);
         for (int r = 0; r < g.rows(); r++) {
             for (int c = 0; c < g.cols(); c++) {
                 int index = page * perPage + r * g.cols() + c;

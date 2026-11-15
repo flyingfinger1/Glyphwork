@@ -84,6 +84,21 @@ public interface Glyphwork {
     @Nullable Scene openScene(Player player);
 
     /**
+     * Loads the skins of these players (names or UUIDs) for big heads ({@link Head},
+     * {@code headSize(16)} and more) ahead of time, so the first drawing already shows their faces
+     * instead of the small stand-in head. Completes on the main thread when every lookup has ended,
+     * also when a skin was not found; faces that are already there complete at once.
+     *
+     * <pre>{@code
+     * Glyphwork.get().preloadHeads(a.getName(), b.getName())
+     *     .completeOnTimeout(null, 3, TimeUnit.SECONDS)   // do not wait long for a slow lookup
+     *     .thenRun(() -> Glyphwork.get().open(a, board));
+     * }</pre>
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    java.util.concurrent.CompletableFuture<@Nullable Void> preloadHeads(String... players);
+
+    /**
      * Puts a size of a picture into the pack, for {@link Image#size(int, int)}. 0 for one side keeps
      * the aspect ratio; {@code *} in the name matches any text ({@code "ranks/*"}). Call it in your
      * {@code onEnable}: a new size makes Glyphwork build the pack again one tick later, before

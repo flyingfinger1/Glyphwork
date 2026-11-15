@@ -72,7 +72,7 @@ Then build scenes as shown in [docs/api.md](docs/api.md). Changes: [CHANGELOG.md
 **Compatibility:** from 1.0 on the API keeps working across minor versions (1.x); breaking changes
 come only with 2.0. Two exceptions are marked in the code: `@ApiStatus.Experimental` (may still
 change in a minor version: tabs, scroll panes, big heads, text styles, item tooltips, the own plain
-view, `redrawAfter`, picture sizes, `redraw`, `openScene`, close reasons) and `@ApiStatus.Internal` (getters Glyphwork's renderer reads; do not call
+view, `redrawAfter`, picture sizes, `redraw`, `openScene`, close reasons, `preloadHeads`) and `@ApiStatus.Internal` (getters Glyphwork's renderer reads; do not call
 them). New element types, form fields and display modes may be added, so give a `switch` over
 them a default branch. The same promise holds for the YAML menu format and `config.yml`; renamed
 keys keep working with a hint in the log. Features added after 1.0 are marked *since 1.x* in the

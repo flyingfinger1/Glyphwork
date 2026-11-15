@@ -230,6 +230,27 @@ public final class GlyphworkService implements Glyphwork {
         return n;
     }
 
+    /** Where {@link #preloadHeads} goes (the plugin's skin faces). */
+    private volatile java.util.function.Function<java.util.List<String>, java.util.concurrent.CompletableFuture<Void>> preload =
+        who -> java.util.concurrent.CompletableFuture.completedFuture(null);
+
+    public void onPreloadHeads(java.util.function.Function<java.util.List<String>, java.util.concurrent.CompletableFuture<Void>> preload) {
+        this.preload = preload;
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<@org.jspecify.annotations.Nullable Void> preloadHeads(String... players) {
+        java.util.concurrent.CompletableFuture<@org.jspecify.annotations.Nullable Void> onMain = new java.util.concurrent.CompletableFuture<>();
+        preload.apply(java.util.List.of(players)).whenComplete((v, e) -> {
+            if (plugin.isEnabled()) {
+                Bukkit.getScheduler().runTask(plugin, () -> onMain.complete(null));
+            } else {
+                onMain.complete(null);
+            }
+        });
+        return onMain;
+    }
+
     @Override
     public @org.jspecify.annotations.Nullable Scene openScene(Player player) {
         Session s = sessions.get(player.getUniqueId());

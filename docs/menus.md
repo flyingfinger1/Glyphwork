@@ -98,7 +98,7 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | type | settings |
 |---|---|
 | `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default the skin's text color), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text) |
-| `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `color` (text color), `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24), `id` |
+| `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `color` (text color), `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24), `head-size` (for a `head:` icon, *since 1.2*), `id` |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
@@ -130,8 +130,8 @@ come from the client like item icons, are drawn at their own size (a heart stays
 the middle of the 16 x 16 icon place, and show as sprites in the plain dialog too. Effect icons are
 18 px and stand out 1 px on each side.
 
-**Big heads:** `type: head` (and `head-size: 16`, `24` or `32` on lists and grids, for their
-`head:` icons) paints a player's face pixel by pixel in the colors of the skin: no pack change, so
+**Big heads:** `type: head` (and `head-size: 16`, `24` or `32` on lists and grids, and on buttons
+*since 1.2*, for their `head:` icons; a button without text shows the face in its middle) paints a player's face pixel by pixel in the colors of the skin: no pack change, so
 it works for every player, also ones who just joined, and at any position (no 9 px grid). The
 server fetches the skin in the background (online players carry it, other names are looked up at
 Mojang) and keeps the faces in memory; until a face is there, the small client head stands in, and
@@ -191,13 +191,14 @@ display mode "no icons"); the plain dialog writes it after the name ("Diamond ×
 **Player heads:** `icon: "head:Steve"` (name or UUID; `%player%` and `%item_head%` work too). The
 client draws heads as 8 x 8 px, they cannot be scaled, and only on its 9 px text grid. So that a head
 still sits exactly in the middle of its button, row or cell, Glyphwork moves that element (frame,
-head and text together) by up to 4 px and logs which `y` avoids the move. Positions where nothing
-moves:
+head and text together) by up to 4 px and logs which `y` avoids the move. Elements 24 px high or
+more (buttons, list rows, grid cells) keep their place since 1.2: there the head moves instead, at
+most 4 px from the middle, so a board of big buttons stays even. Positions where nothing moves:
 
 | element with a head | `y` that needs no move |
 |---|---|
 | `icon`, button 16 px high, grid cell `size: 16` | 4, 13, 22, 31, 40, 49, 58, 67, 76, 85 ... (`y` = 9n + 4) |
-| button 24 px high, grid cell `size: 24` | 0, 9, 18, 27, 36, 45, 54, 63 ... (9n) |
+| button 24 px high, grid cell `size: 24` | any (since 1.2); head exactly in the middle at 0, 9, 18, 27 ... (9n) |
 | list with `row-height: 18` | 3, 12, 21, 30, 39, 48, 57, 66 ... (9n + 3) |
 | list with `row-height: 9` (compact, like the tab list) | 8, 17, 26, 35, 44, 53 ... (9n + 8) |
 

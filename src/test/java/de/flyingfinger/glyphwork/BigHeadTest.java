@@ -147,6 +147,31 @@ class BigHeadTest {
     }
 
     @Test
+    void buttonPaintsABigHeadInTheMiddleOrBeforeTheText() throws MenuException {
+        // alone: a 24 px face exactly in the middle of a 40 px button, off the 9 px grid
+        Scene alone = Scene.builder("t", 64, 80)
+            .add(de.flyingfinger.glyphwork.api.Button.of(8, 24, 40, 40).icon("head:Steve").headSize(24))
+            .build();
+        Layout la = layout(alone);
+        List<int[]> sq = squares(la);
+        assertEquals(64, sq.size());
+        assertEquals(8 + 8, sq.getFirst()[0]);              // (40 - 24) / 2
+        assertEquals(24 + 8, sq.getFirst()[1]);
+        assertEquals(3, sq.get(1)[0] - sq.getFirst()[0]);   // 3 px squares
+        assertTrue(la.heads.isEmpty(), "no client head");
+        // with text (YAML): 16 px face at the left, the button stays where it is
+        Scene withText = new Menus().parse("t", """
+            background: none
+            elements:
+              - { type: button, x: 8, y: 30, width: 100, height: 24, icon: "head:Steve", head-size: 16, text: Steve }
+            """).scene();
+        List<int[]> wq = squares(layout(withText));
+        assertEquals(64, wq.size());
+        assertEquals(8 + 4, wq.getFirst()[0]);
+        assertEquals(30 + 4, wq.getFirst()[1]);             // (24 - 16) / 2
+    }
+
+    @Test
     void yamlHead() throws MenuException {
         Scene s = new Menus().parse("t", """
             background: none

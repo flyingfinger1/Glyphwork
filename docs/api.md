@@ -64,7 +64,7 @@ Glyphwork.get().open(player, settings);
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
 | `ListView.of(id, x, y, w, rows, items)` | rows of text in a sunken frame; `.onClick`, `.selected` (or `.selectedIf((v, item) -> ...)`), `.tooltip`, `.rowHeight`; page buttons appear below when needed (+20 px) |
 | `Grid.of(id, x, y, cols, rows, items)` | cells with a short text; `.text`, `.color`, `.tint`, `.selected` / `.selectedIf`, `.tooltip`, `.onClick`, `.cell(pitch, size)`; page buttons below when needed |
-| `Head.of(x, y, "Steve")` | (experimental) a face painted from the skin, `.size(8/16/24/32)`, also `v -> name`; `.tooltip`, `.onClick`. `Grid` / `ListView`: `.headSize(16)` for their `head:` icons |
+| `Head.of(x, y, "Steve")` | (experimental) a face painted from the skin, `.size(8/16/24/32)`, also `v -> name`; `.tooltip`, `.onClick`. `Grid` / `ListView`, and `Button` *(since 1.2)*: `.headSize(16)` for their `head:` icons. Skins load in the background; until then the small head stands in (see *Preloading heads* below) |
 | `Image.of(x, y, "logo")` | a picture from `plugins/Glyphwork/images/` (also `v -> "ranks/" + rank(v)`); `.tint`, `.tooltip`, `.onClick`, `.size(w, h)` / `.scale(s)` (another size, see below) |
 | `Scroll.of(id, x, y, w, h, elements...)` | (experimental) a window onto its elements with a scroll bar on the right; `.step(18)`, `.frame("slot")`, `.position(v -> "article-" + id(v))` (own position per content); the elements use scene coordinates as if unscrolled, only what fits completely into the window is drawn |
 | `Tabs.of(id, x, y, w, h)` | (experimental) tabs on a panel, the active one joined with it; `.tab(id, title, elements...)` (or with an icon), `.selected(v -> id)` + `.onChange((click, id) -> ...)` to keep the active tab yourself (otherwise Glyphwork keeps it), `.frame`, `.inactiveTint`; the elements of a tab use scene coordinates, the panel starts `Tabs.HEADER` (16) px below `y` |
@@ -105,7 +105,8 @@ icon (not in `NO_ICONS`); the plain dialog writes them after the name ("Diamond 
 (`Grid.icon(p -> "head:" + p.getUniqueId())`, `Button.icon(...)`, `ListView.icon(...)`). The
 client draws heads as 8 x 8 px (no scaling) and only on its 9 px text grid. So that a head still sits
 in the middle of its button, row or cell, the element moves with it (by up to 4 px; the log says which
-`y` avoids that, see the table in [menus.md](menus.md#elements)). Use `rowHeight(18)` (or 9) for lists
+`y` avoids that, see the table in [menus.md](menus.md#elements)). Elements 24 px high or more keep
+their place *(since 1.2)*; the head moves instead, at most 4 px from the middle. Use `rowHeight(18)` (or 9) for lists
 and a cell pitch of 18 or 27 for grids with heads, so that every row fits the same way. Online players send their skin along,
 others are looked up by the client. Heads are not part of the pack: they show in every display mode
 and in the plain dialog.
@@ -181,6 +182,20 @@ if (Glyphwork.get().openScene(opponent) == board) { ... }   // what a player has
 A redraw keeps state, pages and history, and clicks on the old drawing still count. It does nothing
 while the player is in a text prompt, a form or an inventory; the screen is drawn fresh when they
 come back. Call it on the main thread.
+
+**Preloading heads** *(since 1.2, optional)*: big heads need the player's skin, which the server
+loads the first time a face is drawn; until then the small client head stands in and the screen is
+drawn again when the face is there. When you know the players in advance (the two players of a
+match), load their skins first and open the screen when they are there:
+
+```java
+Glyphwork.get().preloadHeads(a.getName(), b.getName())
+    .completeOnTimeout(null, 3, TimeUnit.SECONDS)   // do not wait long for a slow lookup
+    .thenRun(() -> Glyphwork.get().open(a, board)); // runs on the main thread
+```
+
+It completes when every lookup has ended (also when a skin was not found) and at once for faces
+that are already there. Nothing is loaded ahead by itself.
 
 **Links:** `click.openUrl("https://...")` shows the address in a small dialog with *Open* (the
 client asks once more, like for chat links) and *Back* to the current scene. Only `http` and

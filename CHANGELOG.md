@@ -6,6 +6,15 @@
   (state, pages and history stay), `redraw(sceneId)` does it for everyone who has that scene open,
   `openScene(player)` tells which scene a player has open. Found while building small test games:
   a move in a two-player game had to reopen the other player's screen.
+- **Big heads on buttons:** `Button.headSize(16|24|32)` / `head-size:` paints the face of a `head:`
+  icon from the skin, in the middle of the button (without text) or at its left; like on lists and
+  grids it sits at any pixel, not on the 9 px text grid.
+- **Preloading heads (optional):** `Glyphwork.get().preloadHeads(names...)` loads skins for big
+  heads ahead and completes when they are there, so a screen can open with the faces in place
+  instead of the small stand-in head being replaced a moment later.
+- **Big elements keep their place with a player head:** buttons, list rows and grid cells 24 px
+  high or more no longer move to put the head on the client's 9 px text grid; the head moves
+  instead (at most 4 px from the middle). A board of big buttons with heads stayed uneven before.
 - **Why a screen closed:** `onClose((click, reason) -> ...)` gets `PLAYER`, `REPLACED` or
   `CLOSED_BY_CODE`; the old `onClose(click -> ...)` works as before.
 

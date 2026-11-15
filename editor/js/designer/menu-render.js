@@ -552,7 +552,10 @@ export function renderMenu(menu, skin, ctx = {}) {
           const h = Math.max(t, Math.floor(bh / t) * t);
           const icon = el.icon != null ? f(el.icon).trim() : null;
           let by = y;
-          if (isHead(icon)) {
+          // painted heads (head-size 16..32) sit anywhere; buttons 24 px high or more keep their place
+          const hsize = headSizeOf(el['head-size']);
+          const painted = isHead(icon) && hsize > HEAD;
+          if (isHead(icon) && !painted && h < 24) {
             const dy = headShift(y + Math.floor((h - HEAD) / 2));
             if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
             by += dy;
@@ -560,14 +563,22 @@ export function renderMenu(menu, skin, ctx = {}) {
           const enabled = allHold(el['enabled-if'] ?? [], (s) => f(s));
           c.rect(frameName, x, by, bw, bh, enabled ? (color(el.tint) ?? BUTTON_GRAY) : DISABLED);
           let tx = x, tw = Math.max(t, Math.floor(bw / t) * t);   // centered on the drawn width
-          if (isHead(icon)) {
+          const label = f(el.text ?? '');
+          if (painted) {
+            const hs = Math.floor(Math.min(hsize, Math.min(h, tw) - 4) / 8) * 8;
+            if (hs >= 8) {
+              const hx = label ? x + 4 : x + Math.floor((tw - hs) / 2);
+              drawHead(c, hx, by + Math.floor((h - hs) / 2), hs / 8);
+              tx += hs + 6; tw -= hs + 6;
+            }
+          } else if (isHead(icon)) {
             drawHead(c, x + 4, by + Math.floor((h - HEAD) / 2));
             tx += HEAD + 4; tw -= HEAD + 4;
           } else if (icon) {
             drawIcon(c, icon, x + 3, by + Math.floor((h - ICON) / 2));
             tx += ICON + 4; tw -= ICON + 4;
           }
-          const s = f(el.text ?? '');
+          const s = label;
           if (s) {
             const rgb = enabled ? (color(el.color ?? el['text-color']) ?? WHITE) : DISABLED_TEXT;
             c.centered(fit(s, tw - 6), tx, tw, by + Math.floor((h - 7) / 2), rgb, enabled);
@@ -891,7 +902,7 @@ function listEl(c, el, top, ctx, boxes, regions, hints, skinText) {
   const itemIcons = shown.some((r) => r.icon && !isHead(r.icon));
   const wide = heads && itemIcons;
   let ly = y;
-  if (heads) {
+  if (heads && rh < 24) {   // rows 24 px or higher keep their place (the head moves)
     const dy = headShift(y + Math.floor((rh - HEAD) / 2));
     if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
     if (rh % LINE) hints.push({ top, text: `row-height ${rh}: 9 / 18` });
@@ -942,7 +953,7 @@ function gridEl(c, el, top, ctx, boxes, regions, hints) {
   const shown = all.slice(page * per, page * per + per);
   let gy = y;
   const hsize = headSizeOf(el['head-size']);
-  if (hsize <= 8 && shown.some((r) => isHead(r.icon))) {
+  if (hsize <= 8 && size < 24 && shown.some((r) => isHead(r.icon))) {   // cells 24 px or more keep their place
     const dy = headShift(y + Math.floor((size - HEAD) / 2));
     if (dy) hints.push({ top, text: `head: y ${dy > 0 ? '+' : ''}${dy} → y=${y + dy}` });
     gy += dy;

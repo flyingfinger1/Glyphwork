@@ -93,6 +93,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             service = new GlyphworkService(this, b.renderer(), b.height(), b.settings().plainDialog(),
                 packs::hasPack, packs::send, packs::hasServerPack);
             service.onImageSize(this::imageSizeAsked);
+            service.onPreloadHeads(who -> faces().preload(who));
         } catch (IOException e) {
             getLogger().severe("Pack could not be published: " + e);
             getServer().getPluginManager().disablePlugin(this);

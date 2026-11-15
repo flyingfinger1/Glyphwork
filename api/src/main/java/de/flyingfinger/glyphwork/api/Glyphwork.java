@@ -2,6 +2,7 @@ package de.flyingfinger.glyphwork.api;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Entry point for other plugins. Add {@code depend: [Glyphwork]} to your plugin.yml and compile
@@ -54,6 +55,33 @@ public interface Glyphwork {
 
     /** Sends the Glyphwork resource pack to the player (again), e.g. from your own command. */
     void sendPack(Player player);
+
+    /**
+     * Draws the player's open Glyphwork screen again, e.g. after another player changed what it
+     * shows (a move in a game, a new bid). History, state and pages stay, clicks on the old drawing
+     * still count. Nothing happens while the player is in a text prompt, a form or an inventory
+     * (the screen is drawn fresh when they come back). Call it on the main thread.
+     *
+     * @return whether the screen was drawn again
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    boolean redraw(Player player);
+
+    /**
+     * {@link #redraw(Player)} for everyone who has the scene with this id open (shown, not only in
+     * their back history), e.g. a lobby board. Call it on the main thread.
+     *
+     * @return how many screens were drawn again
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    int redraw(String sceneId);
+
+    /**
+     * The scene the player has open, or null: no Glyphwork screen, or it was closed. While the
+     * player is in a text prompt or a form of that scene, it still counts as open.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    @Nullable Scene openScene(Player player);
 
     /**
      * Puts a size of a picture into the pack, for {@link Image#size(int, int)}. 0 for one side keeps

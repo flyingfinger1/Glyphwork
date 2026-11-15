@@ -43,6 +43,9 @@ Glyphwork.get().open(player, settings);
   18 px get a 40 px frame) and a panel covering the whole scene (`background()`).
 - `.onOpen(c -> ...)` runs when the scene is opened, before it is drawn (set state there);
   `.onClose(c -> ...)` when the player closes the screen while it is shown (messages, sounds).
+  `.onClose((c, reason) -> ...)` *(since 1.2)* also says why: `PLAYER` (exit button or ESC),
+  `REPLACED` (another screen opened with `Glyphwork.get().open`) or `CLOSED_BY_CODE`. A game, for
+  example, counts only `PLAYER` as giving up.
 - A binding that knows its value changes at a certain time (a countdown) can call
   `view.redrawAfter(Duration)` (experimental) while rendering; the open scene is then drawn again at that time.
 - `.refresh(Duration.ofSeconds(5))` on the builder redraws the open scene every 5 seconds (at least
@@ -164,6 +167,20 @@ cells come from the items function, so filter those there.
 `Integer`. Read a value with the type you stored (`v.get("number", (Object) "-")` when it may be
 missing and you only print it). If a binding throws while rendering, only that element is hidden and
 a warning is logged.
+
+**Other players' screens** *(since 1.2)*: when something one player does changes what others
+see (a move in a game, a new bid, a lobby list), draw their screens again instead of opening them
+anew, which would reset their history:
+
+```java
+Glyphwork.get().redraw(opponent);          // false if they have no Glyphwork screen open
+Glyphwork.get().redraw("myplugin:lobby");  // everyone who has this scene open; returns how many
+if (Glyphwork.get().openScene(opponent) == board) { ... }   // what a player has open, or null
+```
+
+A redraw keeps state, pages and history, and clicks on the old drawing still count. It does nothing
+while the player is in a text prompt, a form or an inventory; the screen is drawn fresh when they
+come back. Call it on the main thread.
 
 **Links:** `click.openUrl("https://...")` shows the address in a small dialog with *Open* (the
 client asks once more, like for chat links) and *Back* to the current scene. Only `http` and

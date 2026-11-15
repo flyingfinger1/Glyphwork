@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -25,6 +26,7 @@ public final class Scene {
     private final @Nullable Duration refresh;
     private final @Nullable Consumer<Click> onOpen;
     private final @Nullable Consumer<Click> onClose;
+    private final @Nullable BiConsumer<Click, CloseReason> onCloseReason;
     private final @Nullable List<Element> plain;
     private final int plainColumns;
 
@@ -32,6 +34,7 @@ public final class Scene {
         this.refresh = b.refresh;
         this.onOpen = b.onOpen;
         this.onClose = b.onClose;
+        this.onCloseReason = b.onCloseReason;
         this.id = b.id;
         this.width = b.width;
         this.height = b.height;
@@ -83,7 +86,20 @@ public final class Scene {
 
     /** Runs when the player closes the screen while this scene is shown. */
     public @Nullable Consumer<Click> onClose() {
+        if (onClose == null && onCloseReason != null) {
+            return c -> onCloseReason.accept(c, CloseReason.PLAYER);
+        }
         return onClose;
+    }
+
+    /** What runs when the screen of this scene ends, with the reason; null if nothing. */
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable BiConsumer<Click, CloseReason> closeHandler() {
+        if (onCloseReason != null) {
+            return onCloseReason;
+        }
+        Consumer<Click> c = onClose;
+        return c == null ? null : (click, reason) -> c.accept(click);
     }
 
     /** How often the open scene redraws itself, or null if only after clicks. */
@@ -114,6 +130,7 @@ public final class Scene {
         private @Nullable Duration refresh;
         private @Nullable Consumer<Click> onOpen;
         private @Nullable Consumer<Click> onClose;
+        private @Nullable BiConsumer<Click, CloseReason> onCloseReason;
         private @Nullable List<Element> plain;
         private int plainColumns;
 
@@ -175,6 +192,19 @@ public final class Scene {
          */
         public Builder onClose(Consumer<Click> onClose) {
             this.onClose = onClose;
+            this.onCloseReason = null;
+            return this;
+        }
+
+        /**
+         * Like {@link #onClose(Consumer)}, with the reason: {@link CloseReason#PLAYER} (exit button
+         * or ESC), {@link CloseReason#REPLACED} (another screen opened with {@link Glyphwork#open})
+         * or {@link CloseReason#CLOSED_BY_CODE}. A game, for example, counts only PLAYER as giving up.
+         */
+        @org.jetbrains.annotations.ApiStatus.Experimental
+        public Builder onClose(BiConsumer<Click, CloseReason> onClose) {
+            this.onCloseReason = onClose;
+            this.onClose = null;
             return this;
         }
 

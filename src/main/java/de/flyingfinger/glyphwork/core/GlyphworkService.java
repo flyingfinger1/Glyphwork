@@ -76,6 +76,8 @@ public final class GlyphworkService implements Glyphwork {
         long formShownAt;
         /** Show the plain fallback even with the pack (admin preview). */
         boolean forceFallback;
+        /** A text prompt, form or link dialog of the scene is shown instead of it: no redraws. */
+        boolean aside;
         /** The pending redraw of a scene with refresh, or null. */
         org.bukkit.scheduler.@org.jspecify.annotations.Nullable BukkitTask refresh;
 
@@ -111,7 +113,7 @@ public final class GlyphworkService implements Glyphwork {
     public void openAs(Player player, Scene scene, boolean forceFallback) {
         Session s = session(player);
         if (!s.stack.isEmpty()) {
-            closedHook(player, s, s.stack.peek());   // another screen replaces this one
+            closedHook(player, s, s.stack.peek(), de.flyingfinger.glyphwork.api.CloseReason.REPLACED);
         }
         s.forceFallback = forceFallback;
         s.stack.clear();
@@ -136,12 +138,14 @@ public final class GlyphworkService implements Glyphwork {
     }
 
     /** Runs the scene's onClose (the screen is already gone). */
-    private void closedHook(Player player, Session s, @org.jspecify.annotations.Nullable Scene scene) {
-        if (scene == null || scene.onClose() == null || !player.isOnline()) {
+    private void closedHook(Player player, Session s, @org.jspecify.annotations.Nullable Scene scene,
+                            de.flyingfinger.glyphwork.api.CloseReason reason) {
+        s.aside = false;
+        if (scene == null || scene.closeHandler() == null || !player.isOnline()) {
             return;
         }
         try {
-            scene.onClose().accept(new HookClick(player, s, scene, true));
+            scene.closeHandler().accept(new HookClick(player, s, scene, true), reason);
         } catch (RuntimeException e) {
             plugin.getLogger().log(Level.WARNING, "onClose of " + scene.id() + " failed", e);
         }
@@ -155,7 +159,7 @@ public final class GlyphworkService implements Glyphwork {
             s.stack.clear();
             s.generation++;
             s.stopRefresh();
-            closedHook(player, s, top);
+            closedHook(player, s, top, de.flyingfinger.glyphwork.api.CloseReason.CLOSED_BY_CODE);
         }
         player.closeDialog();
     }
@@ -197,6 +201,41 @@ public final class GlyphworkService implements Glyphwork {
         sendPack.accept(player);
     }
 
+    @Override
+    public boolean redraw(Player player) {
+        if (!Bukkit.isPrimaryThread()) {
+            throw new IllegalStateException("redraw must be called on the main thread");
+        }
+        Session s = sessions.get(player.getUniqueId());
+        if (s == null || s.stack.isEmpty() || s.aside || !player.isOnline() || inventoryOpen(player)) {
+            return false;
+        }
+        show(player, s, true);      // like a refresh: same generation, clicks on the old drawing count
+        return true;
+    }
+
+    @Override
+    public int redraw(String sceneId) {
+        if (!Bukkit.isPrimaryThread()) {
+            throw new IllegalStateException("redraw must be called on the main thread");
+        }
+        int n = 0;
+        for (Session s : List.copyOf(sessions.values())) {
+            Scene top = s.stack.peek();
+            Player p = Bukkit.getPlayer(s.id);
+            if (top != null && top.id().equals(sceneId) && p != null && redraw(p)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    @Override
+    public @org.jspecify.annotations.Nullable Scene openScene(Player player) {
+        Session s = sessions.get(player.getUniqueId());
+        return s == null ? null : s.stack.peek();
+    }
+
     /** Where {@link #imageSize} and {@link #imageScale} go (the plugin adds them to the pack). */
     private volatile Consumer<de.flyingfinger.glyphwork.font.ImageCatalog.SizeRequest> imageSizes = r -> { };
 
@@ -230,6 +269,7 @@ public final class GlyphworkService implements Glyphwork {
      */
     private void show(Player player, Session s, boolean redraw) {
         s.stopRefresh();
+        s.aside = false;
         Scene scene = s.stack.peek();
         if (scene == null) {
             player.closeDialog();
@@ -309,7 +349,7 @@ public final class GlyphworkService implements Glyphwork {
                 s.stack.clear();
                 s.generation++;
                 s.stopRefresh();
-                closedHook(player, s, top);
+                closedHook(player, s, top, de.flyingfinger.glyphwork.api.CloseReason.PLAYER);
             }
         });
     }
@@ -588,6 +628,7 @@ public final class GlyphworkService implements Glyphwork {
             }
             int generation = ++session.generation;
             session.stopRefresh();
+            session.aside = true;
             Runnable back = () -> Bukkit.getScheduler().runTask(plugin, () -> {
                 if (player.isOnline() && session.generation == generation) {
                     show(player, session);
@@ -602,6 +643,7 @@ public final class GlyphworkService implements Glyphwork {
         public void prompt(Component title, String initial, Consumer<String> onSubmit) {
             int generation = ++session.generation;
             session.stopRefresh();                 // a refresh must not draw over the text field
+            session.aside = true;
             Runnable back = () -> {
                 if (player.isOnline() && session.generation == generation) {
                     show(player, session);
@@ -627,6 +669,7 @@ public final class GlyphworkService implements Glyphwork {
         public void form(de.flyingfinger.glyphwork.api.Form form, Consumer<de.flyingfinger.glyphwork.api.Form.Values> onSubmit) {
             int generation = ++session.generation;
             session.stopRefresh();
+            session.aside = true;
             Runnable back = () -> {
                 if (player.isOnline() && session.generation == generation) {
                     show(player, session);

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Other players' screens:** `Glyphwork.get().redraw(player)` draws a player's open screen again
+  (state, pages and history stay), `redraw(sceneId)` does it for everyone who has that scene open,
+  `openScene(player)` tells which scene a player has open. Found while building small test games:
+  a move in a two-player game had to reopen the other player's screen.
+- **Why a screen closed:** `onClose((click, reason) -> ...)` gets `PLAYER`, `REPLACED` or
+  `CLOSED_BY_CODE`; the old `onClose(click -> ...)` works as before.
+
 ## 1.1.0 – GUI sprites, picture sizes and one pack for the client
 
 Everything here is new; menus, configs and plugins made for 1.0 keep working unchanged.

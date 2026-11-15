@@ -14,8 +14,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Item icons as glyphs. The pack only references the item and block textures every client already
@@ -28,11 +30,37 @@ public final class IconCatalog {
     public static final int SIZE = 16;
 
     /**
-     * One referenced texture, registered as one glyph. {@code fromPack}: only the server's resource
-     * pack has it (custom items), so it goes into its own fonts (see ShiftFonts).
+     * Which icon fonts a texture goes into. The client rejects a whole font when one of its textures
+     * is missing, so textures that not every client has get fonts of their own (see ShiftFonts).
      */
-    public record Texture(String file, int frameSize, int frames, int advance, char codepoint, boolean fromPack,
+    public enum Group {
+        /** Vanilla textures every supported client has. */
+        VANILLA('i'),
+        /** Vanilla textures newer than the oldest supported client (item_icons.json "newer"). */
+        NEWER('n'),
+        /** Textures only the server's resource pack has (custom items). */
+        PACK('c');
+
+        private final char prefix;
+
+        Group(char prefix) {
+            this.prefix = prefix;
+        }
+
+        /** First letter of the group's font names. */
+        public char prefix() {
+            return prefix;
+        }
+    }
+
+    /** One referenced texture, registered as one glyph. */
+    public record Texture(String file, int frameSize, int frames, int advance, char codepoint, Group group,
                           int width, boolean nativeSize) {
+
+        /** Whether only the server's resource pack has this texture. */
+        public boolean fromPack() {
+            return group == Group.PACK;
+        }
 
         /** Drawn height: item textures fill the 16 px icon, GUI sprites keep their own size. */
         public int height() {
@@ -66,12 +94,18 @@ public final class IconCatalog {
             }
             JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
             IconCatalog c = new IconCatalog();
-            for (JsonElement e : root.getAsJsonArray("textures")) {
-                JsonArray t = e.getAsJsonArray();
+            Set<Integer> newer = new HashSet<>();
+            if (root.has("newer")) {
+                root.getAsJsonArray("newer").forEach(n -> newer.add(n.getAsInt()));
+            }
+            JsonArray all = root.getAsJsonArray("textures");
+            for (int i = 0; i < all.size(); i++) {
+                JsonArray t = all.get(i).getAsJsonArray();
                 int frame = t.get(2).getAsInt();
                 boolean nat = t.size() > 5 && t.get(5).getAsInt() == 1;
                 c.textures.add(new Texture(t.get(0).getAsString(), frame, t.get(3).getAsInt(),
-                    advance(t.get(4).getAsInt() - 1, frame, nat), alloc.next(), false, t.get(1).getAsInt(), nat));
+                    advance(t.get(4).getAsInt() - 1, frame, nat), alloc.next(),
+                    newer.contains(i) ? Group.NEWER : Group.VANILLA, t.get(1).getAsInt(), nat));
             }
             for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("items").entrySet()) {
                 List<Layer> layers = new ArrayList<>();
@@ -113,7 +147,7 @@ public final class IconCatalog {
             PackIcons.Measure m = pack.measure(t.file());
             if (m != null) {
                 Texture n = new Texture(t.file(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame(), t.nativeSize()),
-                    t.codepoint(), t.fromPack(), m.width(), t.nativeSize());
+                    t.codepoint(), t.group(), m.width(), t.nativeSize());
                 textures.set(i, n);
                 replaced.put(t.codepoint(), n);
                 remeasured++;
@@ -137,7 +171,7 @@ public final class IconCatalog {
                     if (m == null) {
                         continue; // texture neither in the pack nor a known vanilla texture
                     }
-                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next(), true,
+                    t = new Texture(r.texture(), m.frame(), m.frames(), advance(m.visibleWidth(), m.frame()), alloc.next(), Group.PACK,
                         m.width(), false);
                     textures.add(t);
                     byFile.put(t.file(), t);
@@ -177,19 +211,30 @@ public final class IconCatalog {
         return textures.size();
     }
 
+    /** Whether any texture belongs to {@code group} (the pack needs that group's fonts then). */
+    public boolean has(Group group) {
+        return textures.stream().anyMatch(t -> t.group() == group);
+    }
+
     /** Whether any texture comes only from the server's pack (then the pack needs the c fonts). */
     public boolean hasPackTextures() {
-        return textures.stream().anyMatch(Texture::fromPack);
+        return has(Group.PACK);
     }
 
     /**
      * Bitmap providers for an icon font shifted {@code shift} px down (see ShiftFonts).
      *
      * @param fromPack true: only textures from the server's pack; false: only vanilla textures
+     *                 every supported client has
      */
     public void addProviders(JsonArray target, int shift, boolean fromPack) {
+        addProviders(target, shift, fromPack ? Group.PACK : Group.VANILLA);
+    }
+
+    /** Bitmap providers of the textures of {@code group} for an icon font shifted {@code shift} px down. */
+    public void addProviders(JsonArray target, int shift, Group group) {
         for (Texture t : textures) {
-            if (t.fromPack() != fromPack) {
+            if (t.group() != group) {
                 continue;
             }
             JsonObject p = new JsonObject();

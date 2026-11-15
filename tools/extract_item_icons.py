@@ -6,7 +6,11 @@ any Minecraft image. Output per item: layers of (texture, tint). Flat items ("it
 get one representative face (blocks cannot be shown in 3D with glyphs). Items drawn by special
 renderers (heads, chests, beds, shields, banners) have no usable texture and are left out.
 
-Usage: py tools/extract_item_icons.py <minecraft-client.jar> src/main/resources/item_icons.json
+Textures that an older client jar (the oldest supported version) lacks are listed as "newer": the
+plugin puts them into fonts of their own, because a client rejects a whole font when one of its
+textures is missing.
+
+Usage: py tools/extract_item_icons.py <minecraft-client.jar> src/main/resources/item_icons.json [<oldest-client.jar>]
 """
 import io
 import json
@@ -16,6 +20,7 @@ import zipfile
 from PIL import Image
 
 jar_path, out_path = sys.argv[1], sys.argv[2]
+baseline = set(zipfile.ZipFile(sys.argv[3]).namelist()) if len(sys.argv) > 3 else None
 jar = zipfile.ZipFile(jar_path)
 names = set(jar.namelist())
 
@@ -209,5 +214,10 @@ for base, folder in GUI:
         gui += 1
 print(f"{gui} gui sprites")
 
-json.dump({"textures": textures, "items": items},open(out_path, "w", encoding="utf-8"), separators=(",", ":"))
+out = {"textures": textures, "items": items}
+if baseline is not None:
+    out["newer"] = [i for i, t in enumerate(textures)
+                    if "assets/%s/textures/%s.png" % tuple(t[0].split(":", 1)) not in baseline]
+    print(f"{len(out['newer'])} textures missing in the oldest client")
+json.dump(out, open(out_path, "w", encoding="utf-8"), separators=(",", ":"))
 print(f"{len(items)} items, {len(textures)} textures, skipped {len(skipped)}: {skipped[:20]}")

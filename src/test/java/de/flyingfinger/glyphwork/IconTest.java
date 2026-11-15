@@ -227,6 +227,17 @@ class IconTest {
         assertEquals(9, p.get("height").getAsInt());
         assertEquals(7 - 2 - 3, p.get("ascent").getAsInt());
 
+        // textures that older clients lack get fonts of their own (n0..n8), so the rest still loads
+        assertEquals(IconCatalog.Group.VANILLA, icons.icon("tnt").getFirst().texture().group());
+        assertEquals(IconCatalog.Group.NEWER, icons.icon("poplar_planks").getFirst().texture().group());
+        com.google.gson.JsonArray newer = new com.google.gson.JsonArray();
+        icons.addProviders(newer, 0, IconCatalog.Group.NEWER);
+        assertTrue(newer.asList().stream().anyMatch(e -> e.getAsJsonObject().get("file").getAsString()
+            .equals("minecraft:block/poplar_planks.png")));
+        assertTrue(providers.asList().stream().noneMatch(e -> e.getAsJsonObject().get("file").getAsString()
+            .equals("minecraft:block/poplar_planks.png")));
+        assertEquals("glyphwork:n3", de.flyingfinger.glyphwork.font.ShiftFonts.icon(3, IconCatalog.Group.NEWER).asString());
+
         Scene s = Scene.builder("t", 80, 40).add(de.flyingfinger.glyphwork.api.Icon.of(40, 18, "gui:hud/heart/full")).build();
         Layout l = layout(s, new TestClick(s));
         assertEquals(1, l.icons.size());

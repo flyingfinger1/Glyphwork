@@ -40,12 +40,18 @@ public final class ShiftFonts {
     }
 
     /**
-     * Font for item icons, s (0..8) px below their text line. Vanilla textures and textures that
-     * only the server's pack has get separate fonts: the client rejects a whole font when one
-     * texture is missing, so a missing server pack must not take vanilla icons (or text) with it.
+     * Font for item icons, s (0..8) px below their text line. The client rejects a whole font when
+     * one texture is missing, so each {@link IconCatalog.Group} has fonts of its own: a missing
+     * server pack, or an older client without the newest textures, must not take the other icons
+     * (or text) with it.
      */
+    public static Key icon(int s, IconCatalog.Group group) {
+        return Key.key("glyphwork", group.prefix() + String.valueOf(s));
+    }
+
+    /** Font for item icons, s px down: server-pack textures or vanilla ones every client has. */
     public static Key icon(int s, boolean fromPack) {
-        return Key.key("glyphwork", (fromPack ? "c" : "i") + s);
+        return icon(s, fromPack ? IconCatalog.Group.PACK : IconCatalog.Group.VANILLA);
     }
 
     public static boolean isShiftFont(Key key) {
@@ -53,7 +59,7 @@ public final class ShiftFonts {
             return false;
         }
         char c = key.value().charAt(0);
-        return c == 'y' || c == 't' || c == 'i' || c == 'c' || c == 'm';
+        return c == 'y' || c == 't' || c == 'i' || c == 'n' || c == 'c' || c == 'm';
     }
 
     public static void write(PackFiles pack, Collection<Sheet> sheets, int maxHeight, VanillaText text,
@@ -75,15 +81,14 @@ public final class ShiftFonts {
             text.addShiftedProviders(providers, s);
             put(pack, "t" + s, providers);
             if (icons != null) {
-                JsonArray vanilla = new JsonArray();
-                vanilla.add(SpaceFont.provider());
-                icons.addProviders(vanilla, s, false);
-                put(pack, "i" + s, vanilla);
-                if (icons.hasPackTextures()) {
-                    JsonArray fromPack = new JsonArray();
-                    fromPack.add(SpaceFont.provider());
-                    icons.addProviders(fromPack, s, true);
-                    put(pack, "c" + s, fromPack);
+                for (IconCatalog.Group g : IconCatalog.Group.values()) {
+                    if (g != IconCatalog.Group.VANILLA && !icons.has(g)) {
+                        continue;
+                    }
+                    JsonArray iconProviders = new JsonArray();
+                    iconProviders.add(SpaceFont.provider());
+                    icons.addProviders(iconProviders, s, g);
+                    put(pack, String.valueOf(g.prefix()) + s, iconProviders);
                 }
             }
         }

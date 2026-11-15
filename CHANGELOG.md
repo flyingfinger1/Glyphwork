@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.2-mc1.21.11 – Paper 1.21.11, example text
+
+The 1.21.11 build with the state of 26.3 release 1.2.1; the plugin's code is unchanged since
+1.2.1-mc1.21.11.
+
+- Example plugin: the options text names the plain mode by its current name ("Plain", not
+  "Simple").
+
 ## 1.2.1-mc1.21.11 – Paper 1.21.11
 
 A build for **Paper 1.21.11** (Java 21) from the branch `mc/1.21.11`; `main` and the other releases

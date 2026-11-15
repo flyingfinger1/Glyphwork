@@ -27,7 +27,7 @@ import java.util.Map;
  */
 final class Layout {
 
-    record Box(float l, float t, float r, float b, ClickEvent<?> click) {
+    record Box(float l, float t, float r, float b, ClickEvent click) {
     }
 
     record Drawn(BufferedImage img, int x, int y, TextColor color) {
@@ -122,7 +122,7 @@ final class Layout {
 
     /** Payload of the winning click event at (px, py), or null. */
     String hit(float px, float py) {
-        ClickEvent<?> result = null;
+        ClickEvent result = null;
         for (Box b : boxes) {
             if (px >= b.l && px < b.r && py >= b.t && py < b.b && b.click != null) {
                 result = b.click;

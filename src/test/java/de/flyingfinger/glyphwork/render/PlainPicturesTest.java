@@ -3,6 +3,8 @@ package de.flyingfinger.glyphwork.render;
 import de.flyingfinger.glyphwork.font.GlyphAllocator;
 import de.flyingfinger.glyphwork.font.IconCatalog;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ObjectComponent;
+import net.kyori.adventure.text.object.SpriteObjectContents;
 import net.kyori.adventure.text.TextComponent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,12 @@ class PlainPicturesTest {
         return c instanceof TextComponent t && t.content().contains("<sprite");
     }
 
+    /** "atlas sprite" of a sprite object component (toString differs between Adventure versions). */
+    private static String sprite(Component c) {
+        return c instanceof ObjectComponent o && o.contents() instanceof SpriteObjectContents s
+            ? s.atlas().asString() + " " + s.sprite().asString() : String.valueOf(c);
+    }
+
     @Test
     void atlasFollowsTheTexture() {
         Component item = FallbackRenderer.spriteOf("minecraft:item/diamond");
@@ -33,13 +41,13 @@ class PlainPicturesTest {
         assertNotNull(block);
         // MiniMessage knows the tag: an object component, not the tag as text
         assertFalse(isText(item), item.toString());
-        assertTrue(item.toString().contains("minecraft:items") && item.toString().contains("item/diamond"), item.toString());
-        assertTrue(block.toString().contains("minecraft:blocks"), block.toString());
+        assertTrue(sprite(item).contains("minecraft:items") && sprite(item).contains("item/diamond"), item.toString());
+        assertTrue(sprite(block).contains("minecraft:blocks"), block.toString());
         assertNull(FallbackRenderer.spriteOf("myserver:item/ruby"));       // only textures every client has
         Component heart = FallbackRenderer.spriteOf("minecraft:gui/sprites/hud/heart/full");
-        assertTrue(heart.toString().contains("minecraft:gui") && heart.toString().contains("hud/heart/full")
-            && !heart.toString().contains("sprites/"), heart.toString());
-        assertTrue(FallbackRenderer.spriteOf("minecraft:mob_effect/speed").toString().contains("mob_effect/speed"));
+        assertTrue(sprite(heart).contains("minecraft:gui") && sprite(heart).contains("hud/heart/full")
+            && !sprite(heart).contains("sprites/"), heart.toString());
+        assertTrue(sprite(FallbackRenderer.spriteOf("minecraft:mob_effect/speed")).contains("mob_effect/speed"));
         assertEquals("Heart Full", FallbackRenderer.humanize("gui:hud/heart/full"));
         assertEquals("Speed", FallbackRenderer.humanize("gui:mob_effect/speed"));
     }

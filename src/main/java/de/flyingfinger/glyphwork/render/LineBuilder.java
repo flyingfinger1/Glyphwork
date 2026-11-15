@@ -88,7 +88,7 @@ public final class LineBuilder {
     }
 
     /** Draws one sheet glyph with its top-left pixel at (x, y) on the first line. */
-    public LineBuilder glyph(Glyph g, int x, int y, @Nullable TextColor tint, @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
+    public LineBuilder glyph(Glyph g, int x, int y, @Nullable TextColor tint, @Nullable ClickEvent click, @Nullable HoverEventSource<?> hover) {
         y = place(y, g.height());
         if (y == SKIP || y < 0 || y >= maxHeight) {
             return this; // no font for this row
@@ -103,7 +103,7 @@ public final class LineBuilder {
      * neighbours pick the right corner/edge/fill tile. The tint multiplies the texture colors.
      */
     public LineBuilder frame(Frame frame, int x, int y, boolean[][] cells, @Nullable TextColor tint,
-                             @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
+                             @Nullable ClickEvent click, @Nullable HoverEventSource<?> hover) {
         int t = frame.tileSize();
         for (int r = 0; r < cells.length; r++) {
             for (int c = 0; c < cells[r].length; c++) {
@@ -117,7 +117,7 @@ public final class LineBuilder {
 
     /** Rectangular frame of {@code w x h} pixels (rounded down to whole tiles, at least one). */
     public LineBuilder frame(Frame frame, int x, int y, int w, int h, @Nullable TextColor tint,
-                             @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
+                             @Nullable ClickEvent click, @Nullable HoverEventSource<?> hover) {
         int t = frame.tileSize();
         return frame(frame, x, y, cells(Math.max(1, w / t), Math.max(1, h / t)), tint, click, hover);
     }
@@ -341,7 +341,7 @@ public final class LineBuilder {
         private final StringBuilder seg = new StringBuilder();
         private @Nullable Key segFont;
         private @Nullable TextColor segColor;
-        private @Nullable ClickEvent<?> segClick;
+        private @Nullable ClickEvent segClick;
         private @Nullable HoverEventSource<?> segHover;
         private @Nullable ShadowColor segShadow;
         private boolean segBold;
@@ -351,17 +351,17 @@ public final class LineBuilder {
         private boolean used;
 
         void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
-                  @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover) {
+                  @Nullable ClickEvent click, @Nullable HoverEventSource<?> hover) {
             draw(chars, advance, x, font, color, click, hover, null);
         }
 
         void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
-                  @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow) {
+                  @Nullable ClickEvent click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow) {
             draw(chars, advance, x, font, color, click, hover, shadow, false, false);
         }
 
         void draw(String chars, int advance, int x, Key font, @Nullable TextColor color,
-                  @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow,
+                  @Nullable ClickEvent click, @Nullable HoverEventSource<?> hover, @Nullable ShadowColor shadow,
                   boolean bold, boolean italic) {
             used = true;
             moveTo(x);

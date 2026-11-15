@@ -1,7 +1,7 @@
 name: Glyphwork
 version: '${version}'
 main: de.flyingfinger.glyphwork.GlyphworkPlugin
-api-version: '26.3'
+api-version: '26.1'
 description: Clickable font-based GUIs inside vanilla dialogs
 author: flyingfinger1
 softdepend: [PlaceholderAPI, floodgate, Geyser-Spigot]

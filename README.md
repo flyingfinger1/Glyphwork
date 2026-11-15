@@ -1,6 +1,7 @@
 # Glyphwork
 
-Clickable, pixel-positioned GUIs inside the vanilla **dialog** screen (Paper 26.3), no client mod.
+Clickable, pixel-positioned GUIs inside the vanilla **dialog** screen (Paper 26.1 to 26.3; a separate
+build for 1.21.11), no client mod.
 The whole GUI is one `plain_message`; the plugin generates a resource pack with bitmap fonts,
 serves it from an embedded HTTP server and sends it on join. See
 [How it works](#how-it-works-as-verified-against-the-263-client).
@@ -43,7 +44,8 @@ and download the `.yml` file.
 ## Install
 
 1. Download `Glyphwork-<version>.jar` from the [releases](https://github.com/flyingfinger1/Glyphwork/releases)
-   into `plugins/` of a Paper 26.3 server (Java 25) and start it.
+   into `plugins/` of a Paper 26.1.2, 26.2 or 26.3 server (Java 25) and start it. For Paper 1.21.11
+   take a `-mc1.21.11` release (Java 21, built from the branch `mc/1.21.11`).
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
    built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
    web server with `pack.hosting: external`. Then `/glyphwork reload`.
@@ -99,7 +101,7 @@ attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
   has a click event wins. So a sprite with a click event is clickable exactly where it is drawn, and
   glyphs without events (text labels, decorations) never block clicks. Invisible hitboxes are 8 x 8
   glyphs of alpha-1 pixels: the client does not draw them (alpha < 0.1) but they count for clicks. The line-binding problem from
-  the original HugoSMP recipe does not apply to 26.3. `src/test/java/de/flyingfinger/glyphwork/M0HitTest.java` replays this logic.
+  the original HugoSMP recipe does not apply to 26.3 (26.1.2, 26.2 and 1.21.11 behave the same in tests). `src/test/java/de/flyingfinger/glyphwork/M0HitTest.java` replays this logic.
 - Text clicks in a dialog body run with the dialog's `afterAction`; we use `NONE`, so the screen
   stays open and the server answers with a re-rendered dialog.
 - Bitmap advance = rightmost non-transparent column + 1 (same rule as the client).

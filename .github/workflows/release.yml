@@ -66,5 +66,8 @@ jobs:
           version-type: ${{ env.CHANNEL }}
           changelog: ${{ github.event.release.body }}
           loaders: paper purpur
-          game-versions: "26.3"
+          game-versions: |
+            26.1.2
+            26.2
+            26.3
           java: "25"

@@ -468,7 +468,7 @@ public final class GlyphworkService implements Glyphwork {
         return scene.exitLabel() != null ? scene.exitLabel() : Messages.active().get(player, "dialog.close");
     }
 
-    private ClickEvent<?> callback(Player player, Session s, int generation, Scene scene, String name, Consumer<Click> action) {
+    private ClickEvent callback(Player player, Session s, int generation, Scene scene, String name, Consumer<Click> action) {
         return ClickEvent.callback(audience -> run(player, s, generation, name, action),
             DialogFactory.callbackOptions(lifetime(scene)));
     }

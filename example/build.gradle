@@ -13,6 +13,8 @@ java {
     }
 }
 
+tasks.withType(JavaCompile).configureEach { options.release = 21 }
+
 compileJava.options.encoding = 'UTF-8'
 
 repositories {
@@ -21,7 +23,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
     // In your own plugin: compileOnly files('libs/glyphwork-api-<version>.jar').
     // compileOnly: the API classes ship inside the Glyphwork plugin, do not shade them.
     compileOnly project(':api')

@@ -21,8 +21,8 @@ import java.util.zip.ZipFile;
  */
 public final class IncludedPack {
 
-    /** Resource pack format of the client Glyphwork targets (26.3). */
-    public static final int PACK_FORMAT = 97;
+    /** Resource pack format of the client Glyphwork targets (1.21.11). */
+    public static final int PACK_FORMAT = 75;
 
     private IncludedPack() {
     }

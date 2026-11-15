@@ -5,6 +5,11 @@ The whole GUI is one `plain_message`; the plugin generates a resource pack with 
 serves it from an embedded HTTP server and sends it on join. See
 [How it works](#how-it-works-as-verified-against-the-263-client).
 
+> **Branch `mc/1.21.11`:** this branch builds Glyphwork for **Paper 1.21.11** (Java 21, resource
+> pack format 75). `main` targets 26.3. Clickable dialog text needs a 1.21.11 client: 1.21.8 has
+> none, and 1.21.9/1.21.10 miss clicks after a negative shift. Icons of the 66 textures newer than
+> 1.21.11 stay empty; all other icons work. The rest of this README describes 26.3 but applies here too.
+
 **Status:** stable since 1.0 (see [Compatibility](#use-it-from-your-plugin)): autotiled skins with
 an editor, a public scene API, YAML menus with a designer, item icons and an example plugin. Other
 plugins build screens with panels, labels, buttons, lists, grids, tabs, scroll panes, sliders, checkboxes, choice buttons, navigation, text input and forms:
@@ -43,7 +48,8 @@ and download the `.yml` file.
 ## Install
 
 1. Download `Glyphwork-<version>.jar` from the [releases](https://github.com/flyingfinger1/Glyphwork/releases)
-   into `plugins/` of a Paper 26.3 server (Java 25) and start it.
+   into `plugins/` of a Paper 26.3 server (Java 25) and start it. On this branch: a jar built from
+   it, on a Paper 1.21.11 server (Java 21).
 2. In `plugins/Glyphwork/config.yml` set `pack.url` to an address the players can reach: either the
    built-in server (open `pack-server.port`, e.g. `http://your.host:8765/{sha1}.zip`) or your own
    web server with `pack.hosting: external`. Then `/glyphwork reload`.

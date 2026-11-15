@@ -12,6 +12,8 @@ java {
     }
 }
 
+tasks.withType(JavaCompile).configureEach { options.release = 21 }
+
 compileJava.options.encoding = 'UTF-8'
 compileJava.options.compilerArgs += ['-Xlint:deprecation']
 
@@ -24,11 +26,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:26.3.build.222-stable'
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
     implementation project(':api')
     testImplementation project(':example')
 
-    testImplementation 'io.papermc.paper:paper-api:26.3.build.222-stable'
+    testImplementation 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
     testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

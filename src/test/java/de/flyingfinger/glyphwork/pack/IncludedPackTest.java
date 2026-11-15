@@ -64,11 +64,11 @@ class IncludedPackTest {
     @Test
     void serverFilesComeInGlyphworkKeepsItsOwn(@TempDir Path dir) throws Exception {
         PackFiles pack = new PackFiles();
-        pack.put("pack.mcmeta", "{\"pack\":{\"description\":\"Glyphwork\",\"min_format\":97,\"max_format\":97}}");
+        pack.put("pack.mcmeta", "{\"pack\":{\"description\":\"Glyphwork\",\"min_format\":75,\"max_format\":75}}");
         pack.put("assets/glyphwork/font/i0.json", "glyphwork");
         pack.put("assets/minecraft/textures/gui/sprites/dialog/warning_button.png", "glyphwork warning");
         Map<String, String> server = new LinkedHashMap<>();
-        server.put("pack.mcmeta", "{\"pack\":{\"description\":\"My server\",\"min_format\":97,\"max_format\":97},"
+        server.put("pack.mcmeta", "{\"pack\":{\"description\":\"My server\",\"min_format\":75,\"max_format\":75},"
             + "\"overlays\":{\"entries\":[]}}");
         server.put("pack.png", "icon");
         server.put("assets/myserver/textures/item/ruby.png", "ruby");
@@ -99,7 +99,7 @@ class IncludedPackTest {
     void packFormatIsChecked() {
         Logger log = Logger.getLogger("include-test-2");
         List<String> warned = warnings(log);
-        assertTrue(IncludedPack.checkFormat("{\"pack\":{\"min_format\":[90,0],\"max_format\":[99,1]}}".getBytes(), log));
+        assertTrue(IncludedPack.checkFormat("{\"pack\":{\"min_format\":[70,0],\"max_format\":[80,1]}}".getBytes(), log));
         assertTrue(IncludedPack.checkFormat("{\"pack\":{\"pack_format\":34,\"supported_formats\":[34,120]}}".getBytes(), log));
         assertTrue(warned.isEmpty(), warned.toString());
         assertTrue(IncludedPack.checkFormat("{\"pack\":{\"pack_format\":34}}".getBytes(), log));   // old: kept, reported

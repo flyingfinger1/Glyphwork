@@ -49,7 +49,7 @@ public final class SceneRenderer {
     /** Creates the click event for an action (production: a callback; tests: a named command). */
     @FunctionalInterface
     public interface Binder {
-        ClickEvent<?> bind(String name, Consumer<Click> action);
+        ClickEvent bind(String name, Consumer<Click> action);
     }
 
     private static final TextColor WHITE = TextColor.color(0xFFFFFF);
@@ -251,7 +251,7 @@ public final class SceneRenderer {
             return online instanceof PlayerHeadObjectContents.SkinSource src
                 ? Component.object(ObjectContents.playerHead(src)) : Component.object(ObjectContents.playerHead(id));
         } catch (IllegalArgumentException notUuid) {
-            if (!PlayerHeadObjectContents.isValidName(who)) {
+            if (!who.matches("[A-Za-z0-9_]{1,16}")) {
                 return null;
             }
             org.bukkit.entity.Player online = org.bukkit.Bukkit.getServer() == null ? null : org.bukkit.Bukkit.getPlayerExact(who);
@@ -516,7 +516,7 @@ public final class SceneRenderer {
                 if (tab == active) {
                     continue;
                 }
-                ClickEvent<?> click = binder.bind(name + ":tab:" + tab.id(), Redraw.after(c -> t.select(c, tab.id())));
+                ClickEvent click = binder.bind(name + ":tab:" + tab.id(), Redraw.after(c -> t.select(c, tab.id())));
                 line.frame(frame, t.x() + col[i] * ts, t.y() + 2, LineBuilder.cells(col[i + 1] - col[i], head), t.inactiveTint(),
                     click, null);
             }
@@ -670,7 +670,7 @@ public final class SceneRenderer {
         if (f == null) {
             return;
         }
-        ClickEvent<?> click = p.onClick() == null ? null : binder.bind(name, p.onClick());
+        ClickEvent click = p.onClick() == null ? null : binder.bind(name, p.onClick());
         Component tip = tooltip(p.tooltip(), view);
         if (p.cells() != null) {
             line.frame(f, p.x(), p.y(), p.cells(), p.tint().apply(view), click, tip);
@@ -796,7 +796,7 @@ public final class SceneRenderer {
     private void button(LineBuilder line, Button b, View view, Binder binder, String name) {
         Frame f = frame(b.frame());
         boolean enabled = Boolean.TRUE.equals(b.enabled().test(view));
-        ClickEvent<?> click = enabled && b.onClick() != null ? binder.bind(name, b.onClick()) : null;
+        ClickEvent click = enabled && b.onClick() != null ? binder.bind(name, b.onClick()) : null;
         String bIcon = b.icon() == null ? null : b.icon().apply(view);
         Component bHead = headOf(bIcon);
         // frames are whole tiles: a 20 px button is drawn 16 px high, so center on what is drawn
@@ -848,7 +848,7 @@ public final class SceneRenderer {
     }
 
     /** Invisible clickable area, covered with 8 x 8 hit glyphs (the last row/column overlaps). */
-    private void hitbox(LineBuilder line, int x, int y, int w, int h, @Nullable ClickEvent<?> click, @Nullable HoverEventSource<?> tip) {
+    private void hitbox(LineBuilder line, int x, int y, int w, int h, @Nullable ClickEvent click, @Nullable HoverEventSource<?> tip) {
         if (click == null && tip == null) {
             return;
         }
@@ -929,7 +929,7 @@ public final class SceneRenderer {
             } else {
                 line.text(line.fit(rowText, l.x() + l.width() - 4 - textX), textX, textY, color, LineBuilder.shadowOf(color));
             }
-            ClickEvent<?> click = l.onClick() == null ? null
+            ClickEvent click = l.onClick() == null ? null
                 : binder.bind(name + ":row" + index, c -> l.onClick().accept(c, item));
             HoverEventSource<?> rowItem = l.hoverItem() != null ? safeItem(l.hoverItem().apply(item))
                 : l.itemTooltip() ? itemHover(rowIcon) : null;
@@ -961,7 +961,7 @@ public final class SceneRenderer {
                 int cx = g.x() + c * g.cellPitch();
                 int cy = gy + r * g.cellPitch();
                 T item = index < items.size() ? items.get(index) : null;
-                ClickEvent<?> click = item == null || g.onClick() == null ? null
+                ClickEvent click = item == null || g.onClick() == null ? null
                     : binder.bind(name + ":cell" + index, k -> g.onClick().accept(k, item));
                 HoverEventSource<?> cellItem = item == null ? null : g.hoverItem() != null ? safeItem(g.hoverItem().apply(item))
                     : g.itemTooltip() && g.icon() != null ? itemHover(g.icon().apply(item)) : null;
@@ -1043,7 +1043,7 @@ public final class SceneRenderer {
                 continue;
             }
             double v = s.valueAt(startPos);
-            ClickEvent<?> click = binder.bind(name + ":v" + startPos, Redraw.after(c -> s.onChange().accept(c, v)));
+            ClickEvent click = binder.bind(name + ":v" + startPos, Redraw.after(c -> s.onChange().accept(c, v)));
             Component tip = s.tooltip() != null ? s.tooltip().apply(view, v)
                 : Component.text(de.flyingfinger.glyphwork.dialog.FormValues.format(v));
             for (int xx = start; xx < col; xx += hit.width()) {
@@ -1068,7 +1068,7 @@ public final class SceneRenderer {
     /** Box ("slot", 16 x 16) with a check mark, text to the right; box and text toggle. */
     private void checkbox(LineBuilder line, Checkbox cb, View view, Binder binder, String name) {
         boolean checked = Boolean.TRUE.equals(cb.checked().test(view));
-        ClickEvent<?> click = cb.onChange() == null ? null
+        ClickEvent click = cb.onChange() == null ? null
             : binder.bind(name, Redraw.after(c -> cb.onChange().accept(c, !checked)));
         Component tip = tooltip(cb.tooltip(), view);
         Frame box = frame("slot");

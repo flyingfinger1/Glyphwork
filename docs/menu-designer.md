@@ -29,6 +29,11 @@ Resource packs (ZIP) loaded afterwards replace textures of the jar, like in game
 own (`myserver:ruby` from `assets/myserver/textures/item/ruby.png`) work as icons. Player heads stay
 placeholders (skins come from Mojang's servers). *Remove* deletes the stored textures.
 
+The jar also tells the designer the Minecraft version. Load the jar of the version your players use
+(e.g. 1.21.11 for the `-mc1.21.11` builds): icons whose textures it lacks are framed in red, and the
+element and the list below the preview say that they stay empty in the game. Another client jar
+replaces everything loaded before, so switching versions does not mix textures.
+
 ## Glyphwork version
 
 *For Glyphwork version* (left, below the skin) sets the version your server runs. Settings that

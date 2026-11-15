@@ -60,8 +60,10 @@ const all = (store) => new Promise((resolve, reject) => {
 
 /**
  * Reads a client jar or resource pack and keeps the textures the designer can use. Later archives
- * replace textures of earlier ones (like resource packs on top of the game).
- * @returns {name, textures, font}
+ * replace textures of earlier ones (like resource packs on top of the game). A client jar (it has a
+ * version.json) replaces everything loaded before except the pictures: it sets the Minecraft
+ * version, and textures of another version must not stay.
+ * @returns {name, textures, font, minecraft}
  */
 export async function importArchive(buffer, name) {
   const cat = await catalog();
@@ -70,34 +72,60 @@ export async function importArchive(buffer, name) {
   for (const p of font.providers) wanted.add(texturePath(p.file));
   // items of resource packs: every item texture outside the minecraft namespace
   const custom = (n) => /^assets\/[a-z0-9_.-]+\/textures\/item\/.+\.png$/.test(n) && !n.startsWith('assets/minecraft/');
-  const files = await readZip(buffer, (n) => wanted.has(n) || custom(n));
+  const files = await readZip(buffer, (n) => wanted.has(n) || custom(n) || n === 'version.json');
+  let minecraft = null;
+  if (files.has('version.json')) {
+    try {
+      minecraft = String(JSON.parse(new TextDecoder().decode(files.get('version.json'))).id ?? '') || null;
+    } catch { /* not a client jar's version.json */ }
+    files.delete('version.json');
+  }
   if (!files.size) throw new Error('no Minecraft textures found (client jar or resource pack expected)');
   const db = await open();
   await tx(db, [STORE, META], 'readwrite', (t) => {
     const s = t.objectStore(STORE);
-    for (const [path, data] of files) s.put(data, path);
     const m = t.objectStore(META);
-    const req = m.get('sources');
-    req.onsuccess = () => m.put([...(req.result || []).filter((x) => x !== name), name], 'sources');
+    const store = () => {
+      for (const [path, data] of files) s.put(data, path);
+    };
+    if (minecraft) {
+      // a client jar: start over (pictures stay)
+      const keys = s.getAllKeys();
+      keys.onsuccess = () => {
+        for (const k of keys.result) if (!String(k).startsWith(PICTURE)) s.delete(k);
+        store();
+      };
+      m.put([name], 'sources');
+      m.put(minecraft, 'minecraft');
+    } else {
+      store();
+      const req = m.get('sources');
+      req.onsuccess = () => m.put([...(req.result || []).filter((x) => x !== name), name], 'sources');
+    }
   });
   db.close();
   const fontFiles = font.providers.filter((p) => files.has(texturePath(p.file))).length;
-  return { name, textures: files.size - fontFiles, font: fontFiles === font.providers.length };
+  return { name, textures: files.size - fontFiles, font: fontFiles === font.providers.length, minecraft };
 }
 
-/** Everything stored: {sources: [names], images: Map(path -> Pix)}; empty if nothing was loaded. */
+/**
+ * Everything stored: {sources: [names], images: Map(path -> Pix), pictures, minecraft (version of
+ * the loaded client jar, or null)}; empty if nothing was loaded.
+ */
 export async function loadStored() {
   let db;
   try {
     db = await open();
   } catch {
-    return { sources: [], images: new Map() };
+    return { sources: [], images: new Map(), minecraft: null };
   }
-  const [entries, sources] = await tx(db, [STORE, META], 'readonly', (t) => {
+  const [entries, sources, minecraft] = await tx(db, [STORE, META], 'readonly', (t) => {
     const p1 = all(t.objectStore(STORE));
-    const r = t.objectStore(META).get('sources');
-    const p2 = new Promise((res) => { r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); });
-    return Promise.all([p1, p2]);
+    const meta = (key, fallback) => {
+      const r = t.objectStore(META).get(key);
+      return new Promise((res) => { r.onsuccess = () => res(r.result ?? fallback); r.onerror = () => res(fallback); });
+    };
+    return Promise.all([p1, meta('sources', []), meta('minecraft', null)]);
   }).then((p) => p);
   db.close();
   const images = new Map();
@@ -108,7 +136,7 @@ export async function loadStored() {
       else images.set(path, await decode(data));
     } catch { /* not a PNG the browser can read */ }
   }
-  return { sources, images, pictures };
+  return { sources, images, pictures, minecraft };
 }
 
 /** Key prefix of the server's own pictures (images/) loaded into the designer. */
@@ -161,6 +189,21 @@ export async function clearStored() {
     t.objectStore(META).clear();
   });
   db.close();
+}
+
+/**
+ * Items of the plugin's table whose textures the loaded client jar lacks (newer than its Minecraft
+ * version): item id -> true. The plugin puts such textures into fonts of their own, which an older
+ * client drops, so the icon stays empty in the game.
+ */
+export function missingIcons(cat, images) {
+  const tex = cat.textures.map((t) => texturePath(t[0]));
+  return (item) => {
+    let id = String(item).toLowerCase();
+    if (id.startsWith('minecraft:')) id = id.slice(10);
+    const layers = cat.items[id];
+    return !!layers && layers.some(([i]) => !images.has(tex[i]));
+  };
 }
 
 /**

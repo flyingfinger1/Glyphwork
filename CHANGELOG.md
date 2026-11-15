@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0 – Paper 26.1 to 26.3
+
+Menus, configs and plugins made for 1.0 to 1.2 keep working.
+
+- **Paper 26.1 to 26.3 with one jar:** the plugin declares api-version 26.1 and resource pack
+  formats 84 to 97 (before: 26.3 only). Tested in game on Paper 26.1.2, 26.2 and 26.3; the 26.1
+  and 26.1.1 clients have the same textures, pack format and click code as 26.1.2.
+- **Icons on 26.1 and 26.2:** the 65 textures newer than 26.1 get fonts of their own, so all other
+  icons load there; these 65 stay empty on 26.1 and 26.2.
+- **Placeholders in variable defaults:** `nick: "%player%"` under `variables:` now starts as the
+  player's name; before, `%player%` showed as text (also in the bundled form examples). Values set
+  later (`set:`, forms, input) are used as they are.
+- **Paper 1.21.11:** `1.3.0-mc1.21.11` is the same version for Paper 1.21.11 (branch
+  `mc/1.21.11`, Java 21).
+- Modrinth lists 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.
+
 ## 1.2.1 – skin cache, icons with older clients
 
 Menus, configs and plugins made for 1.0 to 1.2 keep working.

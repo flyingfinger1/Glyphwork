@@ -623,6 +623,41 @@ function field(key, kind, extra, get, put, mergeKey) {
       wrap.append(row);
       break;
     }
+    case 'fill': {
+      // one color ("#80FF20", with a picker) or steps "0: #FF5555, 20: gold, 50: #80FF20"
+      const row = document.createElement('div');
+      row.className = 'colorRow';
+      const txt = document.createElement('input');
+      txt.type = 'text';
+      txt.value = value && typeof value === 'object' ? Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ') : (value ?? '');
+      txt.placeholder = '#80FF20  |  0: red, 20: gold, 50: green';
+      const pick = document.createElement('input');
+      pick.type = 'color';
+      const steps = (s) => /:/.test(s);
+      const sync = () => {
+        pick.disabled = steps(txt.value);
+        if (/^#[0-9a-f]{6}$/i.test(txt.value.trim())) pick.value = txt.value.trim();
+      };
+      sync();
+      txt.oninput = () => {
+        sync();
+        const s = txt.value.trim();
+        if (!s) { commit(undefined); return; }
+        if (!steps(s)) { commit(s); return; }
+        const out = {};
+        for (const part of s.split(',')) {
+          const [k, ...rest] = part.split(':');
+          const n = Number(k.trim().replace(/%$/, ''));
+          const c = rest.join(':').trim();
+          if (Number.isFinite(n) && c) out[n] = c;
+        }
+        commit(Object.keys(out).length ? out : undefined);
+      };
+      pick.oninput = () => { txt.value = pick.value; sync(); commit(pick.value); };
+      row.append(txt, pick);
+      wrap.append(row);
+      break;
+    }
     case 'lines': case 'shape': {
       const ta = document.createElement('textarea');
       const arr = value == null ? [] : Array.isArray(value) ? value : [value];

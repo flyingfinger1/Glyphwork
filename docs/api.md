@@ -58,7 +58,7 @@ Glyphwork.get().open(player, settings);
 | Element | Use |
 |---|---|
 | `Panel.of(x, y, w, h)` / `Panel.shape(x, y, "##.", "###")` | autotiled frame (`panel` by default, `.frame("slot")` etc.), optional `tint`, `tooltip`, `onClick` |
-| `Label.of(x, y, text)` | one line of text; `.color` (null = the skin's text color, the default), `.width` (clips with "..."), `.align` / `.center(width)`, `.shadow(true)`, `.wrap(true)`, `.bold/.italic/.underline/.strikethrough(true)`, `.markup(true)` (MiniMessage for parts: `<b>`, `<i>`, `<u>`, `<st>`, colors; also on `Button` and `ListView`); the styles and `markup` are experimental |
+| `Label.of(x, y, text)` | one line of text; `.color` (null = the skin's text color, the default), `.width` (clips with "..."; without it the text is cut at the right edge of the scene, since 1.5), `.align` / `.center(width)`, `.shadow(true)`, `.wrap(true)`, `.bold/.italic/.underline/.strikethrough(true)`, `.markup(true)` (MiniMessage for parts: `<b>`, `<i>`, `<u>`, `<st>`, colors; also on `Button` and `ListView`); the styles and `markup` are experimental |
 | `Button.of(x, y, w, h)` | frame + centered text; `.text`, `.tint`, `.color` (text), `.tooltip`, `.enabled`, `.onClick` |
 | `Hitbox.of(x, y, w, h)` | invisible clickable area (min. 8 x 8), e.g. over a label |
 | `Icon.of(x, y, "diamond")` | 16 x 16 item icon (also `Material`); `.count`, `.tint`, `.tooltip`, `.onClick` |
@@ -68,7 +68,7 @@ Glyphwork.get().open(player, settings);
 | `Image.of(x, y, "logo")` | a picture from `plugins/Glyphwork/images/` (also `v -> "ranks/" + rank(v)`); `.tint`, `.tooltip`, `.onClick`, `.size(w, h)` / `.scale(s)` (another size, see below) |
 | `Scroll.of(id, x, y, w, h, elements...)` | (experimental) a window onto its elements with a scroll bar on the right; `.step(18)`, `.frame("slot")`, `.position(v -> "article-" + id(v))` (own position per content); the elements use scene coordinates as if unscrolled, only what fits completely into the window is drawn |
 | `Tabs.of(id, x, y, w, h)` | (experimental) tabs on a panel, the active one joined with it; `.tab(id, title, elements...)` (or with an icon), `.selected(v -> id)` + `.onChange((click, id) -> ...)` to keep the active tab yourself (otherwise Glyphwork keeps it), `.frame`, `.inactiveTint`; the elements of a tab use scene coordinates, the panel starts `Tabs.HEADER` (16) px below `y` |
-| `Bar.of(x, y, w)` | progress bar, 8 or 16 px high; `.value(v -> ...)`, `.max(...)`, `.fill` (color), `.text`, `.tooltip`: fills pixel exact |
+| `Bar.of(x, y, w)` | progress bar, 8 or 16 px high; `.value(v -> ...)`, `.max(...)`, `.fill` (color, also per viewer: `.fill(v -> hp(v) < 5 ? RED : GREEN)`), `.text`, `.tooltip`, `.font` (since 1.5): fills pixel exact |
 | `Slider.of(x, y, w, min, max, step)` | track + knob, 16 px high; `min`, `max`, `step` and the value are `double`; `.value`, `.onChange((click, value) -> ...)`, `.tint`, `.tooltip(value -> ...)`: a click on the track picks the value under the cursor (no dragging) |
 | `Checkbox.of(x, y)` | 16 x 16 box with a check mark and text; `.text`, `.color`, `.checked`, `.onChange((click, on) -> ...)` |
 | `Choice.of(x, y, w, "a", "b", ...)` | button "&lt; option &gt;"; left half = previous, right half = next; `.selected`, `.text(id -> shown)`, `.onChange((click, id) -> ...)` |
@@ -100,7 +100,7 @@ width that fits: `.width(n)` cuts the text there.
 `"\n"` starts a new line.
 
 **Own fonts** *(experimental, since 1.4)*: `.font("title")` on `Label`, `Button`, `ListView`,
-`Grid`, `Checkbox`, `Choice`, `Tabs` or for the whole scene on `Scene.Builder` draws the text in a
+`Grid`, `Checkbox`, `Choice`, `Tabs`, `Bar` (since 1.5) or for the whole scene on `Scene.Builder` draws the text in a
 font the server admin declared in config.yml (`fonts:`, see [menus.md](menus.md#own-fonts)).
 Elements in tabs and scroll panes use the font around them unless they set their own
 (`.font("minecraft")`: the Minecraft font on purpose); text

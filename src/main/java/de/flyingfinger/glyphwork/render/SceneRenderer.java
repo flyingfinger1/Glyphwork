@@ -101,6 +101,7 @@ public final class SceneRenderer {
             case Checkbox cb -> cb.font();
             case Choice ch -> ch.font();
             case Tabs t -> t.font();
+            case Bar b -> b.font();
             default -> null;
         };
         return id == null || id.isBlank() ? current : font(id);
@@ -745,6 +746,8 @@ public final class SceneRenderer {
             lines = RichText.splitLines(spans);
             if (l.width() > 0) {
                 lines.replaceAll(part -> RichText.fit(line.font(), part, l.width()));
+            } else {
+                edgeCut(l, lines, name, scene, line.font());
             }
         }
         for (int i = 0; i < lines.size(); i++) {
@@ -760,6 +763,34 @@ public final class SceneRenderer {
         if (l.width() <= 0) {
             checkOverlap(l, lines, view, name, scene, line.font(), lineHeight);
         }
+    }
+
+    /** Room kept free at the right edge of the scene (the frame of the background panel). */
+    static final int EDGE = 4;
+
+    /**
+     * A label without a width ends at the right edge of the scene (since 1.5): longer text is cut
+     * with "..." instead of running out of the menu, with a hint once per label.
+     */
+    private void edgeCut(Label l, List<List<RichText.Span>> lines, String name, Scene scene,
+                         de.flyingfinger.glyphwork.font.TextFont font) {
+        int room = scene.width() - EDGE - l.x();
+        if (room <= 0) {
+            return;                                   // starts outside: a deliberate position, left alone
+        }
+        int widest = 0;
+        for (List<RichText.Span> part : lines) {
+            widest = Math.max(widest, RichText.visibleWidth(font, part));
+        }
+        if (widest <= room) {
+            return;
+        }
+        lines.replaceAll(part -> RichText.fit(font, part, room));
+        String shown = lines.isEmpty() ? "" : RichText.plainText(lines.getFirst());
+        warnOnce("label-edge:" + scene.id() + ":" + name, "Label " + name + " ('" + (shown.length() > 30
+            ? shown.substring(0, 30) + "..." : shown) + "' at x=" + l.x() + ", y=" + l.y() + ") is " + widest
+            + " px wide but the menu leaves " + room + " px: it is cut. Shorten it, or give it width: "
+            + room + " and wrap: true for several lines");
     }
 
     /**

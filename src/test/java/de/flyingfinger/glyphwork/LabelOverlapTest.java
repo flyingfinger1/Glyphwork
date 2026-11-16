@@ -65,7 +65,7 @@ class LabelOverlapTest {
 
     @Test
     void labelsThatFitOrHaveAWidthAreQuiet() {
-        Scene s = Scene.builder("ok", 200, 60)
+        Scene s = Scene.builder("ok", 260, 60)
             .add(Label.of(8, 7, "Minen: 10   Zeit: 0 s").width(60))      // cut to fit: wanted
             .add(Label.of(8, 30, "Kurz"))                                   // ends before the button
             .add(Button.of(72, 4, 64, 16).text("Aufdecken"))
@@ -76,5 +76,18 @@ class LabelOverlapTest {
             .build();
         draw(s);
         assertTrue(warnings.isEmpty(), warnings.toString());
+    }
+
+    @Test
+    void labelRunningOutOfTheMenuIsCutAndReportedOnce() {
+        Scene s = Scene.builder("edge", 120, 40)
+            .add(Label.of(8, 8, "Farbstufen: rot / gold ab 25 % / gruen ab 50 %"))
+            .add(Label.of(8, 24, "Kurz genug"))
+            .build();
+        draw(s);
+        draw(s);
+        assertEquals(1, warnings.size(), warnings.toString());
+        String w = warnings.getFirst();
+        assertTrue(w.contains("edge") && w.contains("leaves 108 px") && w.contains("width: 108"), w);
     }
 }

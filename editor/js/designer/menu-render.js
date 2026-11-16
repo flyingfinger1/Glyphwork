@@ -12,6 +12,8 @@ import { behaves } from './schema.js';
 export const LINE = 9;
 export const HEAD = 8;
 export const ICON = 16;
+/** Room kept free at the right edge of the menu (like SceneRenderer.EDGE). */
+const EDGE = 4;
 const WHITE = 0xffffff;
 const DARK = 0x404040;
 const BUTTON_GRAY = 0x9c9c9c;
@@ -557,8 +559,11 @@ function renderMenuIn(menu, skin, ctx) {
             const lines = wrap && w0 > 0 ? wrapText(full, w0) : full.split('\n');
             const rgb = skinText(color(el.color) ?? DARK);
             const align = String(el.align ?? 'left').toLowerCase();
+            const room = W - EDGE - x;
+            const cut = w0 <= 0 && room > 0 && behaves(ctx.target, 'edgeCut') && lines.some((ln) => visibleWidth(ln) > room);
+            if (cut) hints.push({ top, text: `label: > ${room} px → ...` });
             lines.forEach((ln, i) => {
-              const part = w0 > 0 ? fit(ln, w0) : ln;
+              const part = w0 > 0 ? fit(ln, w0) : cut ? fit(ln, room) : ln;
               const vw = visibleWidth(part);
               const lx = x + (w0 <= 0 ? 0 : align === 'center' ? Math.floor((w0 - vw) / 2) : align === 'right' ? w0 - vw : 0);
               styledOut(c, part, lx, y + i * lh, rgb, el.shadow === true || el.shadow === 'true', look);
@@ -575,6 +580,10 @@ function renderMenuIn(menu, skin, ctx) {
             const vw = visibleWidth(s);
             const align = String(el.align ?? 'left').toLowerCase();
             lx += align === 'center' ? Math.floor((w - vw) / 2) : align === 'right' ? w - vw : 0;
+          } else if (W - EDGE - x > 0 && visibleWidth(s) > W - EDGE - x && behaves(ctx.target, 'edgeCut')) {
+            // from 1.5 a label without a width ends at the right edge of the menu
+            s = fit(s, W - EDGE - x);
+            hints.push({ top, text: `label: > ${W - EDGE - x} px → ...` });
           }
           const rgb = skinText(color(el.color) ?? DARK);
           styledOut(c, s, lx, y, rgb, el.shadow === true || el.shadow === 'true', look);
@@ -719,7 +728,15 @@ function renderMenuIn(menu, skin, ctx) {
           const max = toNum(el.max ?? 100);
           const ratio = max > 0 ? Math.max(0, Math.min(1, toNum(el.value) / max)) : 0;
           const fillW = Math.round(ratio * (w - 2));
-          if (fillW > 0) c.fillRect(x + 1, y + 1, fillW, h - 2, (0xff000000 | (color(el.fill) ?? 0x80ff20)) >>> 0);
+          // fill: one color, or steps {percent: color}: the highest step at or below the share
+          let fillColor = el.fill;
+          if (fillColor && typeof fillColor === 'object' && !Array.isArray(fillColor)) {
+            const steps = Object.entries(fillColor).map(([k, v]) => [Number(String(k).replace(/%$/, '')), v])
+              .filter(([k]) => Number.isFinite(k)).sort((a, b) => a[0] - b[0]);
+            const pct = ratio * 100 + 1e-9;
+            fillColor = steps.length ? (steps.filter(([k]) => k <= pct).pop() || steps[0])[1] : null;
+          }
+          if (fillW > 0) c.fillRect(x + 1, y + 1, fillW, h - 2, (0xff000000 | (color(fillColor) ?? 0x80ff20)) >>> 0);
           const s = f(el.text ?? '');
           if (s) c.centered(fit(s, w - 4), x, w, h <= 8 ? y - 9 : y + Math.floor((h - 7) / 2), WHITE, true);
           region(x, y, w, h, tip, null);

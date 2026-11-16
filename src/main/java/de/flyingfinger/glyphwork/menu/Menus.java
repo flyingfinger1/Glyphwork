@@ -647,6 +647,42 @@ public final class Menus {
         }
     }
 
+    /**
+     * fill of a bar: one color, or colors from a share on ({@code {0: red, 20: gold, 50: green}}, in
+     * percent of max; since 1.5). Below the lowest step the lowest color counts.
+     */
+    static java.util.NavigableMap<Double, TextColor> fillSteps(Node n) throws MenuException {
+        java.util.TreeMap<Double, TextColor> steps = new java.util.TreeMap<>();
+        Object raw = n.raw().get("fill");
+        if (raw instanceof Map<?, ?> m) {
+            if (m.isEmpty()) {
+                throw n.error("fill", "a color or steps like {0: red, 20: gold, 50: green} expected");
+            }
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String k = String.valueOf(e.getKey()).trim().replaceFirst("%$", "").trim();
+                double from;
+                try {
+                    from = Double.parseDouble(k);
+                } catch (NumberFormatException ex) {
+                    throw n.error("fill", "steps start at a percentage (0 to 100), got '" + e.getKey() + "'");
+                }
+                if (from < 0 || from > 100) {
+                    throw n.error("fill", "steps start at a percentage (0 to 100), got '" + e.getKey() + "'");
+                }
+                steps.put(from, n.color(String.valueOf(e.getValue()).trim(), "fill." + e.getKey()));
+            }
+        } else {
+            steps.put(0.0, n.optColor("fill", Bar.GREEN));
+        }
+        return steps;
+    }
+
+    /** The color of the highest step at or below the share (percent); below all steps the lowest. */
+    static TextColor stepColor(java.util.NavigableMap<Double, TextColor> steps, double percent) {
+        Map.Entry<Double, TextColor> e = steps.floorEntry(percent + 1e-9);
+        return e != null ? e.getValue() : steps.firstEntry().getValue();
+    }
+
     /** font: the name of an own font of config.yml (fonts:), or null; checked for its form here, for existence when drawn. */
     private static @org.jspecify.annotations.Nullable String font(Node n) throws MenuException {
         if (!n.has("font")) {
@@ -999,21 +1035,22 @@ public final class Menus {
                 b.accept(t);
             }
             case "bar" -> {
-                n.only(with("type", "x", "y", "width", "height", "value", "max", "fill", "text", "tooltip", "frame"));
+                n.only(with("type", "x", "y", "width", "height", "value", "max", "fill", "text", "tooltip", "frame", "font"));
                 int h = n.optInt("height", 8);
                 if (h != 8 && h != 16) {
                     throw n.error("height", "8 or 16");
                 }
                 Function<View, String> value = text(n.string("value"));
                 Function<View, String> max = text(n.optString("max", "100"));
-                TextColor color = n.optColor("fill", Bar.GREEN);
+                java.util.NavigableMap<Double, TextColor> steps = fillSteps(n);
                 Bar bar = Bar.of(n.integer("x"), n.integer("y"), n.optInt("width", 100))
                     .height(h)
                     .value(v -> number(value.apply(v)))
                     .max(v -> number(max.apply(v)))
-                    .fill(v -> color)
+                    .fill(v -> stepColor(steps, 100 * Bar.ratio(number(value.apply(v)), number(max.apply(v)))))
                     .text(text(n.optString("text", "")))
-                    .frame(n.optString("frame", "slot"));
+                    .frame(n.optString("frame", "slot"))
+                    .font(font(n));
                 if (tooltip(n) != null) {
                     bar.tooltip(tooltip(n));
                 }

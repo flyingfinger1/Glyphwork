@@ -1409,6 +1409,9 @@ async function loadTextures() {
   $('fontStatus').textContent = fonts.size
     ? t('fontsLoaded', { n: fonts.size, ids: [...fonts.keys()].join(', ') })
     : t('fontsNone');
+  // the font lists of the settings were built before the fonts were read
+  refreshMenuProps();
+  refreshProps();
   mcVersion = images.size ? minecraft : null;
   missingIn = null;
   pictures = pics || new Map();

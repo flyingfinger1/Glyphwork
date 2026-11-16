@@ -34,6 +34,16 @@ The jar also tells the designer the Minecraft version. Load the jar of the versi
 element and the list below the preview say that they stay empty in the game. Another client jar
 replaces everything loaded before, so switching versions does not mix textures.
 
+## Own fonts
+
+For every font of `config.yml` (`fonts:`, see [menus.md](menus.md#own-fonts)) the plugin writes
+`plugins/Glyphwork/fonts/<name>.glyphwork-font` at start and `/glyphwork reload`: the drawn sheet,
+its widths and its placement. *Load fonts* under *Own fonts* reads these files (they stay in the
+browser, like pictures). Then the preview draws and measures text in the font exactly like the
+plugin (wrapping, cutting, centering), and *Font* of labels, buttons, lists and the menu offers
+the loaded fonts in a list. A name that is in the menu but not loaded shows with "(?)" and is drawn
+in the Minecraft font. Loading a newer file of the same font replaces the old one.
+
 ## Glyphwork version
 
 *For Glyphwork version* (left, below the skin) sets the version your server runs. Settings that

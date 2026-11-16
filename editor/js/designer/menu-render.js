@@ -5,7 +5,7 @@
 
 import { Pix, tint } from '../pix.js';
 import { tiles, renderShape } from '../autotile.js';
-import { drawText, textWidth, blend } from '../font.js';
+import { drawText, textWidth, blend, useFont, currentFont } from '../font.js';
 import { behaves } from './schema.js';
 
 
@@ -517,6 +517,9 @@ export function renderMenu(menu, skin, ctx = {}) {
       continue;
     }
     const x = int(el.x, 0), y = int(el.y, 0);
+    // own font of the element, else of the menu, else the one in use (like SceneRenderer.fontOf)
+    const fontId = ['label', 'button', 'list'].includes(type) && el.font ? el.font : menu.font;
+    const fontBefore = useFont(fontId ? (ctx.fonts?.get(String(fontId).trim().toLowerCase()) ?? null) : currentFont());
     // the plugin refuses a cooldown without a place to store it
     if (el.cooldown != null && el.cooldown !== '' && !el.id && !el['cooldown-key']) {
       errors.push({ top, text: 'cooldown: id / cooldown-key' });
@@ -531,7 +534,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           const full = plain(f(el.text ?? ''));
           const look = { bold: on(el.bold), italic: on(el.italic), underline: on(el.underline), strike: on(el.strikethrough) };
           if ((wrap && w0 > 0) || full.includes('\n')) {
-            const lh = Math.max(8, int(el['line-height'], 10));
+            const lh = Math.max(8, int(el['line-height'], currentFont()?.lineHeight ?? 10));
             const lines = wrap && w0 > 0 ? wrapText(full, w0) : full.split('\n');
             const rgb = skinText(color(el.color) ?? DARK);
             const align = String(el.align ?? 'left').toLowerCase();
@@ -749,7 +752,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           if (el.frame != null && !c.rect(String(el.frame), x, y, w, h, null)) errors.push({ top, text: `frame '${el.frame}'` });
           const kids = Array.isArray(el.elements) ? el.elements : [];
           const sub = renderMenu({ width: w, height: 2048, background: 'none', templates: menu.templates,
-            variables: menu.variables, elements: kids }, skin, { ...ctx, menu: undefined });
+            variables: menu.variables, elements: kids, font: menu.font }, skin, { ...ctx, menu: undefined });
           const bottom = Math.max(0, ...sub.boxes.filter((b) => !b.hidden).map((b) => b.y + b.h));
           const max = Math.max(0, Math.ceil((bottom - h) / step) * step);
           const off = Math.floor(Math.min(Math.max(0, int(ctx.pages?.['scroll:' + key], 0)), max) / step) * step;
@@ -822,6 +825,7 @@ export function renderMenu(menu, skin, ctx = {}) {
     } catch (e) {
       errors.push({ top, text: String(e?.message ?? e) });
     }
+    useFont(fontBefore);
     for (const item of c.notIn) hints.push({ top, notIn: item });
   }
   // page buttons would cover other elements once a list gets more entries

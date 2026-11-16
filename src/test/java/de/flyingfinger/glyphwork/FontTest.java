@@ -90,6 +90,25 @@ class FontTest {
     }
 
     @Test
+    void designerFileHasTheSheetAndTheWidths() throws IOException {
+        CustomFont f = pixelify();
+        String json = f.designerFile();
+        JsonObject o = JsonParser.parseString(json).getAsJsonObject();
+        assertEquals("glyphwork-font", o.get("format").getAsString());
+        assertEquals("pixel", o.get("id").getAsString());
+        assertEquals(f.lineHeight(), o.get("lineHeight").getAsInt());
+        assertEquals(f.width("H") , o.getAsJsonObject("advances").get("H").getAsInt());
+        byte[] png = java.util.Base64.getDecoder().decode(o.get("png").getAsString());
+        java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(png));
+        assertEquals(0, img.getWidth() % 16);
+        assertEquals(o.getAsJsonArray("chars").size() * o.get("cellHeight").getAsInt(), img.getHeight());
+        // for trying the menu designer: build/preview/pixel.glyphwork-font
+        java.nio.file.Path out = java.nio.file.Path.of("build", "preview");
+        java.nio.file.Files.createDirectories(out);
+        java.nio.file.Files.writeString(out.resolve("pixel.glyphwork-font"), json);
+    }
+
+    @Test
     void notAFontIsARefusal() {
         IOException e = assertThrows(IOException.class,
             () -> CustomFont.rasterize("x", "kein font".getBytes(), 10, 0, null, vanilla));

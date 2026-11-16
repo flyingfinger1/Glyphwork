@@ -48,6 +48,7 @@ public final class Fonts {
                 byte[] data = spec.file() != null ? file(dataFolder, spec.file()) : download(dataFolder, spec.url());
                 CustomFont f = CustomFont.rasterize(spec.id(), data, spec.size(), spec.lineHeight(), spec.chars(), fallback);
                 out.put(spec.id(), f);
+                designerFile(dataFolder, f, log);
                 log.info("Font '" + spec.id() + "': " + f.glyphs() + " characters from "
                     + (spec.file() != null ? spec.file() : spec.url()) + ", size " + spec.size()
                     + ", line height " + f.lineHeight());
@@ -59,6 +60,19 @@ public final class Fonts {
             }
         }
         return new Fonts(out);
+    }
+
+    /** fonts/<id>.glyphwork-font for the menu designer; written only when it changed. */
+    private static void designerFile(Path dataFolder, CustomFont f, Logger log) {
+        Path p = dataFolder.resolve("fonts").resolve(f.id() + ".glyphwork-font");
+        byte[] data = f.designerFile().getBytes(StandardCharsets.UTF_8);
+        try {
+            if (!Files.isRegularFile(p) || !java.util.Arrays.equals(Files.readAllBytes(p), data)) {
+                Files.write(p, data);
+            }
+        } catch (IOException e) {
+            log.warning("fonts." + f.id() + ": could not write " + p.getFileName() + " for the designer: " + e.getMessage());
+        }
     }
 
     private static byte[] file(Path dataFolder, String name) throws IOException {

@@ -8,7 +8,7 @@ import { Theme } from '../model.js';
 import { renderMenu, fill, varValue, allHold, plain, optionsOf, SAMPLES } from './menu-render.js';
 import { FIELDS, ITEM_FIELDS, TYPES, FIELD_KEY, create, defaultFor, kindOf, setField, VERSIONS, LATEST, sinceOf, newerThan, compareVersions, unreleased } from './schema.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
-import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, missingIcons, importPictures } from './assets.js';
+import { catalog, fontTable, importArchive, loadStored, clearStored, iconSource, missingIcons, importPictures, importFonts } from './assets.js';
 import { useMinecraftFont, minecraftFont } from '../font.js';
 
 const $ = (id) => document.getElementById(id);
@@ -39,6 +39,7 @@ let last = null;           // last render result
 let icons = null;          // item -> texture layers, when Minecraft textures are loaded
 let missingIn = null;      // item -> true when the loaded client jar lacks its textures
 let mcVersion = null;      // Minecraft version of the loaded client jar
+let fonts = new Map();     // own fonts (id -> font), loaded from .glyphwork-font files
 let pictures = new Map();  // the server's own pictures loaded into the designer (id -> Pix)
 // the Glyphwork version the menu is for: newer settings are hidden or marked (kept per browser)
 const TARGET_STORE = 'glyphwork-designer-target';
@@ -174,7 +175,7 @@ let drag = null;
 let hoverRegion = null;
 
 function draw() {
-  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, missingIn, pictures, target });
+  last = renderMenu(menu, skin(), { vars: preview, pages, shared, icons, missingIn, pictures, target, fonts });
   const { pix } = last;
   off.width = pix.w;
   off.height = pix.h;
@@ -572,6 +573,22 @@ function field(key, kind, extra, get, put, mergeKey) {
       wrap.prepend(inp);
       break;
     }
+    case 'font': {
+      // the fonts loaded in this browser; a name that is not loaded (yet) stays selectable
+      const sel = document.createElement('select');
+      const ids = [...fonts.keys()].sort();
+      if (value != null && value !== '' && !ids.includes(String(value))) ids.push(String(value));
+      for (const o of ['', ...ids]) {
+        const op = document.createElement('option');
+        op.value = o;
+        op.textContent = o === '' ? t('mcFontName') : fonts.has(o) ? o : `${o} (?)`;
+        sel.append(op);
+      }
+      sel.value = value == null ? '' : String(value);
+      sel.onchange = () => commit(sel.value === '' ? undefined : sel.value);
+      wrap.append(sel);
+      break;
+    }
     case 'select': {
       const sel = document.createElement('select');
       for (const o of ['', ...extra]) {
@@ -906,7 +923,7 @@ const MENU_FIELDS = [
   ['title', 'text', 'menuTitle'], ['width', 'int', 'width'], ['height', 'int', 'height'],
   ['background', 'text', 'background'], ['command', 'text', 'command'], ['aliases', 'lines', 'aliases'],
   ['permission', 'text', 'permission'], ['description', 'text', 'description'], ['exit-label', 'text', 'exitLabel'],
-  ['refresh', 'text', 'refresh'], ['font', 'text', 'menuFont'], ['persist', 'text', 'persist'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
+  ['refresh', 'text', 'refresh'], ['font', 'font', 'menuFont'], ['persist', 'text', 'persist'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
   ['open-on.join', 'select', 'openOnJoin', ['true', 'first']], ['open-on.item.material', 'text', 'openOnItem'],
   ['open-on.item.name', 'text', 'openOnItemName'], ['open-on.item.slot', 'int', 'openOnItemSlot'],
   ['open-on.item.give', 'select', 'openOnItemGive', ['join', 'first', 'no']], ['open-on.item.keep', 'select', 'openOnItemKeep', ['true', 'false']],
@@ -1387,7 +1404,11 @@ function loadMenu(text, id) {
 // ------------------------------------------------------------------ Minecraft textures
 
 async function loadTextures() {
-  const { sources, images, pictures: pics, minecraft } = await loadStored();
+  const { sources, images, pictures: pics, minecraft, fonts: storedFonts } = await loadStored();
+  fonts = storedFonts || new Map();
+  $('fontStatus').textContent = fonts.size
+    ? t('fontsLoaded', { n: fonts.size, ids: [...fonts.keys()].join(', ') })
+    : t('fontsNone');
   mcVersion = images.size ? minecraft : null;
   missingIn = null;
   pictures = pics || new Map();
@@ -1569,6 +1590,17 @@ function init() {
       toast(e.message, true);
     }
     input.value = '';
+    await loadTextures();
+    changed(false);
+  };
+  $('fontLoad').onclick = () => $('fontFile').click();
+  $('fontFile').onchange = async () => {
+    try {
+      await importFonts([...$('fontFile').files]);
+    } catch (e) {
+      toast(e.message, true);
+    }
+    $('fontFile').value = '';
     await loadTextures();
     changed(false);
   };

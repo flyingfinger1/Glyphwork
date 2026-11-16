@@ -4,6 +4,7 @@
 
 import { readZip } from '../zip.js';
 import { Pix } from '../pix.js';
+import { makeFont } from '../font.js';
 
 const DB = 'glyphwork-designer-assets';
 const STORE = 'files';
@@ -92,7 +93,7 @@ export async function importArchive(buffer, name) {
       // a client jar: start over (pictures stay)
       const keys = s.getAllKeys();
       keys.onsuccess = () => {
-        for (const k of keys.result) if (!String(k).startsWith(PICTURE)) s.delete(k);
+        for (const k of keys.result) if (!String(k).startsWith(PICTURE) && !String(k).startsWith(FONT)) s.delete(k);
         store();
       };
       m.put([name], 'sources');
@@ -130,17 +131,51 @@ export async function loadStored() {
   db.close();
   const images = new Map();
   const pictures = new Map();
+  const fonts = new Map();
   for (const [path, data] of entries) {
     try {
-      if (path.startsWith(PICTURE)) pictures.set(path.slice(PICTURE.length), await decode(data));
+      if (path.startsWith(FONT)) {
+        const meta = JSON.parse(new TextDecoder().decode(data));
+        fonts.set(meta.id, makeFont(meta, await decode(base64(meta.png))));
+      } else if (path.startsWith(PICTURE)) pictures.set(path.slice(PICTURE.length), await decode(data));
       else images.set(path, await decode(data));
-    } catch { /* not a PNG the browser can read */ }
+    } catch { /* not a PNG / font file the browser can read */ }
   }
-  return { sources, images, pictures, minecraft };
+  return { sources, images, pictures, minecraft, fonts };
 }
 
 /** Key prefix of the server's own pictures (images/) loaded into the designer. */
 const PICTURE = 'picture:';
+/** Key prefix of own fonts (.glyphwork-font files the plugin writes to plugins/Glyphwork/fonts/). */
+const FONT = 'font:';
+
+const base64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+/**
+ * Stores .glyphwork-font files (written by the plugin for every font of config.yml). A file of the
+ * same font replaces the stored one.
+ * @returns the ids stored
+ */
+export async function importFonts(files) {
+  const items = [];
+  for (const f of files) {
+    const text = await f.text();
+    let meta;
+    try {
+      meta = JSON.parse(text);
+    } catch {
+      throw new Error(`${f.name}: not a .glyphwork-font file`);
+    }
+    if (meta.format !== 'glyphwork-font' || !meta.id || !meta.png) throw new Error(`${f.name}: not a .glyphwork-font file`);
+    items.push([meta.id, new TextEncoder().encode(text)]);
+  }
+  const db = await open();
+  await tx(db, [STORE], 'readwrite', (t) => {
+    for (const [id, data] of items) t.objectStore(STORE).put(data, FONT + id);
+  });
+  db.close();
+  return items.map(([id]) => id);
+}
 
 /**
  * Stores PNGs of the server's images/ folder. Files from a folder pick keep their path below the

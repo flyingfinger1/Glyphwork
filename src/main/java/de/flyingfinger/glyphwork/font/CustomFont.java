@@ -266,6 +266,31 @@ public final class CustomFont implements TextFont {
         return capHeight + descent;
     }
 
+    /**
+     * The font for the menu designer ({@code <id>.glyphwork-font} in plugins/Glyphwork/fonts/): JSON
+     * with the sheet (base64 PNG, 16 columns), its characters, the widths and the placement, so the
+     * designer measures and draws exactly like the plugin.
+     */
+    public String designerFile() {
+        JsonObject o = new JsonObject();
+        o.addProperty("format", "glyphwork-font");
+        o.addProperty("version", 1);
+        o.addProperty("id", id);
+        o.addProperty("cellHeight", cellHeight);
+        o.addProperty("offset", offset);
+        o.addProperty("lineHeight", lineHeight);
+        o.addProperty("height", capHeight + descent);
+        o.addProperty("space", space);
+        JsonArray chars = new JsonArray();
+        rows.forEach(chars::add);
+        o.add("chars", chars);
+        JsonObject adv = new JsonObject();
+        advances.forEach((cp, a) -> adv.addProperty(new String(Character.toChars(cp)), a));
+        o.add("advances", adv);
+        o.addProperty("png", java.util.Base64.getEncoder().encodeToString(png));
+        return new Gson().toJson(o);
+    }
+
     String texture() {
         return "glyphwork:font/f_" + id + ".png";
     }

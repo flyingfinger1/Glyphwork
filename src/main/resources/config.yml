@@ -99,7 +99,7 @@ heads:
 # from plugins/Glyphwork/fonts/ or downloaded once from an address (cached in cache/fonts/).
 # Latin letters and punctuation are taken; chars: adds others. Letters a font does not have come
 # from the Minecraft font. Only fonts whose license allows putting them into a resource pack.
-# (since 1.4)
+# For the menu designer Glyphwork writes fonts/<name>.glyphwork-font (load it there). (since 1.4)
 fonts: {}
 #  title:
 #    file: PixelifySans.ttf          # or url: "https://example.org/font.ttf"

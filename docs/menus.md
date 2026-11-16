@@ -657,9 +657,11 @@ elements:
 - Wrapped lines are as far apart as the font needs (letters with descenders included);
   `line-height` on the label sets it yourself. Buttons and lists keep their sizes: choose a size
   whose capitals are about 7 px high (like the Minecraft font) for them.
-- The plain dialog and Bedrock show the Minecraft font. The menu designer previews the Minecraft
-  font too. Only use fonts whose license allows putting them into a resource pack (e.g. the SIL
-  Open Font License).
+- The plain dialog and Bedrock show the Minecraft font. Only use fonts whose license allows putting
+  them into a resource pack (e.g. the SIL Open Font License).
+- For the [menu designer](menu-designer.md#own-fonts) the plugin writes `<name>.glyphwork-font`
+  next to the font files in `plugins/Glyphwork/fonts/`: load it there, and the preview draws and
+  measures the font like the plugin.
 - A font that cannot be read is logged at `/glyphwork reload`; text that asks for it, or for a name
   that is not in `fonts:`, uses the Minecraft font (logged once).
 

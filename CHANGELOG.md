@@ -7,6 +7,9 @@
   `font:` on a menu, label, button or list (API: `.font("name")` on `Scene.Builder`, `Label`,
   `Button`, `ListView`) draws text in them. Glyphwork draws each font into the pack itself, so
   widths stay exact; letters a font lacks come from the Minecraft font.
+- **Menu designer with own fonts:** the plugin writes `fonts/<name>.glyphwork-font` for every font;
+  loaded in the designer (*Own fonts*), the preview draws and measures text in it like the plugin,
+  and *Font* offers the loaded fonts in a list.
 
 ## 1.3.0 – Paper 26.1 to 26.3
 

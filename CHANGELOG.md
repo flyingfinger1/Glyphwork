@@ -1,16 +1,22 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 – own fonts
 
-- **Own fonts (experimental):** `fonts:` in config.yml declares TrueType/OpenType fonts (a file in
-  `plugins/Glyphwork/fonts/` or a `url:`, a pixel size, optionally `line-height` and `chars`).
-  `font:` on a menu, label, button, list, grid, checkbox, choice or tabs (API: `.font("name")` on
-  `Scene.Builder` and these elements) draws text in them; elements in tabs and scroll panes use the
-  font around them, text tooltips follow their element's font. Glyphwork draws each font into the pack itself, so
-  widths stay exact; letters a font lacks come from the Minecraft font.
-- **Menu designer with own fonts:** the plugin writes `fonts/<name>.glyphwork-font` for every font;
-  loaded in the designer (*Own fonts*), the preview draws and measures text in it like the plugin,
-  and *Font* offers the loaded fonts in a list.
+Menus, configs and plugins made for 1.0 to 1.3 keep working. Supports Paper 26.1 to 26.3 (and
+1.21.11 as `1.4.0-mc1.21.11`).
+
+- **Own fonts (experimental):** `fonts:` in config.yml declares TrueType/OpenType fonts: a file in
+  `plugins/Glyphwork/fonts/` or a `url:`, the pixel size, optionally `line-height` and `chars`.
+  Glyphwork draws each font into the pack itself (without smoothing, pixel fonts look best), so it
+  knows every letter's width and wrapping, cutting and centering stay exact; letters a font lacks
+  come from the Minecraft font.
+- **`font:` everywhere text is drawn:** on the menu and on label, button, list, grid, checkbox,
+  choice and tabs (API: `.font("name")` on `Scene.Builder` and these elements). Elements in tabs
+  and scroll panes use the font around them; `font: minecraft` sets the Minecraft font on purpose.
+  Text tooltips follow their element's font. Wrapped labels take the font's line height.
+- **Menu designer:** the plugin writes `fonts/<name>.glyphwork-font` for every font. Loaded in the
+  designer (*Own fonts*), the preview draws and measures text in it like the plugin, and *Font*
+  offers the loaded fonts in a list (*As around it*, *Minecraft font*, own fonts).
 
 ## 1.3.0 – Paper 26.1 to 26.3
 

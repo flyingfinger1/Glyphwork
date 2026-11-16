@@ -102,7 +102,8 @@ width that fits: `.width(n)` cuts the text there.
 **Own fonts** *(experimental, since 1.4)*: `.font("title")` on `Label`, `Button`, `ListView`,
 `Grid`, `Checkbox`, `Choice`, `Tabs` or for the whole scene on `Scene.Builder` draws the text in a
 font the server admin declared in config.yml (`fonts:`, see [menus.md](menus.md#own-fonts)).
-Elements in tabs and scroll panes use the font around them unless they set their own; text
+Elements in tabs and scroll panes use the font around them unless they set their own
+(`.font("minecraft")`: the Minecraft font on purpose); text
 tooltips follow the element's font. An unknown name falls back to the Minecraft font; widths,
 wrapping and cutting follow the font.
 

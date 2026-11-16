@@ -574,14 +574,18 @@ function field(key, kind, extra, get, put, mergeKey) {
       break;
     }
     case 'font': {
-      // the fonts loaded in this browser; a name that is not loaded (yet) stays selectable
+      // the fonts loaded in this browser; a name that is not loaded (yet) stays selectable. An
+      // element can take the font around it (empty) or the Minecraft font on purpose ("minecraft").
       const sel = document.createElement('select');
-      const ids = [...fonts.keys()].sort();
-      if (value != null && value !== '' && !ids.includes(String(value))) ids.push(String(value));
-      for (const o of ['', ...ids]) {
+      const menuLevel = mergeKey === 'menu';
+      const ids = [...fonts.keys()].filter((id) => id !== 'minecraft').sort();
+      if (value != null && value !== '' && value !== 'minecraft' && !ids.includes(String(value))) ids.push(String(value));
+      const opts = menuLevel ? ['', ...ids] : ['', 'minecraft', ...ids];
+      for (const o of opts) {
         const op = document.createElement('option');
         op.value = o;
-        op.textContent = o === '' ? t('mcFontName') : fonts.has(o) ? o : `${o} (?)`;
+        op.textContent = o === '' ? t(menuLevel ? 'mcFontName' : 'fontInherit') : o === 'minecraft' ? t('mcFontName')
+          : fonts.has(o) ? o : `${o} (?)`;
         sel.append(op);
       }
       sel.value = value == null ? '' : String(value);

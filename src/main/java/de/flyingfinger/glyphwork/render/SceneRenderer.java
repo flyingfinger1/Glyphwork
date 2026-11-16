@@ -107,7 +107,11 @@ public final class SceneRenderer {
     }
 
     private de.flyingfinger.glyphwork.font.TextFont font(String id) {
-        de.flyingfinger.glyphwork.font.TextFont f = fonts.apply(id.trim().toLowerCase(java.util.Locale.ROOT));
+        String name = id.trim().toLowerCase(java.util.Locale.ROOT);
+        if (name.equals(de.flyingfinger.glyphwork.font.CustomFont.MINECRAFT)) {
+            return text;                              // the Minecraft font, also inside a menu or tab with an own font
+        }
+        de.flyingfinger.glyphwork.font.TextFont f = fonts.apply(name);
         if (f == null) {
             warnOnce("font:" + id, "Font '" + id + "' is not in config.yml (fonts:) or could not be read; using the Minecraft font");
             return text;

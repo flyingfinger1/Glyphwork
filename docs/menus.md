@@ -650,7 +650,9 @@ elements:
 
 `font:` works on the menu and on `label`, `button`, `list`, `grid`, `checkbox`, `choice` and
 `tabs`; the elements inside tabs (and scroll panes) use the font around them unless they set their
-own. Text tooltips follow the font of their element (item tooltips stay the client's).
+own. `font: minecraft` draws an element in the Minecraft font inside a menu or tab with an own
+font (so `minecraft` cannot be the name of an own font). Text tooltips follow the font of their
+element (item tooltips stay the client's).
 
 - Glyphwork draws the font once at that size into the pack, without smoothing, and measures every
   letter itself, so wrapping, cutting with "..." and centering stay exact. Pixel fonts look best;

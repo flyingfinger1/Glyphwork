@@ -149,7 +149,8 @@ class FontTest {
     void elementsAndScenesChooseTheirFont() throws IOException {
         Map<String, CustomFont> fonts = Map.of("pixel", pixelify());
         Scene s = Scene.builder("t", 120, 60)
-            .add(Label.of(4, 4, "Eigene"), Label.of(4, 20, "Minecraft").font("unbekannt"))
+            .add(Label.of(4, 4, "Eigene"), Label.of(4, 20, "Minecraft").font("unbekannt"),
+                Label.of(4, 36, "Ausdruecklich").font("minecraft"))
             .font("pixel")
             .build();
         List<String> warnings = new ArrayList<>();
@@ -166,8 +167,12 @@ class FontTest {
                 used.add("own:" + d.font());
             } else if (d.text().contains("Minecraft")) {
                 used.add("vanilla:" + d.font());
+            } else if (d.text().contains("Ausdruecklich")) {
+                used.add("explicit:" + d.font());
             }
         }
+        assertTrue(used.stream().anyMatch(u -> u.startsWith("explicit:t")), used.toString());   // font: minecraft
+        assertTrue(warnings.stream().noneMatch(w -> w.contains("'minecraft'")), warnings.toString());
         assertTrue(used.contains("own:f_pixel_4"), used.toString());               // y 4 -> shift 4
         assertTrue(used.stream().anyMatch(u -> u.startsWith("vanilla:t")), used.toString());
         assertTrue(warnings.stream().anyMatch(w -> w.contains("unbekannt")), warnings.toString());
@@ -229,6 +234,7 @@ class FontTest {
               kaputt: { size: 10 }
               zugross: { file: a.ttf, size: 99 }
               "Gross": { file: a.ttf, size: 10 }
+              minecraft: { file: a.ttf, size: 10 }
             """);
         List<String> warn = new ArrayList<>();
         Consumer<String> w = warn::add;
@@ -239,7 +245,7 @@ class FontTest {
         assertEquals(List.of("titel", "web"), fonts.stream().map(Settings.FontSpec::id).toList());
         assertEquals(11, fonts.get(1).lineHeight());
         assertEquals("ĀŌ", fonts.get(1).chars());
-        assertEquals(3, warn.size(), warn.toString());
+        assertEquals(4, warn.size(), warn.toString());
         assertFalse(warn.isEmpty());
     }
 

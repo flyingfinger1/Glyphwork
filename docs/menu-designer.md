@@ -41,8 +41,9 @@ For every font of `config.yml` (`fonts:`, see [menus.md](menus.md#own-fonts)) th
 its widths and its placement. *Load fonts* under *Own fonts* reads these files (they stay in the
 browser, like pictures). Then the preview draws and measures text in the font exactly like the
 plugin (wrapping, cutting, centering), and *Font* of labels, buttons, lists and the menu offers
-the loaded fonts in a list. A name that is in the menu but not loaded shows with "(?)" and is drawn
-in the Minecraft font. Loading a newer file of the same font replaces the old one.
+the loaded fonts in a list. For an element, *As around it* takes the font of the menu or tab and
+*Minecraft font* sets it on purpose (`font: minecraft`). A name that is in the menu but not loaded
+shows with "(?)" and is drawn in the Minecraft font. Loading a newer file of the same font replaces the old one.
 
 ## Glyphwork version
 

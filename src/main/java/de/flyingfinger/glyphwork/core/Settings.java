@@ -149,6 +149,10 @@ public record Settings(
                 warn.accept(where + ": use lower case letters, digits, '_' and '-' for the name");
                 continue;
             }
+            if (id.equals(de.flyingfinger.glyphwork.font.CustomFont.MINECRAFT)) {
+                warn.accept(where + ": 'minecraft' is taken (font: minecraft is the Minecraft font), choose another name");
+                continue;
+            }
             String file = f.getString("file");
             String url = f.getString("url");
             if ((file == null || file.isBlank()) == (url == null || url.isBlank())) {

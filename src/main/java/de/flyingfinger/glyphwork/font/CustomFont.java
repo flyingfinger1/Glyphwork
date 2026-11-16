@@ -41,6 +41,8 @@ public final class CustomFont implements TextFont {
 
     /** Font ids: lower case letters, digits, '_' and '-' (they become part of pack file names). */
     public static final Pattern ID = Pattern.compile("[a-z0-9_-]{1,32}");
+    /** Reserved name: font: minecraft draws in the Minecraft font even inside a menu or tab with an own font. */
+    public static final String MINECRAFT = "minecraft";
     public static final int MIN_SIZE = 6;
     public static final int MAX_SIZE = 48;
     /** The client's font atlas takes glyph cells up to this size. */

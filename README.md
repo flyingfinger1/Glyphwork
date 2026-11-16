@@ -30,8 +30,8 @@ stack count at the bottom right, like in the inventory. GUI sprites work the sam
 **Menus without code:** server admins describe menus in YAML files (`plugins/Glyphwork/menus/`)
 with buttons that run commands, open other menus, ask for input or show forms, PlaceholderAPI support, a
 command per menu, conditions (show, gray out or check before an action), reusable templates,
-variables (tabs, search, switches), lists that fill themselves (online players, worlds, RSS/Atom feeds, JSON APIs), values from web APIs and menus
-that redraw themselves every few seconds:
+variables (tabs, search, switches), lists that fill themselves (online players, worlds, RSS/Atom feeds, JSON APIs), values from web APIs, menus
+that redraw themselves every few seconds and own fonts (TrueType/OpenType, drawn into the pack):
 [docs/menus.md](docs/menus.md).
 
 Players without the pack get a plain native dialog built from the same scene; Bedrock players
@@ -173,3 +173,5 @@ vanilla char grids and advances when Minecraft changes its fonts.
 - `src/main/resources/vanilla_text.json` holds character grids and glyph widths read from
   Minecraft's font data. It is not covered by the MIT license; it is Mojang's data and only
   references the client's own textures (no Minecraft textures are shipped).
+- `src/test/resources/fonts/PixelifySans.ttf` (Pixelify Sans, for the font tests only, not in
+  the plugin jar) is under the SIL Open Font License 1.1, see the license file next to it.

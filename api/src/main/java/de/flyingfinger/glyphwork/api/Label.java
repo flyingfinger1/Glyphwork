@@ -24,7 +24,8 @@ public final class Label implements Element {
     private Align align = Align.LEFT;
     private boolean shadow;
     private boolean wrap;
-    private int lineHeight = 10;
+    private int lineHeight;
+    private @Nullable String font;
 
     private Label(int x, int y, Function<View, String> text) {
         this.x = x;
@@ -152,12 +153,28 @@ public final class Label implements Element {
         return strikethrough;
     }
 
-    /** Distance between wrapped lines in pixels (default 10). */
+    /**
+     * Draws the text in an own font of config.yml ({@code fonts:}) instead of the Minecraft font
+     * (since 1.4); null or an unknown name: the scene's font, else the Minecraft font.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Label font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
+    }
+
+    /** Distance between wrapped lines in pixels (default 10, or what the label's font asks for). */
     public Label lineHeight(int lineHeight) {
         this.lineHeight = Math.max(8, lineHeight);
         return this;
     }
 
+    /** The set distance between wrapped lines, or 0 if none was set (then the font decides). */
     @org.jetbrains.annotations.ApiStatus.Internal
     public int lineHeight() {
         return lineHeight;

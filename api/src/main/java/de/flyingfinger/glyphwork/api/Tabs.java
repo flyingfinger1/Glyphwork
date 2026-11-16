@@ -56,6 +56,7 @@ public final class Tabs implements Element {
     }
 
     private Predicate<View> visible = v -> true;
+    private @Nullable String font;
 
     private final String id;
     private final int x;
@@ -197,5 +198,20 @@ public final class Tabs implements Element {
         if (selected == null) {
             c.set("glyphwork:tab:" + id, tab);
         }
+    }
+
+    /**
+     * Draws the tab titles; elements in the tabs use it too unless they set their own in an own font of config.yml ({@code fonts:}, since 1.4); null or an unknown
+     * name: the font around it (scene, tab), else the Minecraft font. Tooltips follow it.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Tabs font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
     }
 }

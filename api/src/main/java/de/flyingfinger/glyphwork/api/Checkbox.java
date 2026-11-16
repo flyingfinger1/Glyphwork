@@ -18,6 +18,7 @@ public final class Checkbox implements Element {
     public static final int SIZE = 16;
 
     private Predicate<View> visible = v -> true;
+    private @Nullable String font;
 
     private final int x;
     private final int y;
@@ -113,5 +114,20 @@ public final class Checkbox implements Element {
     @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
+    }
+
+    /**
+     * Draws the text next to the box in an own font of config.yml ({@code fonts:}, since 1.4); null or an unknown
+     * name: the font around it (scene, tab), else the Minecraft font. Tooltips follow it.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Checkbox font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
     }
 }

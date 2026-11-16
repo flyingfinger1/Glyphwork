@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 public final class Grid<T> implements Element {
 
     private Predicate<View> visible = v -> true;
+    private @Nullable String font;
 
     private final String id;
     private final int x;
@@ -287,5 +288,20 @@ public final class Grid<T> implements Element {
     @Override
     public Predicate<View> visible() {
         return visible;
+    }
+
+    /**
+     * Draws the short names (without icons), counts and page numbers in an own font of config.yml ({@code fonts:}, since 1.4); null or an unknown
+     * name: the font around it (scene, tab), else the Minecraft font. Tooltips follow it.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Grid<T> font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
     }
 }

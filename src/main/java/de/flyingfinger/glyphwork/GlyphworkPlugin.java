@@ -237,6 +237,14 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         imageSizes.addAll(apiSizes);
         int height = packHeight(s.minHeight(), heights, getLogger());
         ShiftFonts.write(pack, sheets, height, text, icons);
+        try {
+            Files.createDirectories(getDataFolder().toPath().resolve("fonts"));
+        } catch (IOException e) {
+            getLogger().warning("Could not create fonts/: " + e.getMessage());
+        }
+        de.flyingfinger.glyphwork.font.Fonts fonts = de.flyingfinger.glyphwork.font.Fonts.load(
+            s.fonts(), getDataFolder().toPath(), text, getLogger());
+        fonts.write(pack);
         de.flyingfinger.glyphwork.render.FallbackRenderer.icons(icons);
         Path imageDir = getDataFolder().toPath().resolve("images");
         try {
@@ -263,7 +271,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
         }
         byte[] zip = pack.toZip();
         SceneRenderer renderer = new SceneRenderer(text, theme, hit.glyph(), height, getLogger(), icons).fills(fills).images(images)
-            .bigHeads(squares, faces());
+            .bigHeads(squares, faces()).fonts(fonts::get);
         return new Build(s, height, theme.name(), renderer, zip, PackFiles.sha1(zip));
     }
 

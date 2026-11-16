@@ -29,6 +29,7 @@ public final class Scene {
     private final @Nullable BiConsumer<Click, CloseReason> onCloseReason;
     private final @Nullable List<Element> plain;
     private final int plainColumns;
+    private final @Nullable String font;
 
     private Scene(Builder b) {
         this.refresh = b.refresh;
@@ -43,6 +44,7 @@ public final class Scene {
         this.elements = List.copyOf(b.elements);
         this.plain = b.plain == null ? null : List.copyOf(b.plain);
         this.plainColumns = b.plainColumns;
+        this.font = b.font;
     }
 
     /**
@@ -116,6 +118,12 @@ public final class Scene {
         return plainColumns;
     }
 
+    /** Own font of config.yml for all text of the scene that sets none, or null: the Minecraft font. */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public @Nullable String font() {
+        return font;
+    }
+
     public @Nullable Duration refresh() {
         return refresh;
     }
@@ -133,6 +141,7 @@ public final class Scene {
         private @Nullable BiConsumer<Click, CloseReason> onCloseReason;
         private @Nullable List<Element> plain;
         private int plainColumns;
+        private @Nullable String font;
 
         private Builder(String id, int width, int height) {
             this.id = id;
@@ -228,6 +237,16 @@ public final class Scene {
         @org.jetbrains.annotations.ApiStatus.Experimental
         public Builder plainColumns(int columns) {
             this.plainColumns = Math.max(0, Math.min(2, columns));
+            return this;
+        }
+
+        /**
+         * Draws all text of the scene in an own font of config.yml ({@code fonts:}) unless an
+         * element sets its own (since 1.4); null or an unknown name: the Minecraft font.
+         */
+        @org.jetbrains.annotations.ApiStatus.Experimental
+        public Builder font(@Nullable String font) {
+            this.font = font;
             return this;
         }
 

@@ -25,7 +25,18 @@ public record Settings(
     boolean provided,
     boolean providedAlways,
     boolean includeSourcePack,
-    java.time.Duration skinCache) {
+    java.time.Duration skinCache,
+    java.util.List<FontSpec> fonts) {
+
+    /**
+     * One entry of {@code fonts:}: a TrueType/OpenType file in plugins/Glyphwork/fonts/ or an
+     * address it is downloaded from, the pixel size it is drawn at, and optionally the line height
+     * of wrapped text and characters to add to the default (Latin) set.
+     */
+    public record FontSpec(String id, @org.jspecify.annotations.Nullable String file,
+                           @org.jspecify.annotations.Nullable String url, int size, int lineHeight,
+                           @org.jspecify.annotations.Nullable String chars) {
+    }
 
     /** Version of the config layout; config.yml files without one are from before 1.0. */
     public static final int CONFIG_VERSION = 1;
@@ -36,7 +47,7 @@ public record Settings(
     }
 
     private static final java.util.Set<String> TOP = java.util.Set.of("config-version", "language", "fallback-language",
-        "theme", "pack", "pack-server", "plain-dialog", "icons", "dialog-warning", "players", "date-format", "feeds", "web", "heads",
+        "theme", "pack", "pack-server", "plain-dialog", "icons", "dialog-warning", "players", "date-format", "feeds", "web", "heads", "fonts",
         // read with a hint, from before 1.0
         "max-height", "fallback", "icon-source-pack");
     private static final java.util.Set<String> PACK = java.util.Set.of("hosting", "url", "send-on-join", "required",
@@ -116,7 +127,58 @@ public record Settings(
             hosting.equals("provided"),
             loaded.equals("always"),
             c.getBoolean("pack.include-source-pack", false),
-            skinCache(c.getString("heads.skin-cache", "0"), warn));
+            skinCache(c.getString("heads.skin-cache", "0"), warn),
+            fonts(c.getConfigurationSection("fonts"), warn));
+    }
+
+    /** fonts: id -> { file | url, size, line-height, chars }; broken entries are skipped with a hint. */
+    static java.util.List<FontSpec> fonts(org.bukkit.configuration.@org.jspecify.annotations.Nullable ConfigurationSection s,
+                                          java.util.function.Consumer<String> warn) {
+        java.util.List<FontSpec> out = new java.util.ArrayList<>();
+        if (s == null) {
+            return out;
+        }
+        for (String id : s.getKeys(false)) {
+            org.bukkit.configuration.ConfigurationSection f = s.getConfigurationSection(id);
+            String where = "config.yml: fonts." + id;
+            if (f == null) {
+                warn.accept(where + " needs file: or url: and size:");
+                continue;
+            }
+            if (!de.flyingfinger.glyphwork.font.CustomFont.ID.matcher(id).matches()) {
+                warn.accept(where + ": use lower case letters, digits, '_' and '-' for the name");
+                continue;
+            }
+            if (id.equals(de.flyingfinger.glyphwork.font.CustomFont.MINECRAFT)) {
+                warn.accept(where + ": 'minecraft' is taken (font: minecraft is the Minecraft font), choose another name");
+                continue;
+            }
+            String file = f.getString("file");
+            String url = f.getString("url");
+            if ((file == null || file.isBlank()) == (url == null || url.isBlank())) {
+                warn.accept(where + " needs either file: (in plugins/Glyphwork/fonts/) or url:");
+                continue;
+            }
+            if (url != null && !url.isBlank() && !url.startsWith("https://") && !url.startsWith("http://")) {
+                warn.accept(where + ".url must start with https://");
+                continue;
+            }
+            int size = f.getInt("size", 0);
+            if (size < de.flyingfinger.glyphwork.font.CustomFont.MIN_SIZE || size > de.flyingfinger.glyphwork.font.CustomFont.MAX_SIZE) {
+                warn.accept(where + ".size must be " + de.flyingfinger.glyphwork.font.CustomFont.MIN_SIZE + " to "
+                    + de.flyingfinger.glyphwork.font.CustomFont.MAX_SIZE + " (the pixel size the font is drawn at)");
+                continue;
+            }
+            for (String k : f.getKeys(false)) {
+                if (!java.util.Set.of("file", "url", "size", "line-height", "chars").contains(k)) {
+                    warn.accept(where + ": unknown setting '" + k + "'");
+                }
+            }
+            out.add(new FontSpec(id, file == null || file.isBlank() ? null : file.trim(),
+                url == null || url.isBlank() ? null : url.trim(), size, Math.max(0, f.getInt("line-height", 0)),
+                f.getString("chars")));
+        }
+        return out;
     }
 
     /** True if a key from before 1.0 is there (with a hint to the new one). */

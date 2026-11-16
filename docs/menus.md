@@ -42,6 +42,7 @@ variables: { tab: shop }      # optional: menu variables and their defaults, see
 refresh: 5                    # optional: redraw every 5 seconds while open (at least 1), see below
 persist: [nick]               # optional: variables kept in the player's data (true = all), see Variables
 plain: {...}                  # optional: an own view for the plain dialog, see below
+font: title                   # optional: an own font from config.yml for all text, see Own fonts
 forms: {...}                  # optional: forms with several input fields, see below
 open-on: {...}                # optional: open by itself on joining or with a menu item, see below
 on-open: [...]                # optional: actions when the menu opens (before it is drawn)
@@ -99,21 +100,21 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 
 | type | settings |
 |---|---|
-| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default the skin's text color), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text) |
-| `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `color` (text color), `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24), `head-size` (for a `head:` icon, *since 1.2*), `id` |
+| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default the skin's text color), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10, or what the font needs), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text), `font` ([own font](#own-fonts), *since 1.4*) |
+| `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `color` (text color), `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24), `head-size` (for a `head:` icon, *since 1.2*), `font` ([own font](#own-fonts), *since 1.4*), `id` |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
 | `head` | a player's face painted from the skin: `x`, `y`, `player` (name, UUID or placeholder, default `%player%`), `size` (8, 16, 24 or 32; default 32), `tooltip`, `actions` |
 | `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `width` / `height` or `scale` (another size, *since 1.1*), `tint`, `tooltip`, `actions` |
 | `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part), `text` (in the middle), `tooltip`, `frame` (`slot`) |
-| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`; page buttons appear below when needed (+20 px) |
-| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed |
+| `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`, `font` ([own font](#own-fonts), *since 1.4*); page buttons appear below when needed (+20 px) |
+| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed, `font` ([own font](#own-fonts), *since 1.4*) |
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
-| `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
-| `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
+| `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions`, `font` ([own font](#own-fonts), *since 1.4*) |
+| `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions`, `font` ([own font](#own-fonts), *since 1.4*) |
 | `scroll` | a window onto its elements with a scroll bar: `x`, `y`, `width` (120), `height` (80, at least 48), `elements`, `step` (18), `id`, `frame` (around the window, default none) |
-| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `inactive-tint` (inactive tabs, default a bit darker) |
+| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `inactive-tint` (inactive tabs, default a bit darker), `font` ([own font](#own-fonts), *since 1.4*) |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
@@ -627,6 +628,48 @@ elements:
 - `show-if` on the `use` entry applies to every element of the template.
 - Templates may use other templates. A `{key}` without a value and without a default is an error
   that names the menu, the element and the template.
+
+## Own fonts
+
+*(experimental, since 1.4)* Menu text can use fonts of your own instead of the Minecraft font.
+Declare them in `config.yml` under `fonts:` with a name, a TrueType/OpenType file from
+`plugins/Glyphwork/fonts/` (or `url:`) and the pixel size, then name them in the menu:
+
+```yaml
+# config.yml
+fonts:
+  title: { file: PixelifySans.ttf, size: 10 }
+```
+
+```yaml
+# a menu
+font: title                     # all text of the menu
+elements:
+  - { type: label, x: 8, y: 8, text: "Welcome", font: title }   # or per element
+```
+
+`font:` works on the menu and on `label`, `button`, `list`, `grid`, `checkbox`, `choice` and
+`tabs`; the elements inside tabs (and scroll panes) use the font around them unless they set their
+own. `font: minecraft` draws an element in the Minecraft font inside a menu or tab with an own
+font (so `minecraft` cannot be the name of an own font). Text tooltips follow the font of their
+element (item tooltips stay the client's).
+
+- Glyphwork draws the font once at that size into the pack, without smoothing, and measures every
+  letter itself, so wrapping, cutting with "..." and centering stay exact. Pixel fonts look best;
+  smooth fonts look jagged at small sizes.
+- The top of the capitals sits at `y`, like with the Minecraft font. Letters the font does not
+  have (other scripts, symbols) come from the Minecraft font. `chars:` in config.yml adds
+  characters beyond the Latin ones.
+- Wrapped lines are as far apart as the font needs (letters with descenders included);
+  `line-height` on the label sets it yourself. Buttons and lists keep their sizes: choose a size
+  whose capitals are about 7 px high (like the Minecraft font) for them.
+- The plain dialog and Bedrock show the Minecraft font. Only use fonts whose license allows putting
+  them into a resource pack (e.g. the SIL Open Font License).
+- For the [menu designer](menu-designer.md#own-fonts) the plugin writes `<name>.glyphwork-font`
+  next to the font files in `plugins/Glyphwork/fonts/`: load it there, and the preview draws and
+  measures the font like the plugin.
+- A font that cannot be read is logged at `/glyphwork reload`; text that asks for it, or for a name
+  that is not in `fonts:`, uses the Minecraft font (logged once).
 
 ## Own plain view
 

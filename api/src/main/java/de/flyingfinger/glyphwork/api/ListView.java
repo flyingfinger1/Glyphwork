@@ -27,6 +27,7 @@ public final class ListView<T> implements Element {
     private final int rows;
     private final Function<View, List<T>> items;
     private int rowHeight = 16;
+    private @Nullable String font;
     private Function<T, String> text = String::valueOf;
     private Function<T, TextColor> color = t -> TextColor.color(0xFFFFFF);
     private @Nullable Function<T, @Nullable Component> tooltip;
@@ -224,6 +225,21 @@ public final class ListView<T> implements Element {
     }
 
     @org.jetbrains.annotations.ApiStatus.Internal
+    /**
+     * Draws the row texts in an own font of config.yml ({@code fonts:}) instead of the Minecraft font
+     * (since 1.4); null or an unknown name: the scene's font, else the Minecraft font.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public ListView<T> font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
+    }
+
     public int rowHeight() {
         return rowHeight;
     }

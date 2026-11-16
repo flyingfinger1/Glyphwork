@@ -26,7 +26,8 @@ public record Settings(
     boolean providedAlways,
     boolean includeSourcePack,
     java.time.Duration skinCache,
-    java.util.List<FontSpec> fonts) {
+    java.util.List<FontSpec> fonts,
+    net.kyori.adventure.sound.@org.jspecify.annotations.Nullable Sound clickSound) {
 
     /**
      * One entry of {@code fonts:}: a TrueType/OpenType file in plugins/Glyphwork/fonts/ or an
@@ -47,7 +48,7 @@ public record Settings(
     }
 
     private static final java.util.Set<String> TOP = java.util.Set.of("config-version", "language", "fallback-language",
-        "theme", "pack", "pack-server", "plain-dialog", "icons", "dialog-warning", "players", "date-format", "feeds", "web", "heads", "fonts",
+        "theme", "pack", "pack-server", "plain-dialog", "icons", "dialog-warning", "players", "date-format", "feeds", "web", "heads", "fonts", "click-sound",
         // read with a hint, from before 1.0
         "max-height", "fallback", "icon-source-pack");
     private static final java.util.Set<String> PACK = java.util.Set.of("hosting", "url", "send-on-join", "required",
@@ -128,7 +129,57 @@ public record Settings(
             loaded.equals("always"),
             c.getBoolean("pack.include-source-pack", false),
             skinCache(c.getString("heads.skin-cache", "0"), warn),
-            fonts(c.getConfigurationSection("fonts"), warn));
+            fonts(c.getConfigurationSection("fonts"), warn),
+            clickSound(c.getString("click-sound", ""), warn));
+    }
+
+    /** click-sound: as {@link #clickSound(String)}; a broken value plays none, with a hint. */
+    static net.kyori.adventure.sound.@org.jspecify.annotations.Nullable Sound clickSound(
+            @org.jspecify.annotations.Nullable String spec, java.util.function.Consumer<String> warn) {
+        try {
+            return clickSound(spec);
+        } catch (IllegalArgumentException e) {
+            warn.accept("config.yml: click-sound: " + e.getMessage() + "; no click sound");
+            return null;
+        }
+    }
+
+    /**
+     * A click sound: "&lt;sound&gt; [volume] [pitch]" (e.g. "ui.button.click 0.5 1"), played in the
+     * player's interface volume; empty, "none" or "off": none.
+     *
+     * @throws IllegalArgumentException for a broken name or number
+     */
+    public static net.kyori.adventure.sound.@org.jspecify.annotations.Nullable Sound clickSound(
+            @org.jspecify.annotations.Nullable String spec) {
+        if (spec == null || spec.isBlank() || spec.trim().equalsIgnoreCase("none") || spec.trim().equalsIgnoreCase("off")) {
+            return null;
+        }
+        String[] p = spec.trim().split("\s+");
+        if (p.length > 3) {
+            throw new IllegalArgumentException("'<sound> [volume] [pitch]' expected, got '" + spec.trim() + "'");
+        }
+        net.kyori.adventure.key.Key key;
+        try {
+            key = net.kyori.adventure.key.Key.key(p[0].toLowerCase(java.util.Locale.ROOT));
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("'" + p[0] + "' is no sound name (like ui.button.click)");
+        }
+        float volume = p.length > 1 ? soundNumber(p[1]) : 1f;
+        float pitch = p.length > 2 ? soundNumber(p[2]) : 1f;
+        return net.kyori.adventure.sound.Sound.sound(key, net.kyori.adventure.sound.Sound.Source.UI, volume, pitch);
+    }
+
+    private static float soundNumber(String s) {
+        try {
+            float f = Float.parseFloat(s);
+            if (f >= 0 && Float.isFinite(f)) {
+                return f;
+            }
+        } catch (NumberFormatException ignored) {
+            // below
+        }
+        throw new IllegalArgumentException("volume and pitch are numbers like 0.5 or 1, got '" + s + "'");
     }
 
     /** fonts: id -> { file | url, size, line-height, chars }; broken entries are skipped with a hint. */

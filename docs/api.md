@@ -168,6 +168,11 @@ Handlers get a `Click` (runs on the main thread):
 | `openUrl(url)` | see Links below |
 | `player()`, `scene()` | who clicked, and the scene shown |
 
+**Click sound** *(since 1.5)*: every click plays `click-sound` of config.yml (off by default) or
+the scene's own: `Scene.builder(...).clickSound(Sound.sound(Key.key("ui.button.click"), Sound.Source.UI, 0.4f, 1f))`,
+`clickSound(null)` for none. A handler that plays its own sound calls `click.noClickSound()`, so
+only that one is heard.
+
 Clicks from a screen that has been replaced in the meantime are ignored. Keys starting with
 `glyphwork:` are Glyphwork's own; use your own prefix for `set`.
 

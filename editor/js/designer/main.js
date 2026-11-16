@@ -927,7 +927,7 @@ const MENU_FIELDS = [
   ['title', 'text', 'menuTitle'], ['width', 'int', 'width'], ['height', 'int', 'height'],
   ['background', 'text', 'background'], ['command', 'text', 'command'], ['aliases', 'lines', 'aliases'],
   ['permission', 'text', 'permission'], ['description', 'text', 'description'], ['exit-label', 'text', 'exitLabel'],
-  ['refresh', 'text', 'refresh'], ['font', 'font', 'menuFont'], ['persist', 'text', 'persist'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
+  ['refresh', 'text', 'refresh'], ['font', 'font', 'menuFont'], ['click-sound', 'text', 'clickSound'], ['persist', 'text', 'persist'], ['on-open', 'lines', 'onOpen'], ['on-close', 'lines', 'onClose'],
   ['open-on.join', 'select', 'openOnJoin', ['true', 'first']], ['open-on.item.material', 'text', 'openOnItem'],
   ['open-on.item.name', 'text', 'openOnItemName'], ['open-on.item.slot', 'int', 'openOnItemSlot'],
   ['open-on.item.give', 'select', 'openOnItemGive', ['join', 'first', 'no']], ['open-on.item.keep', 'select', 'openOnItemKeep', ['true', 'false']],
@@ -965,7 +965,7 @@ function menuPut(path, value) {
   };
   const next = walk(root, 0);
   const order = ['title', 'width', 'height', 'background', 'command', 'aliases', 'permission', 'description',
-    'exit-label', 'refresh', 'font', 'open-on', 'on-open', 'on-close', 'templates', 'variables', 'forms', 'elements'];
+    'exit-label', 'refresh', 'font', 'click-sound', 'open-on', 'on-open', 'on-close', 'templates', 'variables', 'forms', 'elements'];
   const out = {};
   for (const k of order) if (k in next) out[k] = next[k];
   for (const k of Object.keys(next)) if (!(k in out)) out[k] = next[k];

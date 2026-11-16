@@ -92,6 +92,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             apply(b);
             service = new GlyphworkService(this, b.renderer(), b.height(), b.settings().plainDialog(),
                 packs::hasPack, packs::send, packs::hasServerPack);
+            service.clickSound(b.settings().clickSound());
             service.onImageSize(this::imageSizeAsked);
             service.onPreloadHeads(who -> faces().preload(who));
         } catch (IOException e) {
@@ -385,6 +386,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
                 boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
                 apply(b);
                 service.reconfigure(b.renderer(), b.height(), b.settings().plainDialog());
+                service.clickSound(b.settings().clickSound());
                 if (changed && settings.provided()) {
                     getLogger().warning("Picture sizes from plugins changed the pack: merge "
                         + getDataFolder().toPath().resolve("pack").resolve("glyphwork.zip") + " into your pack again");
@@ -406,6 +408,7 @@ public final class GlyphworkPlugin extends JavaPlugin implements Listener {
             boolean changed = packs.publish(b.settings(), b.zip(), b.sha1());
             apply(b);
             service.reconfigure(b.renderer(), b.height(), b.settings().plainDialog());
+            service.clickSound(b.settings().clickSound());
             List<String> menuErrors = loadMenus();
             sender.sendMessage(msg().get(sender, "reload.menus", "count", menus.all().size()));
             for (String e : menuErrors) {

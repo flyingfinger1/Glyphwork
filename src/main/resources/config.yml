@@ -53,6 +53,11 @@ pack-server:
 # (only sensible with a required pack).
 plain-dialog: true
 
+# A sound for every click in Glyphwork screens: "<sound> [volume] [pitch]", in the players'
+# Interface volume, e.g. "ui.button.click 0.4". Empty = none. Menus can set their own
+# (click-sound:, or none), and a button with a "sound:" action plays only that one.
+click-sound: ""
+
 icons:
   # Item icons (icon element, icon: in menus). The pack references the textures every client already
   # has; false makes the pack smaller if you do not use icons.

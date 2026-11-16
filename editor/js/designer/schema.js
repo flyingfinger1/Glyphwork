@@ -144,7 +144,7 @@ export function setField(el, key, value) {
  * "not released yet" and is never the default. On a release, set RELEASED to it (and add the next
  * version once something new for it is committed).
  */
-export const VERSIONS = ['1.0', '1.1', '1.2', '1.3', '1.4'];
+export const VERSIONS = ['1.0', '1.1', '1.2', '1.3', '1.4', '1.5'];
 export const RELEASED = '1.4';
 export const LATEST = RELEASED;
 

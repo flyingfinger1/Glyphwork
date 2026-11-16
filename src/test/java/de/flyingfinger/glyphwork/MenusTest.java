@@ -144,6 +144,26 @@ class MenusTest {
     }
 
     @Test
+    void clickSoundOfAMenu() throws Exception {
+        Menus m = new Menus();
+        Scene own = m.parse("t", "click-sound: ui.button.click 0.5 1.2\n").scene();
+        assertTrue(own.clickSoundSet());
+        assertEquals("minecraft:ui.button.click", own.clickSound().name().asString());
+        assertEquals(0.5f, own.clickSound().volume());
+        assertEquals(1.2f, own.clickSound().pitch());
+        assertEquals(net.kyori.adventure.sound.Sound.Source.UI, own.clickSound().source());
+        Scene none = m.parse("t", "click-sound: none\n").scene();
+        assertTrue(none.clickSoundSet());
+        assertNull(none.clickSound());
+        Scene unset = m.parse("t", "title: x\n").scene();
+        assertTrue(!unset.clickSoundSet());
+        assertError(m, "click-sound: \"Ui Button\"\n", "t.yml.click-sound:");
+        assertError(m, "click-sound: ui.button.click loud\n", "t.yml.click-sound: volume and pitch");
+        assertNull(de.flyingfinger.glyphwork.core.Settings.clickSound(""));
+        assertNull(de.flyingfinger.glyphwork.core.Settings.clickSound("off"));
+    }
+
+    @Test
     void brokenFilesAreSkippedOthersLoad(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve("good.yml"), "title: ok\ncommand: Good\naliases: [g]\n");
         Files.writeString(dir.resolve("bad.yml"), "elements:\n  - type: nope\n");

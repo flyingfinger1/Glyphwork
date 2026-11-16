@@ -6,7 +6,7 @@ Glyphwork renders whole screens (panels, buttons, lists, grids, text) into the d
 
 ## For whom
 
-- **Server admins:** describe menus in YAML files (buttons that run commands, open other menus or ask for input, sliders, checkboxes, choices and forms, PlaceholderAPI, a command per menu, conditions, templates, variables, tabs, scroll panes, cooldowns, lists of online players, worlds, RSS feeds or JSON web APIs, menus that refresh themselves) - no coding. See the [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md), or build them with the mouse in the [menu designer](https://flyingfinger1.github.io/Glyphwork/designer.html).
+- **Server admins:** describe menus in YAML files (buttons that run commands, open other menus or ask for input, sliders, checkboxes, choices and forms, PlaceholderAPI, a command per menu, conditions, templates, variables, tabs, scroll panes, cooldowns, click sounds, progress bars that change color by value, lists of online players, worlds, RSS feeds or JSON web APIs, menus that refresh themselves) - no coding. See the [menu guide](https://github.com/flyingfinger1/Glyphwork/blob/main/docs/menus.md), or build them with the mouse in the [menu designer](https://flyingfinger1.github.io/Glyphwork/designer.html).
 - **Plugin developers:** build screens with the Java API.
 
 ```yaml

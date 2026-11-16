@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.5.0-mc1.21.11 – Paper 1.21.11, click sound, bar colors
+
+The 1.21.11 build of 1.5.0 (see 1.5.0 below): click sound, bar colors by value, `font:` on bars,
+labels that end at the menu edge, clickable buttons without a frame. Tested in the 1.21.11
+client; Java 21, pack format 75, the 66 icons newer than 1.21.11 stay empty.
+
+## 1.5.0 – click sound, bar colors
+
+Menus, configs and plugins made for 1.0 to 1.4 keep working. Supports Paper 26.1 to 26.3 (and
+1.21.11 as `1.5.0-mc1.21.11`). One visible change: a label without a `width` that ran past the
+right edge of its menu is now cut there (see below); the log names each one.
 
 - **Click sound:** `click-sound: ui.button.click 0.4` in config.yml plays a sound for every click
   in Glyphwork screens (off by default), in the players' *Interface* volume. Menus set their own

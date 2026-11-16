@@ -256,6 +256,12 @@ public final class CustomFont implements TextFont {
         return Key.key("glyphwork", "f_" + id + "_" + shift);
     }
 
+    /** Tooltips are laid out by the client: the unshifted font, capitals where the vanilla ones sit. */
+    @Override
+    public Key tooltipFont() {
+        return key(0);
+    }
+
     @Override
     public int lineHeight() {
         return lineHeight;

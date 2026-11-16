@@ -789,7 +789,7 @@ public final class Menus {
             }
             case "grid" -> {
                 n.only(with("type", "id", "x", "y", "cols", "rows", "cell", "size", "frame", "items", "items-from", "item",
-                    "item-tooltip", "head-size"));
+                    "item-tooltip", "head-size", "font"));
                 Grid<Row> g = Grid.of(n.optString("id", "grid" + autoId++), n.integer("x"), n.integer("y"),
                         n.optInt("cols", 4), n.optInt("rows", 2), rows(n))
                     .cell(n.optInt("cell", 18), n.optInt("size", 16))
@@ -803,7 +803,8 @@ public final class Menus {
                     .headSize(n.optInt("head-size", 8))
                     .frame(n.optString("frame", "slot"))
                     .selectedIf((v, e) -> e.selected)
-                    .onClick((c, e) -> e.onClick.accept(c));
+                    .onClick((c, e) -> e.onClick.accept(c))
+                    .font(font(n));
                 b.accept(g);
             }
             case "slider" -> {
@@ -839,7 +840,7 @@ public final class Menus {
                 b.accept(s);
             }
             case "checkbox" -> {
-                n.only(with("type", "x", "y", "var", "text", "color", "tooltip", "actions"));
+                n.only(with("type", "x", "y", "var", "text", "color", "tooltip", "actions", "font"));
                 String var = varName(n);
                 Vars mv = vars;
                 Actions.Chain then = Actions.parse(n.strings("actions"), n, "actions", this::get, vars, forms);
@@ -855,10 +856,10 @@ public final class Menus {
                 if (tooltip(n) != null) {
                     cb.tooltip(tooltip(n));
                 }
-                b.accept(cb);
+                b.accept(cb.font(font(n)));
             }
             case "choice" -> {
-                n.only(with("type", "x", "y", "width", "height", "var", "options", "tint", "tooltip", "actions"));
+                n.only(with("type", "x", "y", "width", "height", "var", "options", "tint", "tooltip", "actions", "font"));
                 String var = varName(n);
                 Map<String, String> options = options(n);
                 Vars mv = vars;
@@ -878,6 +879,7 @@ public final class Menus {
                 if (tooltip(n) != null) {
                     ch.tooltip(tooltip(n));
                 }
+                ch.font(font(n));
                 b.accept(ch);
             }
             case "head" -> {
@@ -949,7 +951,7 @@ public final class Menus {
                 b.accept(sc);
             }
             case "tabs" -> {
-                n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "inactive-tint", "tabs"));
+                n.only(with("type", "id", "x", "y", "width", "height", "var", "frame", "inactive-tint", "tabs", "font"));
                 int x = n.integer("x");
                 int y = n.integer("y");
                 de.flyingfinger.glyphwork.api.Tabs t = de.flyingfinger.glyphwork.api.Tabs.of(n.optString("id", "tabs" + autoId++),
@@ -986,6 +988,7 @@ public final class Menus {
                     t.tab(id, tn.optString("title", id), tn.optString("icon", null), inner);
                 }
                 elementIndex = saved;
+                t.font(font(n));
                 b.accept(t);
             }
             case "bar" -> {

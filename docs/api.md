@@ -99,10 +99,12 @@ width that fits: `.width(n)` cuts the text there.
 **Text blocks:** `Label.of(x, y, longText).width(160).wrap(true)` breaks at spaces; `.lineHeight(10)`;
 `"\n"` starts a new line.
 
-**Own fonts** *(experimental, since 1.4)*: `.font("title")` on `Label`, `Button`, `ListView` or for
-the whole scene on `Scene.Builder` draws the text in a font the server admin declared in
-config.yml (`fonts:`, see [menus.md](menus.md#own-fonts)). An unknown name falls back to the
-Minecraft font; widths, wrapping and cutting follow the font.
+**Own fonts** *(experimental, since 1.4)*: `.font("title")` on `Label`, `Button`, `ListView`,
+`Grid`, `Checkbox`, `Choice`, `Tabs` or for the whole scene on `Scene.Builder` draws the text in a
+font the server admin declared in config.yml (`fonts:`, see [menus.md](menus.md#own-fonts)).
+Elements in tabs and scroll panes use the font around them unless they set their own; text
+tooltips follow the element's font. An unknown name falls back to the Minecraft font; widths,
+wrapping and cutting follow the font.
 
 **Counts:** `Icon.count(64)`, `Grid.count(item -> String.valueOf(item.amount()))` and
 `ListView.count(...)` write a stack size at the bottom right of the icon, white with a shadow like in

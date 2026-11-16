@@ -109,12 +109,12 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `width` / `height` or `scale` (another size, *since 1.1*), `tint`, `tooltip`, `actions` |
 | `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part), `text` (in the middle), `tooltip`, `frame` (`slot`) |
 | `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`, `font` ([own font](#own-fonts), *since 1.4*); page buttons appear below when needed (+20 px) |
-| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed |
+| `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed, `font` ([own font](#own-fonts), *since 1.4*) |
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
-| `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions` |
-| `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions` |
+| `checkbox` | `x`, `y`, `var` (`true`/`false`), `text`, `color`, `tooltip`, `actions`, `font` ([own font](#own-fonts), *since 1.4*) |
+| `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions`, `font` ([own font](#own-fonts), *since 1.4*) |
 | `scroll` | a window onto its elements with a scroll bar: `x`, `y`, `width` (120), `height` (80, at least 48), `elements`, `step` (18), `id`, `frame` (around the window, default none) |
-| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `inactive-tint` (inactive tabs, default a bit darker) |
+| `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `inactive-tint` (inactive tabs, default a bit darker), `font` ([own font](#own-fonts), *since 1.4*) |
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
@@ -645,8 +645,12 @@ fonts:
 # a menu
 font: title                     # all text of the menu
 elements:
-  - { type: label, x: 8, y: 8, text: "Welcome", font: title }   # or per label, button, list
+  - { type: label, x: 8, y: 8, text: "Welcome", font: title }   # or per element
 ```
+
+`font:` works on the menu and on `label`, `button`, `list`, `grid`, `checkbox`, `choice` and
+`tabs`; the elements inside tabs (and scroll panes) use the font around them unless they set their
+own. Text tooltips follow the font of their element (item tooltips stay the client's).
 
 - Glyphwork draws the font once at that size into the pack, without smoothing, and measures every
   letter itself, so wrapping, cutting with "..." and centering stay exact. Pixel fonts look best;

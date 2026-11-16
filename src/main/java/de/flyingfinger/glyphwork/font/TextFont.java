@@ -20,4 +20,9 @@ public interface TextFont {
 
     /** Height of the glyphs from the top of the capitals, for clipping in scroll panes. */
     int height();
+
+    /** Font for tooltips of text in this font (the client lays them out itself), or null: the default font. */
+    default net.kyori.adventure.key.@org.jspecify.annotations.Nullable Key tooltipFont() {
+        return null;
+    }
 }

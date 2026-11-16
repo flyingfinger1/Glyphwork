@@ -105,6 +105,11 @@ public final class LineBuilder {
         if (y == SKIP || y < 0 || y >= maxHeight) {
             return this; // no font for this row
         }
+        // a text tooltip follows the element's font (frames and hitboxes are drawn in it)
+        net.kyori.adventure.key.Key tipFont = text.tooltipFont();
+        if (tipFont != null && hover instanceof net.kyori.adventure.text.Component tip && tip.font() == null) {
+            hover = tip.font(tipFont);
+        }
         line(0).draw(String.valueOf(g.codepoint()), g.advance(), x, ShiftFonts.sprite(y),
             tint == null ? NamedTextColor.WHITE : tint, click, hover);
         return this;

@@ -242,12 +242,14 @@ export function expand(menu, shared = {}) {
   for (const [k, v] of Object.entries(menu.templates || {})) templates[k.toLowerCase()] = v;
   const out = [];
   const errors = [];
-  const walk = (el, dx, dy, showIf, depth, top, inTab = []) => {
+  // font: the font of the tabs element around (its elements use it unless they set their own)
+  const walk = (el, dx, dy, showIf, depth, top, inTab = [], font = null) => {
     if (!el || typeof el !== 'object') return;
     if (el.use == null) {
       const m = { ...el };
       if (dx || dy) { m.x = int(el.x, 0) + dx; m.y = int(el.y, 0) + dy; }
       if (showIf.length) m['show-if'] = [...showIf, ...list(el['show-if'])];
+      if (font && (m.font == null || m.font === '')) m._font = font;
       const kids = String(el.type ?? '').toLowerCase() === 'tabs' ? m.tabs : null;
       if (kids) delete m.tabs;
       out.push({ el: m, top, inTab });
@@ -258,7 +260,7 @@ export function expand(menu, shared = {}) {
         kids.forEach((tb, i) => {
           const mark = [...inTab, { key, id: tabId(tb, i) }];
           for (const child of (Array.isArray(tb?.elements) ? tb.elements : [])) {
-            walk(child, int(m.x, 0), int(m.y, 0) + TAB_HEADER, [], depth + 1, top, mark);
+            walk(child, int(m.x, 0), int(m.y, 0) + TAB_HEADER, [], depth + 1, top, mark, m.font || m._font || null);
           }
         });
       }
@@ -278,8 +280,8 @@ export function expand(menu, shared = {}) {
     }
     const cond = [...showIf, ...list(el['show-if'])];
     const x = dx + int(el.x, 0), y = dy + int(el.y, 0);
-    if (Array.isArray(filled)) filled.forEach((g) => walk(g, x, y, cond, depth + 1, top, inTab));
-    else walk(filled, x, y, cond, depth + 1, top, inTab);
+    if (Array.isArray(filled)) filled.forEach((g) => walk(g, x, y, cond, depth + 1, top, inTab, font));
+    else walk(filled, x, y, cond, depth + 1, top, inTab, font);
   };
   (menu.elements || []).forEach((el, i) => walk(el, 0, 0, [], 0, i));
   return { items: out, errors };
@@ -486,7 +488,23 @@ function drawCount(c, count, x, y, bottom = Infinity) {
  *           hints: [{top, text} | {top, notIn: item}], errors: [{top, text}]}
  *   act: {type:'actions', list, item} | {type:'set', var, value, then} | {type:'page', id, page}
  */
+/** Elements that take font: (the others draw no text of their own). */
+const FONT_TYPES = new Set(['label', 'button', 'list', 'grid', 'checkbox', 'choice', 'tabs']);
+
+/** A loaded own font by name, or null (not loaded: the Minecraft font). */
+const fontNamed = (ctx, id) => ctx.fonts?.get(String(id).trim().toLowerCase()) ?? null;
+
 export function renderMenu(menu, skin, ctx = {}) {
+  // the menu's font for all its text; a scroll pane's content keeps the font around it
+  const menuFontBefore = useFont(menu.font ? fontNamed(ctx, menu.font) : currentFont());
+  try {
+    return renderMenuIn(menu, skin, ctx);
+  } finally {
+    useFont(menuFontBefore);
+  }
+}
+
+function renderMenuIn(menu, skin, ctx) {
   const W = int(menu.width, 176), H = int(menu.height, 96);
   const c = new Canvas(W, H, skin.frames, skin.tileSize, skin.text);
   c.icons = ctx.icons || null;
@@ -517,9 +535,10 @@ export function renderMenu(menu, skin, ctx = {}) {
       continue;
     }
     const x = int(el.x, 0), y = int(el.y, 0);
-    // own font of the element, else of the menu, else the one in use (like SceneRenderer.fontOf)
-    const fontId = ['label', 'button', 'list'].includes(type) && el.font ? el.font : menu.font;
-    const fontBefore = useFont(fontId ? (ctx.fonts?.get(String(fontId).trim().toLowerCase()) ?? null) : currentFont());
+    // own font of the element (or of the tabs around it), else the one in use: the menu's, the
+    // scroll pane's surroundings, the Minecraft font (like SceneRenderer.fontOf)
+    const fontId = (FONT_TYPES.has(type) && el.font) || el._font;
+    const fontBefore = useFont(fontId ? fontNamed(ctx, fontId) : currentFont());
     // the plugin refuses a cooldown without a place to store it
     if (el.cooldown != null && el.cooldown !== '' && !el.id && !el['cooldown-key']) {
       errors.push({ top, text: 'cooldown: id / cooldown-key' });
@@ -752,7 +771,7 @@ export function renderMenu(menu, skin, ctx = {}) {
           if (el.frame != null && !c.rect(String(el.frame), x, y, w, h, null)) errors.push({ top, text: `frame '${el.frame}'` });
           const kids = Array.isArray(el.elements) ? el.elements : [];
           const sub = renderMenu({ width: w, height: 2048, background: 'none', templates: menu.templates,
-            variables: menu.variables, elements: kids, font: menu.font }, skin, { ...ctx, menu: undefined });
+            variables: menu.variables, elements: kids }, skin, { ...ctx, menu: undefined });
           const bottom = Math.max(0, ...sub.boxes.filter((b) => !b.hidden).map((b) => b.y + b.h));
           const max = Math.max(0, Math.ceil((bottom - h) / step) * step);
           const off = Math.floor(Math.min(Math.max(0, int(ctx.pages?.['scroll:' + key], 0)), max) / step) * step;

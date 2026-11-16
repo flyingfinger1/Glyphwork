@@ -89,22 +89,24 @@ public final class SceneRenderer {
     }
 
     /**
-     * The font an element's text is drawn in: its own, else the scene's, else the one in use (the
-     * Minecraft font, or the font of the scroll pane or tab around it). Unknown names are logged once.
+     * The font an element's text is drawn in: its own, else the one in use (the scene's font, the
+     * font of the tab or scroll pane around it, or the Minecraft font). Unknown names are logged once.
      */
-    private de.flyingfinger.glyphwork.font.TextFont fontOf(Element e, Scene scene, de.flyingfinger.glyphwork.font.TextFont current) {
+    private de.flyingfinger.glyphwork.font.TextFont fontOf(Element e, de.flyingfinger.glyphwork.font.TextFont current) {
         String id = switch (e) {
             case Label l -> l.font();
             case Button b -> b.font();
             case ListView<?> l -> l.font();
+            case Grid<?> g -> g.font();
+            case Checkbox cb -> cb.font();
+            case Choice ch -> ch.font();
+            case Tabs t -> t.font();
             default -> null;
         };
-        if (id == null || id.isBlank()) {
-            id = scene.font();
-        }
-        if (id == null || id.isBlank()) {
-            return current;
-        }
+        return id == null || id.isBlank() ? current : font(id);
+    }
+
+    private de.flyingfinger.glyphwork.font.TextFont font(String id) {
         de.flyingfinger.glyphwork.font.TextFont f = fonts.apply(id.trim().toLowerCase(java.util.Locale.ROOT));
         if (f == null) {
             warnOnce("font:" + id, "Font '" + id + "' is not in config.yml (fonts:) or could not be read; using the Minecraft font");
@@ -205,6 +207,9 @@ public final class SceneRenderer {
                 + " px high, the pack covers " + maxHeight + " px (raise max-height in config.yml for scenes of plugins)");
         }
         LineBuilder line = new LineBuilder(text, maxHeight);
+        if (scene.font() != null && !scene.font().isBlank()) {
+            line.font(font(scene.font()));
+        }
         int i = 0;
         for (Element e : scene.elements()) {
             element(line, e, view, binder, scene.id() + "#" + i++, scene);
@@ -219,7 +224,7 @@ public final class SceneRenderer {
             if (!Boolean.TRUE.equals(e.visible().test(view))) {
                 return;
             }
-            line.font(fontOf(e, scene, before));
+            line.font(fontOf(e, before));
             switch (e) {
                 case Panel p -> panel(line, p, view, binder, name, scene);
                 case Label l -> label(line, l, view, name, scene);

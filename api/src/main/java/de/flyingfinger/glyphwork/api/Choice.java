@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 public final class Choice implements Element {
 
     private Predicate<View> visible = v -> true;
+    private @Nullable String font;
 
     private final int x;
     private final int y;
@@ -155,5 +156,20 @@ public final class Choice implements Element {
     public String step(View view, int delta) {
         int n = options.size();
         return options.get(((index(view) + delta) % n + n) % n);
+    }
+
+    /**
+     * Draws the shown option in an own font of config.yml ({@code fonts:}, since 1.4); null or an unknown
+     * name: the font around it (scene, tab), else the Minecraft font. Tooltips follow it.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Choice font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
     }
 }

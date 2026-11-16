@@ -4,8 +4,9 @@
 
 - **Own fonts (experimental):** `fonts:` in config.yml declares TrueType/OpenType fonts (a file in
   `plugins/Glyphwork/fonts/` or a `url:`, a pixel size, optionally `line-height` and `chars`).
-  `font:` on a menu, label, button or list (API: `.font("name")` on `Scene.Builder`, `Label`,
-  `Button`, `ListView`) draws text in them. Glyphwork draws each font into the pack itself, so
+  `font:` on a menu, label, button, list, grid, checkbox, choice or tabs (API: `.font("name")` on
+  `Scene.Builder` and these elements) draws text in them; elements in tabs and scroll panes use the
+  font around them, text tooltips follow their element's font. Glyphwork draws each font into the pack itself, so
   widths stay exact; letters a font lacks come from the Minecraft font.
 - **Menu designer with own fonts:** the plugin writes `fonts/<name>.glyphwork-font` for every font;
   loaded in the designer (*Own fonts*), the preview draws and measures text in it like the plugin,

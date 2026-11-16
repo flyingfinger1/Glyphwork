@@ -126,6 +126,10 @@ class FontTest {
         if (c instanceof TextComponent t && !t.content().isEmpty() && c.font() != null) {
             out.add(new Drawn(t.content(), c.font().value()));
         }
+        if (c.hoverEvent() != null && c.hoverEvent().value() instanceof Component tip) {
+            out.add(new Drawn("tooltip:" + net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+                .plainText().serialize(tip), tip.font() == null ? "default" : tip.font().value()));
+        }
         for (Component child : c.children()) {
             collect(child, out);
         }
@@ -186,6 +190,33 @@ class FontTest {
               - { type: label, x: 4, y: 4, text: Hallo, font: "Mein Font" }
             """));
         assertTrue(e.getMessage().contains("font"), e.getMessage());
+    }
+
+    @Test
+    void tabsHandTheirFontOnAndTooltipsFollow() throws MenuException, IOException {
+        Scene s = new Menus().parse("t", """
+            background: none
+            elements:
+              - type: tabs
+                x: 0
+                y: 0
+                width: 160
+                height: 60
+                font: pixel
+                tabs:
+                  - { id: a, title: Reiter, elements: [{ type: label, x: 4, y: 4, text: Innen }] }
+              - { type: checkbox, x: 4, y: 70, var: c, text: Haken, font: pixel, tooltip: Tipp }
+              - { type: choice, x: 4, y: 90, width: 80, var: w, options: { a: Alpha }, font: pixel }
+              - { type: button, x: 4, y: 110, text: Knopf, tooltip: Minecraft }
+              - { type: grid, x: 100, y: 70, cols: 1, rows: 1, items: [{ text: Zelle }], font: pixel }
+            """).scene();
+        List<Drawn> d = draw(s, Map.of("pixel", pixelify()), Logger.getAnonymousLogger());
+        for (String text : List.of("Reiter", "Innen", "Haken", "Alpha")) {
+            assertTrue(d.stream().anyMatch(x -> x.text().contains(text) && x.font().startsWith("f_pixel_")), text + ": " + d);
+        }
+        assertTrue(d.stream().anyMatch(x -> x.text().equals("tooltip:Tipp") && x.font().equals("f_pixel_0")), d.toString());
+        assertTrue(d.stream().anyMatch(x -> x.text().equals("tooltip:Minecraft") && x.font().equals("default")), d.toString());
+        assertTrue(d.stream().noneMatch(x -> x.text().contains("Knopf") && x.font().startsWith("f_")), d.toString());
     }
 
     @Test

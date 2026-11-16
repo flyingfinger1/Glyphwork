@@ -71,7 +71,7 @@ public final class Menus {
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
         "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms",
-        "on-open", "on-close", "open-on", "persist", "plain", "font");
+        "on-open", "on-close", "open-on", "persist", "plain", "font", "click-sound");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -202,6 +202,13 @@ public final class Menus {
             b.refresh(refresh(root));
         }
         b.font(font(root));
+        if (root.has("click-sound")) {
+            try {
+                b.clickSound(de.flyingfinger.glyphwork.core.Settings.clickSound(root.string("click-sound")));
+            } catch (IllegalArgumentException e) {
+                throw root.error("click-sound", e.getMessage());
+            }
+        }
         if (root.has("on-open")) {
             Actions.Chain open = Actions.parse(root.strings("on-open"), root, "on-open", this::get, vars, forms);
             b.onOpen(k -> open.run(k, null));

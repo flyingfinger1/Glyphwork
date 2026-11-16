@@ -43,6 +43,7 @@ refresh: 5                    # optional: redraw every 5 seconds while open (at 
 persist: [nick]               # optional: variables kept in the player's data (true = all), see Variables
 plain: {...}                  # optional: an own view for the plain dialog, see below
 font: title                   # optional: an own font from config.yml for all text, see Own fonts
+click-sound: ui.button.click 0.4   # optional (since 1.5): sound for every click, see below; none = silent
 forms: {...}                  # optional: forms with several input fields, see below
 open-on: {...}                # optional: open by itself on joining or with a menu item, see below
 on-open: [...]                # optional: actions when the menu opens (before it is drawn)
@@ -79,6 +80,12 @@ again on request. `on-open` runs before the menu is drawn (so `set:` shows at on
 is opened (command, `open:`, trigger), not on redraws or `back`. `on-close` runs when the player
 closes the menu (exit button, ESC, `close`); the screen is gone by then, so use it for messages,
 sounds or commands.
+
+**`click-sound`** *(since 1.5)* plays a sound for every click in the menu: buttons, list rows,
+grid cells, tabs, the plain dialog's buttons. It is `<sound> [volume] [pitch]` like the `sound:`
+action and plays in the player's *Interface* volume. Without it the menu takes `click-sound` of
+`config.yml` (off by default); `click-sound: none` keeps a menu silent anyway. A button whose
+actions play a `sound:` plays only that one, not the click sound as well.
 
 **`refresh`** redraws the open menu every few seconds, so placeholders and dynamic lists stay
 current (players online, balances, a countdown). Clicks on the previous drawing still work. It stops
@@ -313,7 +320,7 @@ A list of strings, run in order:
 | `player: spawn` | the player runs `/spawn` |
 | `console: give %player% bread` | the console runs it |
 | `message: <green>Done!` | chat message to the player ([MiniMessage](https://docs.advntr.dev/minimessage/format.html)) |
-| `sound: entity.experience_orb.pickup 1 1.2` | sound with optional volume and pitch |
+| `sound: entity.experience_orb.pickup 1 1.2` | sound with optional volume and pitch; replaces the [click sound](#menu-settings) of this click |
 | `open: shop` | opens menu `shop`; `back` returns |
 | `back` / `close` / `refresh` | previous menu / close / redraw |
 | `input: Name? \| player: msg %input% hi` | asks for a text, then runs the action after ` \| ` (with spaces) with `%input%` |

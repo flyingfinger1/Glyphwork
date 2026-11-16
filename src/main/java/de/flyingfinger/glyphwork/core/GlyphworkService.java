@@ -42,6 +42,8 @@ public final class GlyphworkService implements Glyphwork {
     private volatile SceneRenderer renderer;
     private volatile int maxHeight;
     private volatile boolean fallback;
+    /** click-sound of config.yml, for scenes without their own. */
+    private volatile net.kyori.adventure.sound.@org.jspecify.annotations.Nullable Sound clickSound;
 
     public GlyphworkService(Plugin plugin, SceneRenderer renderer, int maxHeight, boolean fallback,
                             Predicate<Player> hasPack, Consumer<Player> sendPack, Predicate<Player> hasServerPack) {
@@ -54,6 +56,11 @@ public final class GlyphworkService implements Glyphwork {
         this.fallback = fallback;
         this.hasPack = hasPack;
         this.fallbackRenderer = new FallbackRenderer(plugin.getLogger());
+    }
+
+    /** click-sound of config.yml (null: none), played on clicks in scenes without their own. */
+    public void clickSound(net.kyori.adventure.sound.@org.jspecify.annotations.Nullable Sound sound) {
+        this.clickSound = sound;
     }
 
     /** After /glyphwork reload: new theme/pack. Open screens keep their state. */
@@ -493,10 +500,16 @@ public final class GlyphworkService implements Glyphwork {
             if (!player.isOnline() || s.generation != generation || s.stack.isEmpty()) {
                 return;
             }
+            Scene clicked = s.stack.peek();
+            ClickImpl click = new ClickImpl(player, s, clicked);
             try {
-                action.accept(new ClickImpl(player, s, s.stack.peek()));
+                action.accept(click);
             } catch (RuntimeException e) {
                 plugin.getLogger().log(Level.WARNING, "Click handler " + name + " failed", e);
+            }
+            net.kyori.adventure.sound.Sound sound = clicked.clickSoundSet() ? clicked.clickSound() : clickSound;
+            if (sound != null && !click.quiet && player.isOnline()) {
+                player.playSound(sound, net.kyori.adventure.sound.Sound.Emitter.self());
             }
             if (answer && player.isOnline() && s.generation == generation && !s.stack.isEmpty()) {
                 show(player, s);
@@ -612,9 +625,16 @@ public final class GlyphworkService implements Glyphwork {
     }
 
     private class ClickImpl extends ViewImpl implements Click {
+        /** {@link #noClickSound()} was called. */
+        boolean quiet;
 
         ClickImpl(Player player, Session session, Scene scene) {
             super(player, session, scene);
+        }
+
+        @Override
+        public void noClickSound() {
+            quiet = true;
         }
 
         @Override

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Click sound:** `click-sound: ui.button.click 0.4` in config.yml plays a sound for every click
+  in Glyphwork screens (off by default), in the players' *Interface* volume. Menus set their own
+  with `click-sound:` (or `none`); a button with a `sound:` action plays only that one. API:
+  `Scene.Builder.clickSound(Sound)`, `Click.noClickSound()`.
+
 ## 1.4.0-mc1.21.11 – Paper 1.21.11, own fonts
 
 The 1.21.11 build of 1.4.0 (see 1.4.0 below): own fonts for menu text, `font:` on menus and

@@ -30,6 +30,8 @@ public final class Scene {
     private final @Nullable List<Element> plain;
     private final int plainColumns;
     private final @Nullable String font;
+    private final boolean clickSoundSet;
+    private final net.kyori.adventure.sound.@Nullable Sound clickSound;
 
     private Scene(Builder b) {
         this.refresh = b.refresh;
@@ -45,6 +47,8 @@ public final class Scene {
         this.plain = b.plain == null ? null : List.copyOf(b.plain);
         this.plainColumns = b.plainColumns;
         this.font = b.font;
+        this.clickSoundSet = b.clickSoundSet;
+        this.clickSound = b.clickSound;
     }
 
     /**
@@ -128,6 +132,18 @@ public final class Scene {
         return refresh;
     }
 
+    /** Whether the scene sets its own click sound (also "none"); otherwise config.yml's click-sound plays. */
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public boolean clickSoundSet() {
+        return clickSoundSet;
+    }
+
+    /** The scene's own click sound, or null (none, or not set: see {@link #clickSoundSet()}). */
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public net.kyori.adventure.sound.@Nullable Sound clickSound() {
+        return clickSound;
+    }
+
     public static final class Builder {
         private final String id;
         private final int width;
@@ -142,6 +158,8 @@ public final class Scene {
         private @Nullable List<Element> plain;
         private int plainColumns;
         private @Nullable String font;
+        private boolean clickSoundSet;
+        private net.kyori.adventure.sound.@Nullable Sound clickSound;
 
         private Builder(String id, int width, int height) {
             this.id = id;
@@ -247,6 +265,17 @@ public final class Scene {
         @org.jetbrains.annotations.ApiStatus.Experimental
         public Builder font(@Nullable String font) {
             this.font = font;
+            return this;
+        }
+
+        /**
+         * The sound played for every click in this scene (since 1.5), instead of {@code click-sound}
+         * of config.yml; null: no click sound. A click handler that plays its own sound calls
+         * {@link Click#noClickSound()}.
+         */
+        public Builder clickSound(net.kyori.adventure.sound.@Nullable Sound sound) {
+            this.clickSoundSet = true;
+            this.clickSound = sound;
             return this;
         }
 

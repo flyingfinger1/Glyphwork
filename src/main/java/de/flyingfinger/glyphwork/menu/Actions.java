@@ -122,7 +122,7 @@ final class Actions {
                 String[] p = require(arg, at, key, "a sound name").split("\\s+");
                 float volume = p.length > 1 ? number(p[1], at, key) : 1f;
                 float pitch = p.length > 2 ? number(p[2], at, key) : 1f;
-                yield go((c, in, r) -> c.player().playSound(c.player(), p[0], volume, pitch));
+                yield go((c, in, r) -> { c.noClickSound(); c.player().playSound(c.player(), p[0], volume, pitch); });
             }
             case "open" -> {
                 String id = require(arg, at, key, "a menu id");

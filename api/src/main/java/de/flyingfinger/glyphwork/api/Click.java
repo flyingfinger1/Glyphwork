@@ -34,6 +34,13 @@ public interface Click extends View {
         set("glyphwork:scroll:" + scrollId, Math.max(0, offset));
     }
 
+    /**
+     * This click plays no click sound (the scene's or {@code click-sound} of config.yml), e.g.
+     * because the handler plays its own (since 1.5).
+     */
+    default void noClickSound() {
+    }
+
     /** Renders the current scene again (after a state change). */
     void reopen();
 

@@ -188,6 +188,21 @@ class MenusTest {
     }
 
     @Test
+    void buttonWithoutFrameIsClickable() throws Exception {
+        // a link: a button without a frame was drawn but took no clicks (the frame carried them)
+        Scene s = new Menus().parse("t", String.join("\n",
+            "background: none",
+            "elements:",
+            "  - {type: button, x: 8, y: 18, width: 120, height: 12, frame: none, text: \"<u>example.org</u>\", actions: [\"close\"]}",
+            "")).scene();
+        Layout l = layout(s);
+        assertNotNull(l.hit(10, 20));
+        assertNotNull(l.hit(126, 28));
+        assertNull(l.hit(130, 20));
+        assertNull(l.hit(10, 31));
+    }
+
+    @Test
     void brokenFilesAreSkippedOthersLoad(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve("good.yml"), "title: ok\ncommand: Good\naliases: [g]\n");
         Files.writeString(dir.resolve("bad.yml"), "elements:\n  - type: nope\n");

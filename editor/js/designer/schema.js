@@ -145,7 +145,7 @@ export function setField(el, key, value) {
  * version once something new for it is committed).
  */
 export const VERSIONS = ['1.0', '1.1', '1.2', '1.3', '1.4'];
-export const RELEASED = '1.3';
+export const RELEASED = '1.4';
 export const LATEST = RELEASED;
 
 /** Whether a version is not released yet. */

@@ -34,6 +34,7 @@ public final class Button implements Element {
     private @Nullable Consumer<Click> onClick;
     private @Nullable Function<View, @Nullable String> icon;
     private int headSize = 8;
+    private @Nullable String font;
 
     private Button(int x, int y, int w, int h) {
         this.x = x;
@@ -109,6 +110,21 @@ public final class Button implements Element {
     public Button icon(Function<View, @Nullable String> item) {
         this.icon = item;
         return this;
+    }
+
+    /**
+     * Draws the text in an own font of config.yml ({@code fonts:}) instead of the Minecraft font
+     * (since 1.4); null or an unknown name: the scene's font, else the Minecraft font.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Button font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
     }
 
     /**

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Own fonts (experimental):** `fonts:` in config.yml declares TrueType/OpenType fonts (a file in
+  `plugins/Glyphwork/fonts/` or a `url:`, a pixel size, optionally `line-height` and `chars`).
+  `font:` on a menu, label, button or list (API: `.font("name")` on `Scene.Builder`, `Label`,
+  `Button`, `ListView`) draws text in them. Glyphwork draws each font into the pack itself, so
+  widths stay exact; letters a font lacks come from the Minecraft font.
+
 ## 1.3.0 – Paper 26.1 to 26.3
 
 Menus, configs and plugins made for 1.0 to 1.2 keep working.

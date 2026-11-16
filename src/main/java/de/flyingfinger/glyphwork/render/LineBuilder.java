@@ -4,6 +4,7 @@ import de.flyingfinger.glyphwork.font.Glyph;
 import de.flyingfinger.glyphwork.font.IconCatalog;
 import de.flyingfinger.glyphwork.font.ShiftFonts;
 import de.flyingfinger.glyphwork.font.SpaceFont;
+import de.flyingfinger.glyphwork.font.TextFont;
 import de.flyingfinger.glyphwork.font.VanillaText;
 import de.flyingfinger.glyphwork.theme.Autotile;
 import de.flyingfinger.glyphwork.theme.Frame;
@@ -36,15 +37,26 @@ import java.util.TreeMap;
  */
 public final class LineBuilder {
 
-    private final VanillaText text;
+    private TextFont text;
     private final int maxHeight;
     private final TreeMap<Integer, Line> lines = new TreeMap<>();
 
     /** @param maxHeight number of {@code y<N>} fonts in the pack; frames below are clipped */
-    public LineBuilder(VanillaText text, int maxHeight) {
+    public LineBuilder(TextFont text, int maxHeight) {
         this.text = text;
         this.maxHeight = maxHeight;
         lines.put(0, new Line());
+    }
+
+    /** From now on text is drawn and measured in {@code font}; returns the one used before. */
+    public TextFont font(TextFont font) {
+        TextFont before = text;
+        text = font;
+        return before;
+    }
+
+    public TextFont font() {
+        return text;
     }
 
     /** Marker of {@link #place}: not drawn. */
@@ -152,14 +164,14 @@ public final class LineBuilder {
         if (s.isEmpty()) {
             return this;
         }
-        y = place(y, 8);
+        y = place(y, text.height());
         if (y == SKIP || y < 0) {
             return this;
         }
         int index = y / ShiftFonts.LINE;
         String one = oneLine(s);
         line(index).draw(one.replace(' ', VanillaText.NB_SPACE), text.width(one), x,
-            ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null, shadow);
+            text.key(y - index * ShiftFonts.LINE), color, null, null, shadow);
         return this;
     }
 
@@ -171,7 +183,7 @@ public final class LineBuilder {
         if (s.isEmpty()) {
             return this;
         }
-        y = place(y, 8);
+        y = place(y, text.height());
         if (y == SKIP || y < 0) {
             return this;
         }
@@ -179,7 +191,7 @@ public final class LineBuilder {
         String one = oneLine(s);
         int w = text.width(one) + (bold ? one.codePointCount(0, one.length()) : 0);
         line(index).draw(one.replace(' ', VanillaText.NB_SPACE), w, x,
-            ShiftFonts.text(y - index * ShiftFonts.LINE), color, null, null, shadow, bold, italic);
+            text.key(y - index * ShiftFonts.LINE), color, null, null, shadow, bold, italic);
         return this;
     }
 

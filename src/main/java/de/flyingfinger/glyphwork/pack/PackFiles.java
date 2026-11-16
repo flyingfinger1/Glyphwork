@@ -28,6 +28,11 @@ public final class PackFiles {
         return files.containsKey(path);
     }
 
+    /** The content of a file, or null. */
+    public byte @org.jspecify.annotations.Nullable [] get(String path) {
+        return files.get(path);
+    }
+
     public void put(String path, String text) {
         put(path, text.getBytes(StandardCharsets.UTF_8));
     }

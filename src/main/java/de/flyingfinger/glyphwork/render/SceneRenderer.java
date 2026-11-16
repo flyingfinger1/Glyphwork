@@ -80,6 +80,39 @@ public final class SceneRenderer {
     /** Strips for pixel-exact bar fills (in the pack); without them bars fill in whole tiles. */
     private @Nullable FillSheets fills;
 
+    /** Own fonts of config.yml by name; without them all text uses the Minecraft font. */
+    private java.util.function.Function<String, de.flyingfinger.glyphwork.font.@Nullable TextFont> fonts = id -> null;
+
+    public SceneRenderer fonts(java.util.function.Function<String, de.flyingfinger.glyphwork.font.@Nullable TextFont> fonts) {
+        this.fonts = fonts;
+        return this;
+    }
+
+    /**
+     * The font an element's text is drawn in: its own, else the scene's, else the one in use (the
+     * Minecraft font, or the font of the scroll pane or tab around it). Unknown names are logged once.
+     */
+    private de.flyingfinger.glyphwork.font.TextFont fontOf(Element e, Scene scene, de.flyingfinger.glyphwork.font.TextFont current) {
+        String id = switch (e) {
+            case Label l -> l.font();
+            case Button b -> b.font();
+            case ListView<?> l -> l.font();
+            default -> null;
+        };
+        if (id == null || id.isBlank()) {
+            id = scene.font();
+        }
+        if (id == null || id.isBlank()) {
+            return current;
+        }
+        de.flyingfinger.glyphwork.font.TextFont f = fonts.apply(id.trim().toLowerCase(java.util.Locale.ROOT));
+        if (f == null) {
+            warnOnce("font:" + id, "Font '" + id + "' is not in config.yml (fonts:) or could not be read; using the Minecraft font");
+            return text;
+        }
+        return f;
+    }
+
     public SceneRenderer fills(@Nullable FillSheets fills) {
         this.fills = fills;
         return this;
@@ -181,10 +214,12 @@ public final class SceneRenderer {
 
     /** One element; hidden ones are skipped (their number still counts, so click names stay stable). */
     private void element(LineBuilder line, Element e, View view, Binder binder, String name, Scene scene) {
+        de.flyingfinger.glyphwork.font.TextFont before = line.font();
         try {
             if (!Boolean.TRUE.equals(e.visible().test(view))) {
                 return;
             }
+            line.font(fontOf(e, scene, before));
             switch (e) {
                 case Panel p -> panel(line, p, view, binder, name, scene);
                 case Label l -> label(line, l, view, name, scene);
@@ -225,6 +260,8 @@ public final class SceneRenderer {
         } catch (RuntimeException ex) {
             // a failing binding hides this element instead of breaking the whole screen
             warnOnce("render:" + name + ":" + ex, "Element " + name + " failed to render: " + ex);
+        } finally {
+            line.font(before);
         }
     }
 
@@ -692,26 +729,27 @@ public final class SceneRenderer {
         RichText.Look base = new RichText.Look(color, l.bold(), l.italic(), l.underline(), l.strikethrough());
         List<RichText.Span> spans = l.markup() ? RichText.parse(s, base) : RichText.plain(s, base);
         List<List<RichText.Span>> lines;
+        int lineHeight = l.lineHeight() > 0 ? l.lineHeight() : line.font().lineHeight();
         if (l.wrap() && l.width() > 0) {
-            lines = RichText.wrap(text, spans, l.width());
+            lines = RichText.wrap(line.font(), spans, l.width());
         } else {
             lines = RichText.splitLines(spans);
             if (l.width() > 0) {
-                lines.replaceAll(part -> RichText.fit(text, part, l.width()));
+                lines.replaceAll(part -> RichText.fit(line.font(), part, l.width()));
             }
         }
         for (int i = 0; i < lines.size(); i++) {
             List<RichText.Span> part = lines.get(i);
-            int w = RichText.visibleWidth(text, part);
+            int w = RichText.visibleWidth(line.font(), part);
             int lx = l.x() + (l.width() <= 0 ? 0 : switch (l.align()) {
                 case LEFT -> 0;
                 case CENTER -> (l.width() - w) / 2;
                 case RIGHT -> l.width() - w;
             });
-            rich(line, part, lx, l.y() + i * l.lineHeight(), color, l.shadow());
+            rich(line, part, lx, l.y() + i * lineHeight, color, l.shadow());
         }
         if (l.width() <= 0) {
-            checkOverlap(l, lines, view, name, scene);
+            checkOverlap(l, lines, view, name, scene, line.font(), lineHeight);
         }
     }
 
@@ -720,16 +758,17 @@ public final class SceneRenderer {
      * miss (the button covers the end of the text): logged once per label and button. Only labels
      * at the top level, compared with the buttons there (scroll panes and tabs have their own space).
      */
-    private void checkOverlap(Label l, List<List<RichText.Span>> lines, View view, String name, Scene scene) {
+    private void checkOverlap(Label l, List<List<RichText.Span>> lines, View view, String name, Scene scene,
+                              de.flyingfinger.glyphwork.font.TextFont font, int lineHeight) {
         List<Element> top = scene.elements();
         if (top.stream().noneMatch(e -> e == l)) {
             return;
         }
         int w = 0;
         for (List<RichText.Span> part : lines) {
-            w = Math.max(w, RichText.visibleWidth(text, part));
+            w = Math.max(w, RichText.visibleWidth(font, part));
         }
-        int h = (lines.size() - 1) * l.lineHeight() + 8;
+        int h = (lines.size() - 1) * lineHeight + font.height();
         for (int i = 0; i < top.size(); i++) {
             if (!(top.get(i) instanceof Button b) || !Boolean.TRUE.equals(b.visible().test(view))) {
                 continue;
@@ -757,7 +796,7 @@ public final class SceneRenderer {
             RichText.Look k = s.look();
             TextColor c = k.color() == null ? base : skinText(k.color());
             line.text(s.text(), cx, y, c, shadow ? LineBuilder.shadowOf(c) : null, k.bold(), k.italic());
-            int w = RichText.width(text, s);
+            int w = RichText.width(line.font(), s);
             // like the client: from 1 px before the piece to the end of its advance
             if (k.underline()) {
                 rule(line, cx - 1, y + 8, w + 1, c, shadow);
@@ -835,8 +874,8 @@ public final class SceneRenderer {
             TextColor color = enabled ? b.color().apply(view) : TextColor.color(0xA0A0A0);
             if (b.markup() && enabled) {
                 // formatted: measured and centered as pieces
-                List<RichText.Span> spans = RichText.fit(text, RichText.parse(s, new RichText.Look(color, false, false, false, false)), textW - 6);
-                rich(line, spans, textX + (textW - RichText.visibleWidth(text, spans)) / 2, textY, color, true);
+                List<RichText.Span> spans = RichText.fit(line.font(), RichText.parse(s, new RichText.Look(color, false, false, false, false)), textW - 6);
+                rich(line, spans, textX + (textW - RichText.visibleWidth(line.font(), spans)) / 2, textY, color, true);
                 s = "";
             } else if (b.markup()) {
                 s = RichText.plainText(RichText.parse(s, RichText.Look.PLAIN));
@@ -924,7 +963,7 @@ public final class SceneRenderer {
             TextColor color = l.color().apply(item);
             String rowText = String.valueOf(l.text().apply(item));
             if (l.markup()) {
-                rich(line, RichText.fit(text, RichText.parse(rowText, new RichText.Look(color, false, false, false, false)),
+                rich(line, RichText.fit(line.font(), RichText.parse(rowText, new RichText.Look(color, false, false, false, false)),
                     l.x() + l.width() - 4 - textX), textX, textY, color, true);
             } else {
                 line.text(line.fit(rowText, l.x() + l.width() - 4 - textX), textX, textY, color, LineBuilder.shadowOf(color));

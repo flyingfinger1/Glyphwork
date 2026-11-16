@@ -1,5 +1,6 @@
 package de.flyingfinger.glyphwork.render;
 
+import de.flyingfinger.glyphwork.font.TextFont;
 import de.flyingfinger.glyphwork.font.VanillaText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -94,7 +95,7 @@ public final class RichText {
     }
 
     /** Width in pixels as the client advances (bold: +1 per character). */
-    public static int width(VanillaText text, List<Span> spans) {
+    public static int width(TextFont text, List<Span> spans) {
         int w = 0;
         for (Span s : spans) {
             w += width(text, s);
@@ -102,12 +103,12 @@ public final class RichText {
         return w;
     }
 
-    static int width(VanillaText text, Span s) {
+    static int width(TextFont text, Span s) {
         return text.width(s.text()) + (s.look().bold() ? s.text().codePointCount(0, s.text().length()) : 0);
     }
 
     /** Visible width: the last advance pixel is empty. */
-    public static int visibleWidth(VanillaText text, List<Span> spans) {
+    public static int visibleWidth(TextFont text, List<Span> spans) {
         return Math.max(0, width(text, spans) - 1);
     }
 
@@ -121,7 +122,7 @@ public final class RichText {
     }
 
     /** Cut to {@code maxWidth} visible pixels, with "..." in the look of the last piece. */
-    public static List<Span> fit(VanillaText text, List<Span> spans, int maxWidth) {
+    public static List<Span> fit(TextFont text, List<Span> spans, int maxWidth) {
         if (visibleWidth(text, spans) <= maxWidth) {
             return spans;
         }
@@ -161,7 +162,7 @@ public final class RichText {
      * Lines of at most {@code width} px: breaks at spaces, keeps '\n' breaks; a word longer than a
      * line is cut with "...".
      */
-    public static List<List<Span>> wrap(VanillaText text, List<Span> spans, int width) {
+    public static List<List<Span>> wrap(TextFont text, List<Span> spans, int width) {
         List<List<Span>> out = new ArrayList<>();
         for (List<Span> para : splitLines(spans)) {
             List<List<Span>> words = splitWords(para);

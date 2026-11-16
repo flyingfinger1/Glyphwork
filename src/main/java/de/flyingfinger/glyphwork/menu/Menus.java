@@ -71,7 +71,7 @@ public final class Menus {
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Set<String> MENU_KEYS = Set.of("title", "width", "height", "background", "exit-label",
         "command", "aliases", "permission", "description", "elements", "templates", "variables", "refresh", "forms",
-        "on-open", "on-close", "open-on", "persist", "plain");
+        "on-open", "on-close", "open-on", "persist", "plain", "font");
 
     private final Map<String, Menu> menus = new LinkedHashMap<>();
     private final List<String> errors = new ArrayList<>();
@@ -201,6 +201,7 @@ public final class Menus {
         if (root.has("refresh")) {
             b.refresh(refresh(root));
         }
+        b.font(font(root));
         if (root.has("on-open")) {
             Actions.Chain open = Actions.parse(root.strings("on-open"), root, "on-open", this::get, vars, forms);
             b.onOpen(k -> open.run(k, null));
@@ -639,11 +640,23 @@ public final class Menus {
         }
     }
 
+    /** font: the name of an own font of config.yml (fonts:), or null; checked for its form here, for existence when drawn. */
+    private static @org.jspecify.annotations.Nullable String font(Node n) throws MenuException {
+        if (!n.has("font")) {
+            return null;
+        }
+        String f = n.string("font").trim().toLowerCase(java.util.Locale.ROOT);
+        if (!de.flyingfinger.glyphwork.font.CustomFont.ID.matcher(f).matches()) {
+            throw n.error("font", "the name of a font in config.yml (fonts:) expected");
+        }
+        return f;
+    }
+
     private void element(Consumer<Element> b, Node n, int index, String type) throws MenuException {
         switch (type) {
             case "label" -> {
                 n.only(with("type", "x", "y", "text", "color", "width", "align", "shadow", "wrap", "line-height",
-                    "bold", "italic", "underline", "strikethrough"));
+                    "bold", "italic", "underline", "strikethrough", "font"));
                 Label l = Label.of(n.integer("x"), n.integer("y"), text(n.string("text")))
                     .markup(true)
                     .bold(n.optBool("bold", false))
@@ -653,7 +666,10 @@ public final class Menus {
                     .color(n.optColor("color", null))
                     .shadow(n.optBool("shadow", false))
                     .wrap(n.optBool("wrap", false))
-                    .lineHeight(n.optInt("line-height", 10));
+                    .font(font(n));
+                if (n.has("line-height")) {
+                    l.lineHeight(n.integer("line-height"));         // else the font's (10 for the Minecraft font)
+                }
                 if (l.wrap() && !n.has("width")) {
                     throw n.error("wrap", "wrap needs a width (where lines break)");
                 }
@@ -671,9 +687,10 @@ public final class Menus {
             case "button" -> {
                 n.only(with("type", "x", "y", "width", "height", "text", "tint", "color", "text-color", "tooltip",
                     "actions", "permission", "frame", "icon", "head-size", "enabled-if", "disabled-tooltip", "cooldown",
-                    "cooldown-key", "cooldown-tooltip", "cooldown-message"));
+                    "cooldown-key", "cooldown-tooltip", "cooldown-message", "font"));
                 Button bt = Button.of(n.integer("x"), n.integer("y"), n.optInt("width", 64), n.optInt("height", 16))
                     .headSize(n.optInt("head-size", 8))
+                    .font(font(n))
                     .text(text(n.optString("text", "")))
                     .markup(true)
                     .tint(n.optColor("tint", Button.GRAY))
@@ -752,7 +769,7 @@ public final class Menus {
             }
             case "list" -> {
                 n.only(with("type", "id", "x", "y", "width", "rows", "row-height", "items", "items-from", "item", "item-tooltip",
-                    "head-size"));
+                    "head-size", "font"));
                 ListView<Row> l = ListView.of(n.optString("id", "list" + autoId++), n.integer("x"), n.integer("y"),
                         n.optInt("width", 120), n.optInt("rows", 4), rows(n))
                     .markup(true)
@@ -766,7 +783,8 @@ public final class Menus {
                     .itemTooltip(n.optBool("item-tooltip", false))
                     .headSize(n.optInt("head-size", 8))
                     .selectedIf((v, e) -> e.selected)
-                    .onClick((c, e) -> e.onClick.accept(c));
+                    .onClick((c, e) -> e.onClick.accept(c))
+                    .font(font(n));
                 b.accept(l);
             }
             case "grid" -> {

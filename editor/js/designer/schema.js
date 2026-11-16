@@ -7,10 +7,11 @@ const COMMON_TAIL = ['show-if'];
 export const FIELDS = {
   label: [['x', 'int'], ['y', 'int'], ['text', 'text'], ['color', 'color'], ['width', 'int'],
     ['align', 'select', ['left', 'center', 'right']], ['shadow', 'bool'], ['wrap', 'bool'], ['line-height', 'int'],
-    ['bold', 'bool'], ['italic', 'bool'], ['underline', 'bool'], ['strikethrough', 'bool']],
+    ['bold', 'bool'], ['italic', 'bool'], ['underline', 'bool'], ['strikethrough', 'bool'], ['font', 'text']],
   button: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['text', 'text'], ['tint', 'color'],
     ['color', 'color'], ['icon', 'text'], ['head-size', 'select', ['8', '16', '24', '32']], ['tooltip', 'text'],
-    ['actions', 'lines'], ['permission', 'text'], ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text']],
+    ['actions', 'lines'], ['permission', 'text'], ['enabled-if', 'lines'], ['disabled-tooltip', 'text'], ['frame', 'text'],
+    ['font', 'text']],
   panel: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['shape', 'shape'], ['frame', 'text'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   hitbox: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['tooltip', 'text'], ['actions', 'lines'],
@@ -19,7 +20,7 @@ export const FIELDS = {
     ['tooltip', 'text'], ['actions', 'lines']],
   list: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['width', 'int'], ['rows', 'int'], ['row-height', 'int'],
     ['item-tooltip', 'bool'], ['head-size', 'select', ['8', '16', '24', '32']], ['items', 'items'], ['items-from', 'from'],
-    ['item', 'item']],
+    ['item', 'item'], ['font', 'text']],
   grid: [['id', 'text'], ['x', 'int'], ['y', 'int'], ['cols', 'int'], ['rows', 'int'], ['cell', 'int'], ['size', 'int'],
     ['frame', 'text'], ['item-tooltip', 'bool'], ['head-size', 'select', ['8', '16', '24', '32']], ['items', 'items'],
     ['items-from', 'from'], ['item', 'item']],
@@ -71,7 +72,7 @@ export const FIELD_KEY = {
   min: 'f_min', max: 'f_max', step: 'f_step', options: 'f_options', use: 'f_use', values: 'f_values',
   'items-from': 'itemsFrom', wrap: 'f_wrap', 'line-height': 'f_lineHeight', 'item-tooltip': 'f_itemTooltip',
   value: 'f_value', image: 'f_image', player: 'f_player', 'head-size': 'f_headSize', cooldown: 'f_cooldown',
-  'cooldown-key': 'f_cooldownKey', 'selected-if': 'f_selectedIf', bold: 'f_bold', italic: 'f_italic', underline: 'f_underline', strikethrough: 'f_strike', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage',
+  'cooldown-key': 'f_cooldownKey', 'selected-if': 'f_selectedIf', bold: 'f_bold', italic: 'f_italic', underline: 'f_underline', strikethrough: 'f_strike', tabs: 'f_tabs', elements: 'f_elements', 'cooldown-tooltip': 'f_cooldownTooltip', 'cooldown-message': 'f_cooldownMessage', font: 'f_font',
 };
 
 /** A new element of this type at (x, y). */
@@ -143,7 +144,7 @@ export function setField(el, key, value) {
  * "not released yet" and is never the default. On a release, set RELEASED to it (and add the next
  * version once something new for it is committed).
  */
-export const VERSIONS = ['1.0', '1.1', '1.2', '1.3'];
+export const VERSIONS = ['1.0', '1.1', '1.2', '1.3', '1.4'];
 export const RELEASED = '1.3';
 export const LATEST = RELEASED;
 
@@ -169,6 +170,9 @@ export const SINCE = {
   'image.height': '1.1',
   'image.scale': '1.1',
   'button.head-size': '1.2',
+  'label.font': '1.4',
+  'button.font': '1.4',
+  'list.font': '1.4',
 };
 
 /** Values that came after 1.0: icons from the GUI atlas ("gui:hud/heart/full"). */

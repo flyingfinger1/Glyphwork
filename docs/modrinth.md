@@ -67,4 +67,4 @@ Glyphwork.get().open(player, settings);
 - Dialogs report clicks only: no hover, no right click, no keys held while a dialog is open. Glyphwork's answer is a mode button or a first click as preview.
 - Text and icons are always drawn on top of frames; blocks show one face (no 3D), items drawn by special renderers (chests, beds, banners, shields) have no icon; small player heads are 8 x 8 and sit on the 9 px text grid (small elements with a head move by up to 4 px, big ones keep their place); painted heads sit anywhere.
 
-The technique goes back to a public description by the developer of the HugoSMP server; Glyphwork is an independent, MIT-licensed implementation.
+The technique goes back to a public description by a developer in the PaperMC Discord; Glyphwork is an independent, MIT-licensed implementation.

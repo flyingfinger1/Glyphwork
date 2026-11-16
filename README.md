@@ -109,7 +109,7 @@ attached to each release from 0.5.0 on); put it next to Glyphwork to try it.
   has a click event wins. So a sprite with a click event is clickable exactly where it is drawn, and
   glyphs without events (text labels, decorations) never block clicks. Invisible hitboxes are 8 x 8
   glyphs of alpha-1 pixels: the client does not draw them (alpha < 0.1) but they count for clicks. The line-binding problem from
-  the original HugoSMP recipe does not apply to 26.3 (26.1.2, 26.2 and 1.21.11 behave the same in tests; 26.1 and 26.1.1 have the same client code as 26.1.2). `src/test/java/de/flyingfinger/glyphwork/M0HitTest.java` replays this logic.
+  the original recipe does not apply to 26.3 (26.1.2, 26.2 and 1.21.11 behave the same in tests; 26.1 and 26.1.1 have the same client code as 26.1.2). `src/test/java/de/flyingfinger/glyphwork/M0HitTest.java` replays this logic.
 - Text clicks in a dialog body run with the dialog's `afterAction`; we use `NONE`, so the screen
   stays open and the server answers with a re-rendered dialog.
 - Bitmap advance = rightmost non-transparent column + 1 (same rule as the client).
@@ -167,7 +167,7 @@ vanilla char grids and advances when Minecraft changes its fonts.
 ## Credits & licensing
 
 - The technique (one `plain_message`, negative-space glyphs, one font per vertical shift, served
-  resource pack) goes back to a public description by the developer of the HugoSMP server in the
+  resource pack) goes back to a public description by a developer in the
   PaperMC Discord. Glyphwork is an independent implementation; no code or assets were taken from it.
 - Glyphwork's own code is MIT-licensed (see [LICENSE](LICENSE)).
 - `src/main/resources/vanilla_text.json` holds character grids and glyph widths read from

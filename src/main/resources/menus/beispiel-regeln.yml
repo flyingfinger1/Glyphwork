@@ -8,7 +8,7 @@ elements:
   - type: label
     x: 8
     y: 7
-    text: "Serverregeln - Klick zeigt Details"
+    text: "Serverregeln - Klick für Details"
 
   - type: list
     x: 8

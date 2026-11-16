@@ -31,7 +31,7 @@ export const FIELDS = {
   choice: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'int'], ['var', 'text'], ['options', 'options'],
     ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines'], ['font', 'font']],
   bar: [['x', 'int'], ['y', 'int'], ['width', 'int'], ['height', 'select', ['8', '16']], ['value', 'text'], ['max', 'text'],
-    ['fill', 'color'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text']],
+    ['fill', 'fill'], ['text', 'text'], ['tooltip', 'text'], ['frame', 'text'], ['font', 'font']],
   image: [['x', 'int'], ['y', 'int'], ['image', 'text'], ['width', 'int'], ['height', 'int'], ['scale', 'text'], ['tint', 'color'], ['tooltip', 'text'], ['actions', 'lines']],
   head: [['x', 'int'], ['y', 'int'], ['player', 'text'], ['size', 'select', ['8', '16', '24', '32']], ['tooltip', 'text'],
     ['actions', 'lines']],
@@ -157,6 +157,7 @@ export const unreleased = (v) => compareVersions(v, RELEASED) > 0;
  */
 export const BEHAVIOR = {
   keepPlace: '1.2',   // elements 24 px or higher keep their place with a player head
+  edgeCut: '1.5',     // labels without a width end at the right edge of the menu
 };
 
 /** Whether the chosen version has this behavior (no version given: the newest). */
@@ -177,6 +178,7 @@ export const SINCE = {
   'checkbox.font': '1.4',
   'choice.font': '1.4',
   'tabs.font': '1.4',
+  'bar.font': '1.5',
 };
 
 /** Values that came after 1.0: icons from the GUI atlas ("gui:hud/heart/full"). */
@@ -221,6 +223,7 @@ export function newerThan(menu, target) {
     for (const [k, v] of Object.entries(node)) {
       const s = node.type ? sinceOf(t, k) : null;
       if (s) note(top, k, s);
+      if (t === 'bar' && k === 'fill' && v && typeof v === 'object' && !Array.isArray(v)) note(top, 'fill: {…}', '1.5');
       if (typeof v === 'string') {
         for (const r of VALUE_SINCE) if (r.keys.includes(k) && r.test(v)) note(top, `${k}: ${r.what}`, r.since);
       } else {

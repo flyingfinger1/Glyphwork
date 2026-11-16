@@ -107,14 +107,14 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 
 | type | settings |
 |---|---|
-| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default the skin's text color), `width` (clips with "..."), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10, or what the font needs), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text), `font` ([own font](#own-fonts), *since 1.4*) |
+| `label` | `x`, `y`, `text`, `color` (`"#RRGGBB"` or a name like `gold`, default the skin's text color), `width` (clips with "..."; without it the text ends at the right edge of the menu, *since 1.5*), `align` (`left`/`center`/`right`, needs `width`), `shadow` (`true`: drop shadow, for light text on dark ground), `wrap` (`true`: break into lines at spaces, needs `width`), `line-height` (10, or what the font needs), `bold`, `italic`, `underline`, `strikethrough` (`true`: the whole text), `font` ([own font](#own-fonts), *since 1.4*) |
 | `button` | `x`, `y`, `width` (64), `height` (16), `text`, `tint` (button color), `color` (text color), `tooltip`, `actions`, `permission` (otherwise grayed out), `frame`, `icon` (item at the left; use height 24), `head-size` (for a `head:` icon, *since 1.2*), `font` ([own font](#own-fonts), *since 1.4*), `id` |
 | `panel` | `x`, `y`, `width`, `height` **or** `shape: ["###.", "#..."]` (tiles), `frame` (`panel`, `slot`, `button` or a frame of your skin), `tint`, `tooltip`, `actions` |
 | `hitbox` | invisible clickable area: `x`, `y`, `width`, `height`, `tooltip`, `actions` |
 | `icon` | 16 x 16 item icon: `x`, `y`, `item` (e.g. `diamond`), `count`, `item-tooltip`, `tint`, `tooltip`, `actions` |
 | `head` | a player's face painted from the skin: `x`, `y`, `player` (name, UUID or placeholder, default `%player%`), `size` (8, 16, 24 or 32; default 32), `tooltip`, `actions` |
 | `image` | one of your pictures: `x`, `y`, `image` (name in `images/` without `.png`, placeholders allowed), `width` / `height` or `scale` (another size, *since 1.1*), `tint`, `tooltip`, `actions` |
-| `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part), `text` (in the middle), `tooltip`, `frame` (`slot`) |
+| `bar` | progress bar: `x`, `y`, `width` (100), `height` (8 or 16), `value`, `max` (100; both numbers or placeholders like `%player_level%`), `fill` (color of the filled part, or steps by share, see below), `text` (in the middle), `tooltip`, `frame` (`slot`), `font` (since 1.5) |
 | `list` | `x`, `y`, `width` (120), `rows` (4), `row-height` (16), `id`, `items` (`text`, `color`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item` ([dynamic lists](#dynamic-lists)), `item-tooltip`, `head-size`, `font` ([own font](#own-fonts), *since 1.4*); page buttons appear below when needed (+20 px) |
 | `grid` | `x`, `y`, `cols` (4), `rows` (2), `cell` (pitch, 18), `size` (16), `frame` (`slot`, or `none`), `id`, `items` (`text`, `color`, `tint`, `tooltip`, `actions`, `permission`, `icon`, `count`), `items-from` + `item`, `item-tooltip`, `head-size`; page buttons below when needed, `font` ([own font](#own-fonts), *since 1.4*) |
 | `slider` | `x`, `y`, `width` (100), `var`, `min` (0), `max` (10), `step` (1), `tint` (knob), `tooltip` (`%value%` = the value at that spot), `actions` (after a change) |
@@ -122,6 +122,19 @@ of buttons, lists and grids has a drop shadow (grayed-out buttons do not); label
 | `choice` | `x`, `y`, `width` (80), `height` (16), `var`, `options` (list, or `value: text` pairs), `tint`, `tooltip`, `actions`, `font` ([own font](#own-fonts), *since 1.4*) |
 | `scroll` | a window onto its elements with a scroll bar: `x`, `y`, `width` (120), `height` (80, at least 48), `elements`, `step` (18), `id`, `frame` (around the window, default none) |
 | `tabs` | tabs on top of a panel: `x`, `y`, `width` (160), `height` (100, tabs included), `tabs` (list of `id`, `title`, `icon`, `elements`), `var` (keeps the active tab in a [menu variable](#variables)), `id`, `frame` (`panel`, for the panel and the tabs), `inactive-tint` (inactive tabs, default a bit darker), `font` ([own font](#own-fonts), *since 1.4*) |
+
+**Bar colors by value** *(since 1.5)*: `fill` can also be steps, each from a share of `max` (in
+percent) on; below the lowest step its color counts:
+
+```yaml
+- type: bar
+  x: 8
+  y: 20
+  width: 160
+  value: "%player_health%"
+  max: 20
+  fill: { 0: "#FF5555", 25: gold, 50: "#80FF20" }   # red up to 25 %, gold up to 50 %, then green
+```
 
 **Item icons** (`icon:`) are 16 x 16 and use the textures every client already has: items look
 like in the inventory, blocks show one face, and items drawn by special renderers (heads, chests,
@@ -655,8 +668,8 @@ elements:
   - { type: label, x: 8, y: 8, text: "Welcome", font: title }   # or per element
 ```
 
-`font:` works on the menu and on `label`, `button`, `list`, `grid`, `checkbox`, `choice` and
-`tabs`; the elements inside tabs (and scroll panes) use the font around them unless they set their
+`font:` works on the menu and on `label`, `button`, `list`, `grid`, `checkbox`, `choice`,
+`tabs` and `bar` (since 1.5); the elements inside tabs (and scroll panes) use the font around them unless they set their
 own. `font: minecraft` draws an element in the Minecraft font inside a menu or tab with an own
 font (so `minecraft` cannot be the name of an own font). Text tooltips follow the font of their
 element (item tooltips stay the client's).

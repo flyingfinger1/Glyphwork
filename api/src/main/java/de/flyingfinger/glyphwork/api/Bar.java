@@ -29,6 +29,7 @@ public final class Bar implements Element {
     private Function<View, String> text = v -> "";
     private String frame = "slot";
     private @Nullable Function<View, @Nullable Component> tooltip;
+    private @Nullable String font;
 
     private Bar(int x, int y, int width) {
         this.x = x;
@@ -155,6 +156,21 @@ public final class Bar implements Element {
     @org.jetbrains.annotations.ApiStatus.Internal
     public @Nullable Function<View, @Nullable Component> tooltip() {
         return tooltip;
+    }
+
+    /**
+     * Draws the text in an own font of config.yml ({@code fonts:}, since 1.5); null or an unknown
+     * name: the font around it (scene, tab), else the Minecraft font. Tooltips follow it.
+     */
+    @org.jetbrains.annotations.ApiStatus.Experimental
+    public Bar font(@Nullable String font) {
+        this.font = font;
+        return this;
+    }
+
+    @org.jetbrains.annotations.ApiStatus.Internal
+    public @Nullable String font() {
+        return font;
     }
 
     /** Filled share (0..1) of a value; max <= 0 counts as empty. */

@@ -164,6 +164,30 @@ class MenusTest {
     }
 
     @Test
+    void barFillStepsAndFont() throws Exception {
+        Menus m = new Menus();
+        java.util.function.Function<String, net.kyori.adventure.text.format.TextColor> colorAt = value -> {
+            try {
+                Scene s = m.parse("t", "elements:\n  - {type: bar, x: 0, y: 0, value: " + value
+                    + ", max: 200, fill: {0: \"#FF0000\", 20: gold, \"50%\": \"#00FF00\"}, font: pixel}\n").scene();
+                de.flyingfinger.glyphwork.api.Bar bar = (de.flyingfinger.glyphwork.api.Bar) s.elements().stream()
+                    .filter(e -> e instanceof de.flyingfinger.glyphwork.api.Bar).findFirst().orElseThrow();
+                assertEquals("pixel", bar.font());
+                return bar.fill().apply(new RecordingClick(s));
+            } catch (MenuException e) {
+                throw new AssertionError(e);
+            }
+        };
+        assertEquals(net.kyori.adventure.text.format.TextColor.color(0xFF0000), colorAt.apply("0"));
+        assertEquals(net.kyori.adventure.text.format.TextColor.color(0xFF0000), colorAt.apply("39"));
+        assertEquals(net.kyori.adventure.text.format.NamedTextColor.GOLD, colorAt.apply("40"));
+        assertEquals(net.kyori.adventure.text.format.TextColor.color(0x00FF00), colorAt.apply("100"));
+        assertEquals(net.kyori.adventure.text.format.TextColor.color(0x00FF00), colorAt.apply("500"));
+        assertError(m, "elements:\n  - {type: bar, x: 0, y: 0, value: 1, fill: {low: red}}\n", "t.yml.elements[0].fill: steps start");
+        assertError(m, "elements:\n  - {type: bar, x: 0, y: 0, value: 1, fill: {10: nocolor}}\n", "t.yml.elements[0].fill.10: color expected");
+    }
+
+    @Test
     void brokenFilesAreSkippedOthersLoad(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve("good.yml"), "title: ok\ncommand: Good\naliases: [g]\n");
         Files.writeString(dir.resolve("bad.yml"), "elements:\n  - type: nope\n");

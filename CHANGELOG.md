@@ -6,6 +6,14 @@
   in Glyphwork screens (off by default), in the players' *Interface* volume. Menus set their own
   with `click-sound:` (or `none`); a button with a `sound:` action plays only that one. API:
   `Scene.Builder.clickSound(Sound)`, `Click.noClickSound()`.
+- **Bar colors by value:** `fill:` of a `bar` can be steps by share of `max`
+  (`fill: { 0: "#FF5555", 25: gold, 50: "#80FF20" }`), e.g. a health bar that turns red. The
+  designer takes them as `0: red, 25: gold, 50: green` and previews them.
+- **`font:` on bars** (API `Bar.font`), like the other text elements since 1.4.
+- **Text stays inside the menu:** a label without a `width` that would run past the right edge is
+  cut there with "..." (4 px from the edge, inside the frame), and the log says once which label
+  and what `width` fits. The designer shows it the same way (for 1.5 on). The German example menu
+  `beispiel-regeln` had such a label; its text is shorter now.
 
 ## 1.4.0 – own fonts
 

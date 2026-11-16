@@ -14,6 +14,8 @@
   cut there with "..." (4 px from the edge, inside the frame), and the log says once which label
   and what `width` fits. The designer shows it the same way (for 1.5 on). The German example menu
   `beispiel-regeln` had such a label; its text is shorter now.
+- **Fix:** a button with `frame: none` (a link, a text button) took no clicks and showed no
+  tooltip; it now has an invisible click area of its size.
 
 ## 1.4.0-mc1.21.11 – Paper 1.21.11, own fonts
 

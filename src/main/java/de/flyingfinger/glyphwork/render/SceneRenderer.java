@@ -885,6 +885,9 @@ public final class SceneRenderer {
         if (f != null) {
             line.frame(f, b.x(), y, b.width(), b.height(), enabled ? b.tint().apply(view) : Button.DISABLED,
                 click, tooltip(b.tooltip(), view));
+        } else {
+            // without a frame (a link, a text button) invisible hit glyphs take the click and the tooltip
+            hitbox(line, b.x(), y, b.width(), b.height(), click, tooltip(b.tooltip(), view));
         }
         int textX = b.x();
         // like the height: a 22 px button is drawn 16 px wide, so center on what is drawn
